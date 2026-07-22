@@ -1,0 +1,68 @@
+{
+  "format": "gpt-review-planner-rust-benchmark-v1",
+  "observed_at": "2026-07-22",
+  "environment": "ChatGPT Linux sandbox",
+  "source": {
+    "repository": "rceman/gpt-review-planner",
+    "workflow_run_id": 29910237409,
+    "artifact_id": 8525559070,
+    "artifact_name": "rustc-lite-linux-x86_64",
+    "artifact_digest": "sha256:7f3ff61b19f9947ac18d5911719b9ebd71ac89b1ee5520ff673897b56b972975",
+    "head_ref": "v1.0.0",
+    "head_sha": "b19c7abc2b7fb5f841ee3350df931bbc95227c00"
+  },
+  "rust": {
+    "version": "1.97.1",
+    "host": "x86_64-unknown-linux-gnu",
+    "bundle": "rustc-lite-1.97.1-x86_64-unknown-linux-gnu.tar.zst",
+    "bundle_size_bytes": 194051637,
+    "bundle_sha256": "2d761c47fc6987ae574ece46b210e1495fe3d553c71d401c26d5da36431af02f",
+    "artifact_zip_size_bytes": 194052235
+  },
+  "samples": [
+    {
+      "artifact_zip_extract_seconds": 0.121041,
+      "cold_bootstrap_compile_test_seconds": 1.029139,
+      "warm_cache_compile_test_seconds": 0.100065
+    },
+    {
+      "artifact_zip_extract_seconds": 0.119163,
+      "cold_bootstrap_compile_test_seconds": 0.961618,
+      "warm_cache_compile_test_seconds": 0.107003
+    },
+    {
+      "artifact_zip_extract_seconds": 0.12407,
+      "cold_bootstrap_compile_test_seconds": 3.233442,
+      "warm_cache_compile_test_seconds": 0.120707
+    },
+    {
+      "artifact_zip_extract_seconds": 0.13489,
+      "cold_bootstrap_compile_test_seconds": 1.090644,
+      "warm_cache_compile_test_seconds": 0.114831
+    },
+    {
+      "artifact_zip_extract_seconds": 0.119243,
+      "cold_bootstrap_compile_test_seconds": 1.019042,
+      "warm_cache_compile_test_seconds": 0.099634
+    }
+  ],
+  "median": {
+    "artifact_zip_extract_seconds": 0.121041,
+    "cold_bootstrap_compile_test_seconds": 1.029139,
+    "warm_cache_compile_test_seconds": 0.107003
+  },
+  "range": {
+    "artifact_zip_extract_seconds": {
+      "min": 0.119163,
+      "max": 0.13489
+    },
+    "cold_bootstrap_compile_test_seconds": {
+      "min": 0.961618,
+      "max": 3.233442
+    },
+    "warm_cache_compile_test_seconds": {
+      "min": 0.099634,
+      "max": 0.120707
+    }
+  }
+}

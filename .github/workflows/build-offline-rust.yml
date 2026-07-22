@@ -41,6 +41,28 @@ jobs:
             --toolchain '${{ steps.config.outputs.toolchain }}' \
             --output-dir dist
 
+      - name: Validate portable release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum -c ./*.sha256
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(Path("rustc-lite-manifest.json").read_text(encoding="utf-8"))
+          bundle = Path(manifest["bundle"])
+          checksum = Path(manifest["checksum"])
+          assert bundle.name == manifest["bundle"]
+          assert checksum.name == manifest["checksum"]
+          assert bundle.is_file(), bundle
+          assert checksum.is_file(), checksum
+          sidecar_name = checksum.read_text(encoding="utf-8").split()[1]
+          assert sidecar_name == bundle.name, (sidecar_name, bundle.name)
+          assert "/" not in sidecar_name and "\\" not in sidecar_name
+          PY
+
       - name: Prove strict offline bootstrap path
         shell: bash
         run: |
@@ -52,7 +74,7 @@ jobs:
             --no-network \
             --cache-dir /tmp/gpt-review-planner-rust-cache \
             --offline-bundle "$bundle" \
-            -- bash -lc '
+            -- bash -c '
               rustc --version
               cargo --version
               rustc --edition=2021 --test \
@@ -61,6 +83,24 @@ jobs:
               /tmp/damage-kernel-tests
             '
 
+      - name: Publish bundle summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(Path("dist/rustc-lite-manifest.json").read_text(encoding="utf-8"))
+          print("## Offline Rust bundle")
+          print()
+          print(f"- Rust: `{manifest['rust_release']}`")
+          print(f"- Host: `{manifest['host']}`")
+          print(f"- Bundle: `{manifest['bundle']}`")
+          print(f"- Size: `{manifest['size_bytes']}` bytes")
+          print(f"- SHA-256: `{manifest['sha256']}`")
+          PY
+
       - name: Upload downloadable workflow artifact
         uses: actions/upload-artifact@v7
         with:
@@ -68,6 +108,7 @@ jobs:
           path: |
             dist/*.tar.zst
             dist/*.sha256
+            dist/*.json
           if-no-files-found: error
           retention-days: 90
           compression-level: 0

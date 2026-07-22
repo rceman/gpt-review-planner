@@ -16,7 +16,7 @@ responsibility boundaries, not to prescribe a game-specific damage formula.
 From the workflow repository root:
 
 ```bash
-bash scripts/bootstrap-rustc.sh -- bash -lc '
+bash scripts/bootstrap-rustc.sh -- bash -c '
   rustc --edition=2021 --test \
     examples/rust-domain-feature/overlay/src/damage_kernel.rs \
     -o /tmp/damage-kernel-tests

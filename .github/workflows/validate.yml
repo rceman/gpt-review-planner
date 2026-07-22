@@ -16,6 +16,7 @@ jobs:
           bash -n scripts/new-patch-pack.sh
           bash -n scripts/bootstrap-rustc.sh
           bash -n scripts/build-offline-rust-bundle.sh
+          python scripts/benchmark-offline-rust.py --help >/dev/null
       - name: Python compile
         run: python -m compileall scripts tests examples
       - name: Unit tests
@@ -26,7 +27,7 @@ jobs:
         run: bash scripts/bootstrap-rustc.sh -- rustc --version
       - name: Example Rust kernel
         run: |
-          bash scripts/bootstrap-rustc.sh -- bash -lc '
+          bash scripts/bootstrap-rustc.sh -- bash -c '
             rustc --edition=2021 --test \
               examples/rust-domain-feature/overlay/src/damage_kernel.rs \
               -o /tmp/damage-kernel-tests

@@ -14,6 +14,7 @@ Options:
 Produces:
   rustc-lite-<rust-version>-<host>.tar.zst
   rustc-lite-<rust-version>-<host>.tar.zst.sha256
+  rustc-lite-manifest.json
 USAGE
 }
 
@@ -111,11 +112,45 @@ PY
 
 archive="$output_dir/$bundle_name.tar.zst"
 checksum="$archive.sha256"
-rm -f "$archive" "$checksum"
+release_manifest="$output_dir/rustc-lite-manifest.json"
+rm -f "$archive" "$checksum" "$release_manifest"
 log "creating $archive"
 tar --zstd -cf "$archive" -C "$temporary/stage" "$bundle_name"
-sha256sum "$archive" > "$checksum"
+
+archive_basename="$(basename "$archive")"
+checksum_basename="$(basename "$checksum")"
+archive_sha256="$(sha256sum "$archive" | awk '{print $1}')"
+printf '%s  %s\n' "$archive_sha256" "$archive_basename" > "$checksum"
+
+RUST_RELEASE="$rust_release" HOST="$host" COMMIT_HASH="$commit_hash" \
+TOOLCHAIN="$toolchain" ARCHIVE_BASENAME="$archive_basename" \
+CHECKSUM_BASENAME="$checksum_basename" ARCHIVE_SHA256="$archive_sha256" \
+ARCHIVE_SIZE="$(stat -c %s "$archive")" \
+python3 - "$release_manifest" <<'PY'
+import json
+import os
+import sys
+from datetime import datetime, timezone
+
+path = sys.argv[1]
+data = {
+    "format": "gpt-review-planner-rustc-release-v1",
+    "requested_toolchain": os.environ["TOOLCHAIN"],
+    "rust_release": os.environ["RUST_RELEASE"],
+    "host": os.environ["HOST"],
+    "commit_hash": os.environ["COMMIT_HASH"],
+    "bundle": os.environ["ARCHIVE_BASENAME"],
+    "checksum": os.environ["CHECKSUM_BASENAME"],
+    "sha256": os.environ["ARCHIVE_SHA256"],
+    "size_bytes": int(os.environ["ARCHIVE_SIZE"]),
+    "created_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+}
+with open(path, "w", encoding="utf-8") as handle:
+    json.dump(data, handle, indent=2)
+    handle.write("\n")
+PY
 
 log "bundle ready"
 printf '%s\n' "$archive"
 printf '%s\n' "$checksum"
+printf '%s\n' "$release_manifest"

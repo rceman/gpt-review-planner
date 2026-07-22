@@ -188,6 +188,11 @@ emit_or_run() {
   fi
 
   if ((${#command_args[@]} > 0)); then
+    command_name="${command_args[0]##*/}"
+    command_flags="${command_args[1]:-}"
+    if [[ "$command_name" == "bash" ]] &&        ([[ "$command_flags" == "--login" ]] || [[ "$command_flags" == -*l* ]]); then
+      fail "refusing to launch a Bash login shell; it may replace PATH and hide the prepared compiler. Use 'bash -c' instead of 'bash -lc'."
+    fi
     exec "${command_args[@]}"
   fi
 

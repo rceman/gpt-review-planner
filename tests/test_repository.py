@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import importlib.util
 import json
 import os
 import subprocess
@@ -24,6 +26,9 @@ class RepositoryTest(unittest.TestCase):
             ".github/workflows/build-offline-rust.yml",
             "toolchains/README.md",
             "docs/FAST_RUSTC_BOOTSTRAP.md",
+            "docs/CHATGPT_RUST_SANDBOX_BOOTSTRAP.md",
+            "scripts/benchmark-offline-rust.py",
+            "benchmarks/chatgpt-sandbox-rust-1.97.1.json",
             "schemas/patch-manifest.schema.json",
             "templates/executable-patch-pack/manifest.json",
         ):
@@ -316,8 +321,17 @@ fi
                 check=True,
                 capture_output=True,
                 text=True,
-            ).stdout
-            Path(f"{bundle}.sha256").write_text(digest, encoding="utf-8")
+            ).stdout.split()[0]
+            Path(f"{bundle}.sha256").write_text(
+                f"{digest}  {bundle.name}\n", encoding="utf-8"
+            )
+            subprocess.run(
+                ["sha256sum", "-c", Path(f"{bundle}.sha256").name],
+                cwd=temp,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
 
             command = [
                 "bash",
@@ -362,6 +376,87 @@ fi
             )
             self.assertEqual(second.stdout.strip(), "rustc 9.9.9-offline")
             self.assertIn("offline-cache", second.stderr)
+
+    def test_bootstrap_rejects_bash_login_shell(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            fake_bin = Path(temp_dir) / "bin"
+            fake_bin.mkdir()
+            fake_rustc = fake_bin / "rustc"
+            fake_rustc.write_text(
+                "#!/usr/bin/env bash\nprintf 'rustc 9.9.9-test\n'\n",
+                encoding="utf-8",
+            )
+            fake_rustc.chmod(0o755)
+
+            env = os.environ.copy()
+            env["PATH"] = f"{fake_bin}:{env['PATH']}"
+            result = subprocess.run(
+                [
+                    "bash",
+                    str(ROOT / "scripts/bootstrap-rustc.sh"),
+                    "--",
+                    "bash",
+                    "-lc",
+                    "rustc --version",
+                ],
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Use 'bash -c' instead of 'bash -lc'", result.stderr)
+
+    def test_no_executable_bootstrap_example_uses_login_shell(self) -> None:
+        for path in ROOT.rglob("*"):
+            if not path.is_file() or path.suffix not in {".md", ".yml", ".yaml", ".sh"}:
+                continue
+            text = path.read_text(encoding="utf-8")
+            self.assertNotIn("-- bash -lc", text, str(path.relative_to(ROOT)))
+
+    def test_benchmark_accepts_legacy_absolute_path_sidecar(self) -> None:
+        script = ROOT / "scripts/benchmark-offline-rust.py"
+        spec = importlib.util.spec_from_file_location("benchmark_offline_rust", script)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            bundle = Path(temp_dir) / "rustc-lite-test.tar.zst"
+            bundle.write_bytes(b"legacy-sidecar-test")
+            digest = hashlib.sha256(bundle.read_bytes()).hexdigest()
+            Path(f"{bundle}.sha256").write_text(
+                f"{digest}  /home/runner/work/repo/dist/{bundle.name}\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(module.verify_bundle(bundle), digest)
+
+    def test_release_builder_declares_portable_metadata(self) -> None:
+        script = (ROOT / "scripts/build-offline-rust-bundle.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("rustc-lite-manifest.json", script)
+        self.assertIn("archive_basename", script)
+        self.assertIn("printf '%s  %s\\n'", script)
+
+        workflow = (ROOT / ".github/workflows/build-offline-rust.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("sha256sum -c ./*.sha256", workflow)
+        self.assertIn("dist/*.json", workflow)
+
+    def test_observed_benchmark_fixture_is_valid(self) -> None:
+        data = json.loads(
+            (ROOT / "benchmarks/chatgpt-sandbox-rust-1.97.1.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(data["source"]["workflow_run_id"], 29910237409)
+        self.assertEqual(data["rust"]["version"], "1.97.1")
+        self.assertEqual(len(data["samples"]), 5)
+        self.assertGreater(data["median"]["cold_bootstrap_compile_test_seconds"], 0)
+        self.assertGreater(data["median"]["warm_cache_compile_test_seconds"], 0)
 
     def test_template_manifest_is_valid_json(self) -> None:
         path = ROOT / "templates/executable-patch-pack/manifest.json"
