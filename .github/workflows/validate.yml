@@ -1,0 +1,34 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Shell syntax
+        run: |
+          bash -n setup.sh
+          bash -n update.sh
+          bash -n scripts/new-patch-pack.sh
+          bash -n scripts/bootstrap-rustc.sh
+          bash -n scripts/build-offline-rust-bundle.sh
+      - name: Python compile
+        run: python -m compileall scripts tests examples
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Example oracle tests
+        run: python -m unittest discover -s examples/rust-domain-feature/reference/python -v
+      - name: Fast rustc bootstrap reuse
+        run: bash scripts/bootstrap-rustc.sh -- rustc --version
+      - name: Example Rust kernel
+        run: |
+          bash scripts/bootstrap-rustc.sh -- bash -lc '
+            rustc --edition=2021 --test \
+              examples/rust-domain-feature/overlay/src/damage_kernel.rs \
+              -o /tmp/damage-kernel-tests
+            /tmp/damage-kernel-tests
+          '

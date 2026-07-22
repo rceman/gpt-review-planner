@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/rceman/gpt-review-planner",
+  "version": "v1.0.0",
+  "commit": "REPLACE_WITH_40_CHARACTER_COMMIT_SHA",
+  "document": "GPT_REVIEW_PLANNER.md",
+  "installed_at": "REPLACE_WITH_UTC_TIMESTAMP"
+}
