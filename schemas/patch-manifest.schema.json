@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rceman/gpt-review-planner/schemas/patch-manifest.schema.json",
+  "title": "Executable Patch Pack Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "patch_id",
+    "workflow",
+    "target",
+    "files_created",
+    "files_modified",
+    "files_deleted",
+    "locally_validated",
+    "requires_agent_validation",
+    "known_integration_risks",
+    "forbidden_deviations",
+    "required_quality_gates"
+  ],
+  "properties": {
+    "patch_id": {
+      "type": "string",
+      "pattern": "^[A-Z0-9][A-Z0-9._-]+$"
+    },
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "version",
+        "commit",
+        "document"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "format": "uri"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{40}$"
+        },
+        "document": {
+          "const": "GPT_REVIEW_PLANNER.md"
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "branch",
+        "base_revision"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "base_revision": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "files_created": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "files_modified": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "files_deleted": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "locally_validated": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "requires_agent_validation": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "known_integration_risks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "forbidden_deviations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_quality_gates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

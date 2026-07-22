@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "name": "armor_exceeds_damage",
+      "input": {
+        "base_damage": 10,
+        "armor": 50,
+        "multiplier_bps": 10000
+      },
+      "expected": {
+        "damage": 0
+      }
+    },
+    {
+      "name": "one_point_five_multiplier",
+      "input": {
+        "base_damage": 100,
+        "armor": 10,
+        "multiplier_bps": 15000
+      },
+      "expected": {
+        "damage": 140
+      }
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rceman/gpt-review-planner/schemas/deviation-report.schema.json",
+  "title": "Local Agent Deviation Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "deviation_id",
+    "original_implementation",
+    "observed_failure",
+    "repository_evidence",
+    "changed_implementation",
+    "behavioral_impact",
+    "tests_proving_correctness",
+    "approval_required"
+  ],
+  "properties": {
+    "deviation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "original_implementation": {
+      "type": "string"
+    },
+    "observed_failure": {
+      "type": "string"
+    },
+    "repository_evidence": {
+      "type": "string"
+    },
+    "changed_implementation": {
+      "type": "string"
+    },
+    "behavioral_impact": {
+      "type": "string"
+    },
+    "tests_proving_correctness": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "approval_required": {
+      "type": "boolean"
+    }
+  }
+}
