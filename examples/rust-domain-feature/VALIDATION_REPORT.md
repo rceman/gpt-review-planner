@@ -3,7 +3,7 @@
 ## GREEN
 
 ```bash
-bash ../../scripts/bootstrap-rustc.sh -- bash -lc '
+bash ../../scripts/bootstrap-rustc.sh -- bash -c '
   rustc --edition=2021 --test overlay/src/damage_kernel.rs \
     -o /tmp/damage-kernel-tests
   /tmp/damage-kernel-tests

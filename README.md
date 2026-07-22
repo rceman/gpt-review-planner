@@ -5,7 +5,7 @@ Canonical workflow and tooling for a two-model software delivery process:
 - **GPT** owns architecture, behavior, fixtures, tests, review, and the principal implementation.
 - **The local coding agent** applies, integrates, compiles, runs runtime tests, fixes narrow integration defects, and produces evidence.
 
-Current version: **1.0.0**
+Current version: **1.0.1**
 
 For first-time GitHub publication, follow [`UPLOAD_TO_GITHUB.md`](UPLOAD_TO_GITHUB.md).
 
@@ -33,10 +33,10 @@ After uploading this archive's contents to the empty repository:
    - `Validate`;
    - `Build Offline Rust Toolchain`.
 3. Download the `rustc-lite-linux-x86_64` artifact once to verify it exists.
-4. Create and push tag `v1.0.0` from the validated commit.
+4. Create and push tag `v1.0.1` from the validated commit.
 5. The tag workflow creates or updates the GitHub Release and attaches the
    offline Rust bundle plus its SHA-256 sidecar.
-6. Use `v1.0.0` in project setup commands.
+6. Use `v1.0.1` in project setup commands.
 
 The default setup command resolves the tag to its exact commit SHA and stores
 both values in `.gpt-workflow.lock`.
@@ -46,7 +46,7 @@ both values in `.gpt-workflow.lock`.
 Clone this repository, then run:
 
 ```bash
-bash setup.sh --project /path/to/project --version v1.0.0
+bash setup.sh --project /path/to/project --version v1.0.1
 ```
 
 This creates or updates:
@@ -62,12 +62,12 @@ The workflow document itself is not copied into the project.
 
 ```bash
 tmp_dir="$(mktemp -d)"
-git clone --depth 1 --branch v1.0.0 \
+git clone --depth 1 --branch v1.0.1 \
   https://github.com/rceman/gpt-review-planner.git "$tmp_dir"
 
 bash "$tmp_dir/setup.sh" \
   --project /path/to/project \
-  --version v1.0.0
+  --version v1.0.1
 ```
 
 ## Update a project
@@ -117,7 +117,7 @@ bash scripts/bootstrap-rustc.sh \
   --force-managed \
   --no-network \
   --offline-bundle /path/to/rustc-lite-*.tar.zst \
-  -- bash -lc '
+  -- bash -c '
     rustc --version
     rustc --edition=2021 --test path/to/kernel.rs -o /tmp/kernel-tests
     /tmp/kernel-tests
@@ -129,6 +129,18 @@ proves that the bundle can compile and execute the repository's standalone Rust
 example with network access disabled at the bootstrap layer. Compiler binaries
 are stored as Actions artifacts and GitHub Release assets, not committed to Git.
 See [`docs/FAST_RUSTC_BOOTSTRAP.md`](docs/FAST_RUSTC_BOOTSTRAP.md).
+
+For ChatGPT sandboxes whose shell cannot reach GitHub, provide the successful
+`Build Offline Rust Toolchain` Actions run URL. GPT can download the named
+workflow artifact through the connected GitHub integration and run:
+
+```bash
+python scripts/benchmark-offline-rust.py \
+  --artifact-zip /mnt/data/rustc-lite-linux-x86_64.zip
+```
+
+The exact connector procedure and measured baseline are documented in
+[`docs/CHATGPT_RUST_SANDBOX_BOOTSTRAP.md`](docs/CHATGPT_RUST_SANDBOX_BOOTSTRAP.md).
 
 ## Run repository tests
 

@@ -55,7 +55,11 @@ The builder installs the official Rust `minimal` profile into an isolated
 - host `rust-std`;
 - `cargo`;
 - Rust license and toolchain metadata;
-- `manifest.json` recording version, host, commit, and provenance format.
+- `manifest.json` inside the sysroot recording version, host, commit, and provenance format.
+
+The release artifact also contains `rustc-lite-manifest.json` beside the bundle.
+It records the exact archive basename, portable checksum filename, SHA-256, size,
+Rust release, host, and compiler commit.
 
 It intentionally omits rustfmt, Clippy, rust-docs, extra targets, and project
 Cargo dependencies.
@@ -72,11 +76,13 @@ The workflow:
 
 1. creates an isolated official minimal toolchain;
 2. packages `rustc-lite-<version>-<host>.tar.zst`;
-3. creates a SHA-256 sidecar;
-4. uses `bootstrap-rustc.sh --no-network --offline-bundle ...` with a fresh cache;
-5. compiles and runs the standalone Rust example;
-6. uploads both files as an Actions artifact;
-7. on a version tag, creates or updates the GitHub Release and attaches them.
+3. creates a portable SHA-256 sidecar containing only the archive basename;
+4. creates `rustc-lite-manifest.json` with machine-readable release metadata;
+5. validates the sidecar using `sha256sum -c` from inside `dist/`;
+6. uses `bootstrap-rustc.sh --no-network --offline-bundle ...` with a fresh cache;
+7. compiles and runs the standalone Rust example;
+8. uploads the bundle, sidecar, and manifest as an Actions artifact;
+9. on a version tag, creates or updates the GitHub Release and attaches them.
 
 ## Strict offline use
 
@@ -90,7 +96,7 @@ GPT_RUSTC_NO_NETWORK=1 bash scripts/bootstrap-rustc.sh \
   --no-network \
   --cache-dir /tmp/gpt-review-planner-rust \
   --offline-bundle "$bundle" \
-  -- bash -lc '
+  -- bash -c '
     rustc --version
     cargo --version
     rustc --edition=2021 --test path/to/kernel.rs -o /tmp/kernel-tests
@@ -104,8 +110,33 @@ The `.sha256` file must be next to the archive and named:
 <archive-name>.sha256
 ```
 
+Use `bash -c`, not `bash -lc`, for a compound command. A Bash login shell may
+reconstruct `PATH` and hide the compiler prepared by `bootstrap-rustc.sh`.
+The bootstrap rejects known Bash login-shell invocations for this reason.
+
 The first offline invocation verifies and extracts the archive. Later runs reuse
 the extracted cache without reading or downloading the archive again.
+
+
+## ChatGPT Actions-artifact path
+
+When the shell cannot resolve GitHub but the connected GitHub app is available,
+provide a successful Actions run URL:
+
+```text
+https://github.com/rceman/gpt-review-planner/actions/runs/<RUN_ID>
+```
+
+GPT should fetch the artifact named `rustc-lite-linux-x86_64`, download it by
+`artifact_id`, and then run:
+
+```bash
+python scripts/benchmark-offline-rust.py \
+  --artifact-zip /mnt/data/rustc-lite-linux-x86_64.zip
+```
+
+See [`CHATGPT_RUST_SANDBOX_BOOTSTRAP.md`](CHATGPT_RUST_SANDBOX_BOOTSTRAP.md) for
+the exact connector calls, validation gates, and the observed benchmark.
 
 ## Repository-bundled use
 

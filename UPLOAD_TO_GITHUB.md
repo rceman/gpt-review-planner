@@ -76,3 +76,27 @@ bootstrap, and run the standalone Rust tests in the sandbox.
 
 GPT can inspect the workflow run and download its artifact through the connected
 GitHub integration.
+
+## 5. Publish correction release `v1.0.1`
+
+After merging the `v1.0.1` correction patch:
+
+1. Confirm both workflows are green on the merged `main` commit.
+2. Open the successful `Build Offline Rust Toolchain` run.
+3. Confirm artifact `rustc-lite-linux-x86_64` contains the bundle, portable
+   `.sha256` sidecar, and `rustc-lite-manifest.json`.
+4. Copy the complete Actions run URL. This is the canonical input for ChatGPT
+   sandbox download because the GitHub connector can resolve the run to an
+   `artifact_id` even when the sandbox shell cannot reach GitHub.
+5. Create tag/release `v1.0.1` from the exact validated commit.
+6. Confirm all three release assets are attached.
+7. Ask GPT to validate using the Actions run URL, not only the Release URL:
+
+```text
+Use this Build Offline Rust Toolchain run:
+https://github.com/rceman/gpt-review-planner/actions/runs/<RUN_ID>
+
+Download artifact rustc-lite-linux-x86_64 through the GitHub connector, run
+scripts/benchmark-offline-rust.py, and report checksum, cold bootstrap,
+standalone Rust test, and warm-cache results.
+```

@@ -369,7 +369,7 @@ bash scripts/bootstrap-rustc.sh
 For a compile-and-test operation in one prepared environment:
 
 ```bash
-bash scripts/bootstrap-rustc.sh -- bash -lc '
+bash scripts/bootstrap-rustc.sh -- bash -c '
   rustc --edition=2021 --test path/to/kernel.rs -o /tmp/kernel-tests
   /tmp/kernel-tests
 '
