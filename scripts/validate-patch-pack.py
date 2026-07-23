@@ -19,6 +19,13 @@ REQUIRED_FILES = (
     "expected/allowed-deviations.md",
 )
 
+REQUIRED_VALIDATION_SECTIONS = (
+    "GPT_STATIC_CHECKS_PERFORMED",
+    "GPT_RUNTIME_CHECKS_NOT_PERFORMED",
+    "AGENT_RUNTIME_GATES_REQUIRED",
+    "AGENT_RUNTIME_RESULTS",
+)
+
 
 def main() -> int:
     if len(sys.argv) != 2:
@@ -46,8 +53,10 @@ def main() -> int:
                 "files_created",
                 "files_modified",
                 "files_deleted",
-                "locally_validated",
-                "requires_agent_validation",
+                "gpt_static_checks_performed",
+                "gpt_runtime_checks_not_performed",
+                "agent_runtime_gates_required",
+                "agent_runtime_results",
                 "known_integration_risks",
                 "forbidden_deviations",
                 "required_quality_gates",
@@ -58,6 +67,21 @@ def main() -> int:
             commit = str(manifest.get("workflow", {}).get("commit", ""))
             if commit.startswith("REPLACE_") or not re.fullmatch(r"[0-9a-fA-F]{40}", commit):
                 errors.append("workflow.commit must be a real 40-character Git SHA")
+
+            runtime_results = manifest.get("agent_runtime_results")
+            if not isinstance(runtime_results, str) or not runtime_results.strip():
+                errors.append("manifest agent_runtime_results must be a non-empty string")
+
+    report_path = root / "VALIDATION_REPORT.md"
+    if report_path.is_file():
+        report = report_path.read_text(encoding="utf-8")
+        for section in REQUIRED_VALIDATION_SECTIONS:
+            if section not in report:
+                errors.append(f"VALIDATION_REPORT.md missing section: {section}")
+        if "Pending local-agent execution." not in report:
+            errors.append(
+                "VALIDATION_REPORT.md must initially state: Pending local-agent execution."
+            )
 
     placeholders: list[str] = []
     for path in root.rglob("*"):

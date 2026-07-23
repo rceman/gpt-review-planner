@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import tempfile
 import unittest
@@ -547,8 +548,10 @@ fi
             "files_created": created,
             "files_modified": modified,
             "files_deleted": deleted,
-            "locally_validated": [],
-            "requires_agent_validation": [],
+            "gpt_static_checks_performed": [],
+            "gpt_runtime_checks_not_performed": [],
+            "agent_runtime_gates_required": [],
+            "agent_runtime_results": "Pending local-agent execution.",
             "known_integration_risks": [],
             "forbidden_deviations": [],
             "required_quality_gates": [],
@@ -833,6 +836,77 @@ fi
         path = ROOT / "templates/executable-patch-pack/manifest.json"
         data = json.loads(path.read_text(encoding="utf-8"))
         self.assertEqual(data["workflow"]["document"], "GPT_REVIEW_PLANNER.md")
+
+    def test_gpt_facing_policy_forbids_runtime_execution_instructions(self) -> None:
+        surfaces = (
+            "GPT_REVIEW_PLANNER.md",
+            "README.md",
+            "docs/PATCH_PACK_FORMAT.md",
+            "RELEASE_CHECKLIST.md",
+            "UPLOAD_TO_GITHUB.md",
+            "docs/FAST_RUSTC_BOOTSTRAP.md",
+            "docs/CHATGPT_RUST_SANDBOX_BOOTSTRAP.md",
+            "prompts/GPT_CREATE_PATCH_PACK.md",
+            "templates/executable-patch-pack/AGENT_PROMPT.md",
+            "templates/executable-patch-pack/VALIDATION_REPORT.md",
+            "examples/rust-domain-feature/README.md",
+            "examples/rust-domain-feature/VALIDATION_REPORT.md",
+        )
+        positive_runtime_instruction = re.compile(
+            r"\bGPT\s+(?:must|should|can)\s+(?!not\b)"
+            r"(?:run|execute|perform|compile|build|install)\b",
+            re.IGNORECASE,
+        )
+
+        for relative in surfaces:
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            self.assertIsNone(
+                positive_runtime_instruction.search(text),
+                f"GPT-facing surface assigns runtime execution: {relative}",
+            )
+
+        workflow = (ROOT / "GPT_REVIEW_PLANNER.md").read_text(encoding="utf-8")
+        for section in (
+            "GPT_STATIC_CHECKS_PERFORMED",
+            "GPT_RUNTIME_CHECKS_NOT_PERFORMED",
+            "AGENT_RUNTIME_GATES_REQUIRED",
+            "AGENT_RUNTIME_RESULTS",
+            "runtime validation not executed by GPT",
+        ):
+            self.assertIn(section, workflow)
+
+    def test_validation_report_and_manifest_separate_gpt_and_agent_evidence(self) -> None:
+        report = (ROOT / "templates/executable-patch-pack/VALIDATION_REPORT.md").read_text(
+            encoding="utf-8"
+        )
+        for section in (
+            "GPT_STATIC_CHECKS_PERFORMED",
+            "GPT_RUNTIME_CHECKS_NOT_PERFORMED",
+            "AGENT_RUNTIME_GATES_REQUIRED",
+            "AGENT_RUNTIME_RESULTS",
+            "Pending local-agent execution.",
+            "Written by GPT",
+            "Executed by agent",
+            "Evidence or log location",
+        ):
+            self.assertIn(section, report)
+
+        manifest = json.loads(
+            (ROOT / "templates/executable-patch-pack/manifest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        for field in (
+            "gpt_static_checks_performed",
+            "gpt_runtime_checks_not_performed",
+            "agent_runtime_gates_required",
+            "agent_runtime_results",
+        ):
+            self.assertIn(field, manifest)
+        self.assertEqual(
+            manifest["agent_runtime_results"],
+            "Pending local-agent execution.",
+        )
 
 
 if __name__ == "__main__":

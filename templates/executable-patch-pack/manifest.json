@@ -14,8 +14,12 @@
   "files_created": [],
   "files_modified": [],
   "files_deleted": [],
-  "locally_validated": [],
-  "requires_agent_validation": [],
+  "gpt_static_checks_performed": [],
+  "gpt_runtime_checks_not_performed": [
+    "unit, integration, E2E, property, benchmark, compile, and build gates"
+  ],
+  "agent_runtime_gates_required": [],
+  "agent_runtime_results": "Pending local-agent execution.",
   "known_integration_risks": [],
   "forbidden_deviations": [
     "Do not change behavior contract semantics.",

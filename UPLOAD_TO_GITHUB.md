@@ -64,18 +64,19 @@ existing release and uploads or replaces the Rust bundle and SHA-256 sidecar.
 After the tag workflow succeeds, refresh the release and confirm both assets are
 attached.
 
-## 4. Request GPT verification
+## 4. Request local-agent runtime validation and GPT review
 
 Send GPT:
 
 ```text
-Verify https://github.com/rceman/gpt-review-planner after the v1.0.0 release.
-Check both workflows, download the rustc-lite artifact, measure cold and warm
-bootstrap, and run the standalone Rust tests in the sandbox.
+Have the local coding agent verify https://github.com/rceman/gpt-review-planner
+after the v1.0.0 release. The agent should check both workflows, download the
+rustc-lite artifact, measure cold and warm bootstrap, and run the standalone Rust
+tests. GPT should review the agent's evidence without rerunning the tests.
 ```
 
-GPT can inspect the workflow run and download its artifact through the connected
-GitHub integration.
+GPT can inspect the workflow run and coordinate artifact download through the
+connected GitHub integration; executable gates remain local-agent work.
 
 ## 5. Publish correction release `v1.0.1`
 
@@ -90,7 +91,8 @@ After merging the `v1.0.1` correction patch:
    `artifact_id` even when the sandbox shell cannot reach GitHub.
 5. Create tag/release `v1.0.1` from the exact validated commit.
 6. Confirm all three release assets are attached.
-7. Ask GPT to validate using the Actions run URL, not only the Release URL:
+7. Ask the local coding agent to execute the gates using the Actions run URL,
+   then ask GPT to review the evidence, not rerun the gates:
 
 ```text
 Use this Build Offline Rust Toolchain run:
@@ -98,5 +100,6 @@ https://github.com/rceman/gpt-review-planner/actions/runs/<RUN_ID>
 
 Download artifact rustc-lite-linux-x86_64 through the GitHub connector, run
 scripts/benchmark-offline-rust.py, and report checksum, cold bootstrap,
-standalone Rust test, and warm-cache results.
+standalone Rust test, and warm-cache results. GPT will perform static/artifact
+review only and will not rerun these commands.
 ```

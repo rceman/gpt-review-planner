@@ -1,20 +1,29 @@
 # Validation Report
 
-## GREEN
+## GPT_STATIC_CHECKS_PERFORMED
 
-```bash
-bash ../../scripts/bootstrap-rustc.sh -- bash -c '
-  rustc --edition=2021 --test overlay/src/damage_kernel.rs \
-    -o /tmp/damage-kernel-tests
-  /tmp/damage-kernel-tests
-'
-python -m unittest discover -s reference/python -v
-```
+- Reviewed the standalone Rust kernel, Python oracle, fixtures, and example
+  paths statically.
 
-The standalone Rust tests and Python oracle tests are expected to pass without
-external dependencies.
+## GPT_RUNTIME_CHECKS_NOT_PERFORMED
 
-## YELLOW
+- GPT did not bootstrap Rust, compile the kernel, or execute either test suite.
+
+## AGENT_RUNTIME_GATES_REQUIRED
+
+The local coding agent must execute the Rust test command and the Python oracle
+command shown in `README.md`, then record their exact outputs.
+
+## AGENT_RUNTIME_RESULTS
+
+Pending local-agent execution.
+
+| Gate | Written by GPT | Executed by agent | Result | Evidence or log location |
+|---|---|---|---|---|
+| Rust standalone tests | test source and command | pending | pending | pending |
+| Python oracle tests | test source and command | pending | pending | pending |
+
+## Residual integration surface
 
 The repository-specific `mod.rs` export and call-site adapter are intentionally
 not represented in this generic example. A real patch pack must include them.

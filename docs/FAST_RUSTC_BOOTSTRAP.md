@@ -2,8 +2,10 @@
 
 ## Objective
 
-Provide a working Rust compiler for standalone `rustc --test` validation with
-minimal setup time and without restoring project dependencies.
+Provide a working Rust compiler for the local coding agent's standalone
+`rustc --test` runtime gates with minimal setup time and without restoring
+project dependencies. GPT may inspect this procedure and its artifacts but does
+not bootstrap a compiler or execute the gates.
 
 The same script supports:
 
@@ -121,14 +123,14 @@ the extracted cache without reading or downloading the archive again.
 ## ChatGPT Actions-artifact path
 
 When the shell cannot resolve GitHub but the connected GitHub app is available,
-provide a successful Actions run URL:
+provide a successful Actions run URL to the local coding agent:
 
 ```text
 https://github.com/rceman/gpt-review-planner/actions/runs/<RUN_ID>
 ```
 
-GPT should fetch the artifact named `rustc-lite-linux-x86_64`, download it by
-`artifact_id`, and then run:
+The connected GitHub app can fetch the artifact named
+`rustc-lite-linux-x86_64` by `artifact_id`. The local coding agent then runs:
 
 ```bash
 python scripts/benchmark-offline-rust.py \
@@ -136,7 +138,7 @@ python scripts/benchmark-offline-rust.py \
 ```
 
 See [`CHATGPT_RUST_SANDBOX_BOOTSTRAP.md`](CHATGPT_RUST_SANDBOX_BOOTSTRAP.md) for
-the exact connector calls, validation gates, and the observed benchmark.
+the exact connector calls, agent runtime gates, and the observed benchmark.
 
 ## Repository-bundled use
 

@@ -9,7 +9,8 @@
 > `GPT_REVIEW_PLANNER.md`.
 >
 > Operating model:
-> - GPT owns architecture, behavior contracts, fixtures, tests, review, and the principal implementation.
-> - The local agent owns integration, dependency restoration, compilation, runtime tests, and minimal integration corrections.
+> - GPT owns architecture, behavior contracts, fixtures, tests, static/artifact review, and the principal implementation. GPT does not execute runtime quality gates.
+> - The local agent owns integration, dependency restoration, formatting, compilation, linting, runtime tests, benchmarks, evidence, and minimal integration corrections.
 > - The local agent must not redesign approved behavior or weaken tests and acceptance criteria.
+> - GPT reviews agent-reported runtime evidence without rerunning tests.
 <!-- END GPT-REVIEW-PLANNER -->
