@@ -115,11 +115,16 @@ Head commit: b19c7abc2b7fb5f841ee3350df931bbc95227c00
 Rust: 1.97.1 x86_64-unknown-linux-gnu
 ```
 
-Five complete agent benchmark repetitions were recorded in the ChatGPT Linux
-sandbox on 2026-07-22. This is historical agent evidence supplied for GPT
-review, not runtime execution by GPT. Each repetition extracted the artifact
-ZIP, created an empty toolchain cache, performed strict offline bootstrap,
-compiled and ran two Rust tests, then repeated compile/test from the warm cache.
+Five complete benchmark repetitions were recorded in the ChatGPT Linux sandbox
+on 2026-07-22 before the current role-separation policy was adopted. They were
+executed by GPT/ChatGPT and are retained only as a legacy performance baseline.
+This historical execution does not comply with the current policy and must not be
+repeated by GPT. Future benchmark, compiler, and test execution belongs exclusively
+to the local coding agent, whose evidence GPT reviews without rerunning it.
+
+Each historical repetition extracted the artifact ZIP, created an empty toolchain
+cache, performed strict offline bootstrap, compiled and ran two Rust tests, then
+repeated compile/test from the warm cache.
 
 ```text
 Artifact ZIP:                           194,052,235 bytes

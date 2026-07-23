@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import importlib.util
 import json
 import os
@@ -803,6 +804,89 @@ fi
         self.assertEqual(modified, set())
         self.assertEqual(deleted, set())
 
+    def test_patch_pack_scope_preserves_leading_and_trailing_spaces(self) -> None:
+        script = ROOT / "scripts/patch_pack_scope.py"
+        spec = importlib.util.spec_from_file_location("patch_pack_scope", script)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        paths = {" leading.txt", "trailing.txt ", " both sides "}
+        encoded = b"".join(b"1\t1\t" + path.encode("utf-8") + b"\0" for path in paths)
+        self.assertEqual(module.parse_numstat_z(encoded), paths)
+        for path in paths:
+            self.assertEqual(module.normalize_repo_path(path, source="test"), path)
+
+    def test_patch_pack_scope_rejects_newline_and_nul_paths(self) -> None:
+        script = ROOT / "scripts/patch_pack_scope.py"
+        spec = importlib.util.spec_from_file_location("patch_pack_scope", script)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        for path in ("line\nfeed.txt", "carriage\rreturn.txt", "nul\0path.txt"):
+            with self.subTest(path=repr(path)):
+                with self.assertRaises(module.ScopeError):
+                    module.normalize_repo_path(path, source="test")
+
+    def test_patch_pack_scope_parses_native_rename_and_copy_numstat(self) -> None:
+        script = ROOT / "scripts/patch_pack_scope.py"
+        spec = importlib.util.spec_from_file_location("patch_pack_scope", script)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        data = (
+            b"0\t0\t\0old name.txt\0new name.txt\0"
+            b"12\t0\tregular.txt\0"
+            b"0\t0\t\0source.txt\0copy.txt\0"
+        )
+        self.assertEqual(
+            module.parse_numstat_z(data),
+            {"old name.txt", "new name.txt", "regular.txt", "source.txt", "copy.txt"},
+        )
+
+    def test_delete_paths_preserves_significant_spaces(self) -> None:
+        script = ROOT / "scripts/patch_pack_scope.py"
+        spec = importlib.util.spec_from_file_location("patch_pack_scope", script)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "delete-paths.txt"
+            path.write_text(" leading.txt\ntrailing.txt \n# comment\n\n", encoding="utf-8")
+            self.assertEqual(module.delete_paths(path), {" leading.txt", "trailing.txt "})
+
+    def test_gpt_policy_enforcement_covers_all_normative_surfaces_and_wording(self) -> None:
+        source = inspect.getsource(self.test_gpt_facing_policy_forbids_runtime_execution_instructions)
+        for surface in (
+            "prompts/AGENT_APPLY_PATCH_PACK.md",
+            "templates/project/AGENTS.managed-block.md",
+        ):
+            self.assertIn(surface, source)
+        for wording in ("may", "runs", "executes", "performs", "is responsible for"):
+            self.assertIn(wording, source.lower())
+
+    def test_historical_benchmark_has_truthful_legacy_provenance(self) -> None:
+        fixture = json.loads(
+            (ROOT / "benchmarks/chatgpt-sandbox-rust-1.97.1.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(fixture["executor"], "GPT/ChatGPT legacy run")
+        self.assertIn("must not be repeated by GPT", fixture["policy_status"])
+        documentation = (ROOT / "docs/CHATGPT_RUST_SANDBOX_BOOTSTRAP.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("before the current role-separation policy", documentation)
+        self.assertIn("executed by GPT/ChatGPT", documentation)
+        self.assertNotIn("historical agent evidence", documentation)
+
     def test_new_patch_pack_includes_scope_verifier_and_deviation_report(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             subprocess.run(
@@ -846,23 +930,59 @@ fi
             "UPLOAD_TO_GITHUB.md",
             "docs/FAST_RUSTC_BOOTSTRAP.md",
             "docs/CHATGPT_RUST_SANDBOX_BOOTSTRAP.md",
+            "prompts/AGENT_APPLY_PATCH_PACK.md",
             "prompts/GPT_CREATE_PATCH_PACK.md",
             "templates/executable-patch-pack/AGENT_PROMPT.md",
             "templates/executable-patch-pack/VALIDATION_REPORT.md",
+            "templates/project/AGENTS.managed-block.md",
             "examples/rust-domain-feature/README.md",
             "examples/rust-domain-feature/VALIDATION_REPORT.md",
         )
-        positive_runtime_instruction = re.compile(
-            r"\bGPT\s+(?:must|should|can)\s+(?!not\b)"
-            r"(?:run|execute|perform|compile|build|install)\b",
+        explicit_gpt_runtime_instruction = re.compile(
+            r"\bGPT(?:\s*/\s*ChatGPT)?\s+"
+            r"(?:(?:must|should|can|may)\s+(?!not\b)|)"
+            r"(?:run|runs|execute|executes|compile|compiles|build|builds|"
+            r"install|installs)\b|"
+            r"(?:perform|performs)\s+(?:unit|integration|end-to-end|E2E|"
+            r"property|benchmark|runtime|smoke|project|dependency)",
             re.IGNORECASE,
+        )
+        # This explicitly covers the phrase "is responsible for".
+        responsibility_assignment = re.compile(
+            r"\bGPT(?:\s*/\s*ChatGPT)?\s+is\s+responsible\s+for\s+"
+            r"(?:running|executing|performing|compiling|building|installing)\b",
+            re.IGNORECASE,
+        )
+        imperative_runtime_instruction = re.compile(
+            r"^(?:run|execute|perform|compile|build|install)\b.*"
+            r"(?:test|benchmark|compiler|project|dependencies|runtime|smoke)",
+            re.IGNORECASE | re.MULTILINE,
         )
 
         for relative in surfaces:
             text = (ROOT / relative).read_text(encoding="utf-8")
-            self.assertIsNone(
-                positive_runtime_instruction.search(text),
-                f"GPT-facing surface assigns runtime execution: {relative}",
+            prohibited_lines = []
+            for line in text.splitlines():
+                lower = line.lower()
+                if any(
+                    marker in lower
+                    for marker in (
+                        "ambiguous claims",
+                        "locally validated by gpt",
+                        "gpt executes smoke tests",
+                    )
+                ):
+                    continue
+                if any(marker in lower for marker in ("must not", "does not", "do not", "not executed by gpt")):
+                    continue
+                if explicit_gpt_runtime_instruction.search(line) or responsibility_assignment.search(line):
+                    prohibited_lines.append(line)
+                if "gpt" in lower and imperative_runtime_instruction.search(line):
+                    prohibited_lines.append(line)
+            self.assertEqual(
+                prohibited_lines,
+                [],
+                f"GPT-facing surface assigns runtime execution: {relative}: {prohibited_lines}",
             )
 
         workflow = (ROOT / "GPT_REVIEW_PLANNER.md").read_text(encoding="utf-8")

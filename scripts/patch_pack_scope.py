@@ -14,9 +14,11 @@ class ScopeError(ValueError):
 
 
 def normalize_repo_path(raw: str, *, source: str) -> str:
-    value = raw.strip()
-    if not value:
+    value = raw
+    if value == "":
         raise ScopeError(f"{source}: empty repository path")
+    if any(character in value for character in ("\0", "\n", "\r")):
+        raise ScopeError(f"{source}: NUL and newline characters are not supported in repository paths")
     if "\\" in value:
         raise ScopeError(f"{source}: paths must use '/' separators: {value!r}")
     path = PurePosixPath(value)
@@ -76,6 +78,39 @@ def decode_repo_path(raw: bytes, *, source: str) -> str:
     return normalize_repo_path(value, source=source)
 
 
+def parse_numstat_z(data: bytes) -> set[str]:
+    fields = data.split(b"\0")
+    paths: set[str] = set()
+    index = 0
+    record_number = 0
+
+    while index < len(fields):
+        record = fields[index]
+        index += 1
+        if not record:
+            continue
+        record_number += 1
+        columns = record.split(b"\t", 2)
+        if len(columns) != 3:
+            raise ScopeError(f"changes.patch numstat record {record_number} is malformed")
+        raw_path = columns[2]
+        if raw_path:
+            paths.add(decode_repo_path(raw_path, source=f"changes.patch:{record_number}"))
+            continue
+
+        if index + 1 >= len(fields) or not fields[index] or not fields[index + 1]:
+            raise ScopeError(
+                f"changes.patch numstat rename/copy record {record_number} is missing old/new paths"
+            )
+        old_path = decode_repo_path(fields[index], source=f"changes.patch:{record_number} old path")
+        new_path = decode_repo_path(fields[index + 1], source=f"changes.patch:{record_number} new path")
+        index += 2
+        paths.add(old_path)
+        paths.add(new_path)
+
+    return paths
+
+
 def patch_paths(path: Path) -> set[str]:
     if not path.is_file() or not path.read_bytes().strip():
         return set()
@@ -90,14 +125,7 @@ def patch_paths(path: Path) -> set[str]:
         message = result.stderr.decode("utf-8", errors="replace").strip()
         raise ScopeError(f"changes.patch could not be parsed by git apply --numstat: {message}")
 
-    paths: set[str] = set()
-    for record_number, record in enumerate(result.stdout.split(b"\0"), 1):
-        if not record:
-            continue
-        fields = record.split(b"\t", 2)
-        if len(fields) != 3:
-            raise ScopeError(f"changes.patch numstat record {record_number} is malformed")
-        paths.add(decode_repo_path(fields[2], source=f"changes.patch:{record_number}"))
+    paths = parse_numstat_z(result.stdout)
 
     if not paths:
         raise ScopeError("changes.patch is non-empty but git apply reported no changed paths")
@@ -120,10 +148,9 @@ def delete_paths(path: Path) -> set[str]:
         return set()
     result: set[str] = set()
     for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-        value = line.strip()
-        if not value or value.startswith("#"):
+        if line == "" or line.startswith("#"):
             continue
-        normalized = normalize_repo_path(value, source=f"delete-paths.txt:{line_number}")
+        normalized = normalize_repo_path(line, source=f"delete-paths.txt:{line_number}")
         if normalized in result:
             raise ScopeError(f"delete-paths.txt:{line_number}: duplicate path: {normalized}")
         result.add(normalized)

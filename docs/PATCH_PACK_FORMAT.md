@@ -55,7 +55,18 @@ The following sets must agree:
 
 `changes.patch` paths are extracted through `git apply --numstat -z`, not by
 manually splitting quoted `diff --git` headers. UTF-8 names, spaces, and embedded
-whitespace therefore retain their exact repository spelling.
+whitespace therefore retain their exact repository spelling. Leading and trailing
+spaces are significant and must not be trimmed by the manifest, overlay, patch, or
+deletion-list validators.
+
+Native Git rename/copy numstat records are supported. In NUL-delimited numstat,
+these records expose an empty pathname field followed by separate old and new
+pathnames; both paths are included in patch payload scope. The final-result verifier
+continues to classify rename as old deleted plus new created, and copy as new
+created.
+
+NUL, LF, and CR characters in repository paths are not supported by the patch-pack
+manifest and line-based deletion-list format and must be rejected explicitly.
 
 The final verifier preserves operation classes:
 
