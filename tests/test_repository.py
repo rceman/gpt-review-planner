@@ -28,6 +28,8 @@ class RepositoryTest(unittest.TestCase):
             "docs/FAST_RUSTC_BOOTSTRAP.md",
             "docs/CHATGPT_RUST_SANDBOX_BOOTSTRAP.md",
             "scripts/benchmark-offline-rust.py",
+            "scripts/patch_pack_scope.py",
+            "templates/executable-patch-pack/DEVIATIONS.md",
             "benchmarks/chatgpt-sandbox-rust-1.97.1.json",
             "schemas/patch-manifest.schema.json",
             "templates/executable-patch-pack/manifest.json",
@@ -407,6 +409,67 @@ fi
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("Use 'bash -c' instead of 'bash -lc'", result.stderr)
 
+    def test_bootstrap_rejects_login_shell_after_other_bash_options(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            fake_bin = Path(temp_dir) / "bin"
+            fake_bin.mkdir()
+            fake_rustc = fake_bin / "rustc"
+            fake_rustc.write_text(
+                "#!/usr/bin/env bash\nprintf 'rustc 9.9.9-test\n'\n",
+                encoding="utf-8",
+            )
+            fake_rustc.chmod(0o755)
+
+            env = os.environ.copy()
+            env["PATH"] = f"{fake_bin}:{env['PATH']}"
+            cases = (
+                ["bash", "-O", "extglob", "-lc", "rustc --version"],
+                ["bash", "-o", "pipefail", "-lc", "rustc --version"],
+                ["bash", "--norc", "-lc", "rustc --version"],
+            )
+            for command in cases:
+                with self.subTest(command=command):
+                    result = subprocess.run(
+                        ["bash", str(ROOT / "scripts/bootstrap-rustc.sh"), "--", *command],
+                        capture_output=True,
+                        text=True,
+                        env=env,
+                    )
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("Use 'bash -c' instead of 'bash -lc'", result.stderr)
+
+    def test_bootstrap_does_not_treat_script_arguments_as_bash_options(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            fake_bin = temp / "bin"
+            fake_bin.mkdir()
+            fake_rustc = fake_bin / "rustc"
+            fake_rustc.write_text(
+                "#!/usr/bin/env bash\nprintf 'rustc 9.9.9-test\n'\n",
+                encoding="utf-8",
+            )
+            fake_rustc.chmod(0o755)
+            script = temp / "check.sh"
+            script.write_text("rustc --version\n", encoding="utf-8")
+
+            env = os.environ.copy()
+            env["PATH"] = f"{fake_bin}:{env['PATH']}"
+            result = subprocess.run(
+                [
+                    "bash",
+                    str(ROOT / "scripts/bootstrap-rustc.sh"),
+                    "--",
+                    "bash",
+                    str(script),
+                    "-l",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+            self.assertEqual(result.stdout.strip(), "rustc 9.9.9-test")
+
     def test_no_executable_bootstrap_example_uses_login_shell(self) -> None:
         for path in ROOT.rglob("*"):
             if not path.is_file() or path.suffix not in {".md", ".yml", ".yaml", ".sh"}:
@@ -444,7 +507,146 @@ fi
             encoding="utf-8"
         )
         self.assertIn("sha256sum -c ./*.sha256", workflow)
+        self.assertIn("hashlib.sha256()", workflow)
+        self.assertIn('manifest["sha256"] == digest.hexdigest()', workflow)
+        self.assertIn('manifest["size_bytes"] == bundle.stat().st_size', workflow)
         self.assertIn("dist/*.json", workflow)
+
+    def _write_scope_pack(
+        self,
+        root: Path,
+        *,
+        base_revision: str,
+        modified: list[str],
+        patch_paths: list[str],
+        overlay_paths: list[str],
+    ) -> None:
+        (root / "patch").mkdir(parents=True)
+        (root / "overlay").mkdir()
+        (root / "scripts").mkdir()
+        manifest = {
+            "patch_id": "TEST-SCOPE",
+            "workflow": {
+                "repository": "https://github.com/rceman/gpt-review-planner",
+                "version": "v1.0.1",
+                "commit": FAKE_COMMIT,
+                "document": "GPT_REVIEW_PLANNER.md",
+            },
+            "target": {
+                "repository": "test/repository",
+                "branch": "test",
+                "base_revision": base_revision,
+            },
+            "files_created": [],
+            "files_modified": modified,
+            "files_deleted": [],
+            "locally_validated": [],
+            "requires_agent_validation": [],
+            "known_integration_risks": [],
+            "forbidden_deviations": [],
+            "required_quality_gates": [],
+        }
+        (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+        patch = "".join(
+            f"diff --git a/{path} b/{path}\n--- a/{path}\n+++ b/{path}\n"
+            for path in patch_paths
+        )
+        (root / "patch/changes.patch").write_text(patch, encoding="utf-8")
+        (root / "patch/delete-paths.txt").write_text("", encoding="utf-8")
+        for relative in overlay_paths:
+            target = root / "overlay" / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("new\n", encoding="utf-8")
+        (root / "DEVIATIONS.md").write_text(
+            "# Agent Deviations\n\nStatus: none\n\nNo deviations.\n",
+            encoding="utf-8",
+        )
+        scope_script = ROOT / "scripts/patch_pack_scope.py"
+        target_script = root / "scripts/patch_pack_scope.py"
+        target_script.write_text(scope_script.read_text(encoding="utf-8"), encoding="utf-8")
+
+    def test_patch_pack_scope_rejects_payload_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            pack = Path(temp_dir) / "pack"
+            pack.mkdir()
+            self._write_scope_pack(
+                pack,
+                base_revision=FAKE_COMMIT,
+                modified=["a.txt", "b.txt"],
+                patch_paths=["a.txt"],
+                overlay_paths=["a.txt"],
+            )
+            result = subprocess.run(
+                [
+                    "python3",
+                    str(ROOT / "scripts/patch_pack_scope.py"),
+                    "validate-pack",
+                    str(pack),
+                ],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("missing=b.txt", result.stderr)
+
+    def test_patch_pack_scope_verifies_exact_final_diff(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            repository = temp / "repository"
+            repository.mkdir()
+            subprocess.run(["git", "init", "-q", str(repository)], check=True)
+            subprocess.run(["git", "-C", str(repository), "config", "user.email", "test@example.com"], check=True)
+            subprocess.run(["git", "-C", str(repository), "config", "user.name", "Test"], check=True)
+            (repository / "a.txt").write_text("old\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(repository), "add", "a.txt"], check=True)
+            subprocess.run(["git", "-C", str(repository), "commit", "-qm", "base"], check=True)
+            base = subprocess.run(
+                ["git", "-C", str(repository), "rev-parse", "HEAD"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+            (repository / "a.txt").write_text("new\n", encoding="utf-8")
+
+            pack = temp / "pack"
+            pack.mkdir()
+            self._write_scope_pack(
+                pack,
+                base_revision=base,
+                modified=["a.txt"],
+                patch_paths=["a.txt"],
+                overlay_paths=["a.txt"],
+            )
+            command = [
+                "python3",
+                str(ROOT / "scripts/patch_pack_scope.py"),
+                "verify-result",
+                str(pack),
+                str(repository),
+            ]
+            subprocess.run(command, check=True, capture_output=True, text=True)
+
+            (repository / "b.txt").write_text("undeclared\n", encoding="utf-8")
+            result = subprocess.run(command, capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("extra=b.txt", result.stderr)
+
+    def test_new_patch_pack_includes_scope_verifier_and_deviation_report(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            subprocess.run(
+                [
+                    "bash",
+                    str(ROOT / "scripts/new-patch-pack.sh"),
+                    "TEST-PACK",
+                    temp_dir,
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            pack = Path(temp_dir) / "TEST-PACK"
+            self.assertTrue((pack / "DEVIATIONS.md").is_file())
+            self.assertTrue((pack / "scripts/patch_pack_scope.py").is_file())
 
     def test_observed_benchmark_fixture_is_valid(self) -> None:
         data = json.loads(

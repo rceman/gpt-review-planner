@@ -35,7 +35,7 @@ After uploading this archive's contents to the empty repository:
 3. Download the `rustc-lite-linux-x86_64` artifact once to verify it exists.
 4. Create and push tag `v1.0.1` from the validated commit.
 5. The tag workflow creates or updates the GitHub Release and attaches the
-   offline Rust bundle plus its SHA-256 sidecar.
+   offline Rust bundle, portable SHA-256 sidecar, and release manifest.
 6. Use `v1.0.1` in project setup commands.
 
 The default setup command resolves the tag to its exact commit SHA and stores
@@ -92,12 +92,17 @@ bash scripts/new-patch-pack.sh \
   /path/to/output
 ```
 
-Then fill in the generated files and validate:
+Then fill in the generated files and validate exact scope:
 
 ```bash
 python scripts/validate-patch-pack.py \
   /path/to/output/PROJECT-FEATURE-001
 ```
+
+The validator compares `manifest.json` with `changes.patch`, `overlay/`, and
+`delete-paths.txt`. After the agent finishes, the pack's
+`scripts/verify-agent-result.sh` also compares the final repository diff with the
+same manifest scope and requires an explicit `DEVIATIONS.md` status.
 
 ## Fast standalone Rust validation
 

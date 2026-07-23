@@ -17,6 +17,7 @@ jobs:
           bash -n scripts/bootstrap-rustc.sh
           bash -n scripts/build-offline-rust-bundle.sh
           python scripts/benchmark-offline-rust.py --help >/dev/null
+          python scripts/patch_pack_scope.py --help >/dev/null
       - name: Python compile
         run: python -m compileall scripts tests examples
       - name: Unit tests

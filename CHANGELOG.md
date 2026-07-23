@@ -15,6 +15,10 @@ All notable changes to this workflow are documented here.
 - Added the canonical ChatGPT GitHub-connector procedure for downloading an
   artifact by Actions run URL and `artifact_id`.
 - Added a five-run ChatGPT sandbox benchmark with provenance and cold/warm timing.
+- Hardened Bash login-shell detection across option ordering and option arguments.
+- Added exact manifest/patch/overlay/delete/final-diff scope verification.
+- Added mandatory `DEVIATIONS.md` reports to generated patch packs.
+- Added CI verification of release-manifest SHA-256 and size metadata.
 
 ## 1.0.0 — 2026-07-22
 

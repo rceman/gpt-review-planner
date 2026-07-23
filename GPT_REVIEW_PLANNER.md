@@ -456,6 +456,7 @@ Recommended structure:
 ├── PATCH_SPEC.md
 ├── BEHAVIOR_CONTRACT.md
 ├── VALIDATION_REPORT.md
+├── DEVIATIONS.md
 ├── manifest.json
 ├── patch/
 │   ├── changes.patch
@@ -468,6 +469,7 @@ Recommended structure:
 │   ├── apply.sh
 │   ├── validate-static.sh
 │   ├── run-reference-tests.sh
+│   ├── patch_pack_scope.py
 │   └── verify-agent-result.sh
 └── expected/
     ├── file-tree.txt
@@ -486,6 +488,14 @@ Omit directories that are genuinely unused.
 - `BEHAVIOR_CONTRACT.md`: normative behavior.
 - `VALIDATION_REPORT.md`: exact checks GPT executed and did not execute.
 - `manifest.json`: machine-readable scope, risks, required gates, and workflow pin.
+- `DEVIATIONS.md`: mandatory agent deviation status and evidence; `Status: none` is explicit.
+- `patch_pack_scope.py`: validates pack payload scope and the final repository diff.
+
+The created, modified, and deleted paths in `manifest.json` are authoritative. When
+present, `changes.patch` and `overlay/` must match the manifest create/modify set,
+while `delete-paths.txt` must match the manifest delete set exactly. Before completion, the final repository diff from the
+pinned base revision must equal the complete manifest path set. An additional path is
+a blocking deviation and requires an updated pack or explicit owner approval.
 
 ---
 
@@ -600,7 +610,9 @@ Requires explicit approval:
 
 ## 13. Deviation protocol
 
-Every material deviation must record:
+Every patch execution must contain `DEVIATIONS.md`. Use `Status: none` when the
+agent made no deviation. Use `Status: documented` and record the following when a
+deviation is required:
 
 ```text
 Deviation ID:
@@ -614,6 +626,9 @@ Approval required:
 ```
 
 A successful build is not sufficient justification for a behavioral deviation.
+A change outside the manifest file scope must not be merged merely because it is
+mechanical or makes tests pass; it requires an updated patch pack or explicit owner
+approval.
 
 ---
 

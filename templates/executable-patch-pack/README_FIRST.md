@@ -18,8 +18,10 @@
 6. Restore locked dependencies.
 7. Run targeted gates, then full gates.
 8. Correct only verified integration defects.
-9. Record every material deviation.
-10. Produce the required final report and archive.
+9. Keep the final changed-path set exactly equal to `manifest.json`.
+10. Record every deviation in `DEVIATIONS.md`.
+11. Run `scripts/verify-agent-result.sh`.
+12. Produce the required final report and archive.
 
 ## Critical restrictions
 
@@ -27,3 +29,4 @@
 - Do not weaken tests or acceptance criteria.
 - Do not update dependencies unless required and documented.
 - Do not claim skipped tests passed.
+- Do not silently change files outside the manifest scope.
