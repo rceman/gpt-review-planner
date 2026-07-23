@@ -17,3 +17,7 @@ Do not leave ordinary implementation work, TODOs, pseudocode, missing tests,
 or unresolved architecture decisions to the local agent. Leave only environment
 integration, compilation, runtime test execution, evidence collection, and
 minimal integration corrections.
+
+The manifest, `changes.patch`, overlay, deletion list, and expected final repository
+diff must describe the same path scope. Include `DEVIATIONS.md` and the standalone
+`patch_pack_scope.py` verifier in every pack. Validate exact scope before archiving.

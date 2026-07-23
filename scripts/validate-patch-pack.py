@@ -13,6 +13,8 @@ REQUIRED_FILES = (
     "BEHAVIOR_CONTRACT.md",
     "VALIDATION_REPORT.md",
     "manifest.json",
+    "DEVIATIONS.md",
+    "scripts/patch_pack_scope.py",
     "expected/acceptance-gates.md",
     "expected/allowed-deviations.md",
 )
@@ -70,6 +72,20 @@ def main() -> int:
 
     if placeholders:
         errors.append("unresolved REPLACE placeholders: " + ", ".join(sorted(placeholders)))
+
+    scope_validator = Path(__file__).with_name("patch_pack_scope.py")
+    if scope_validator.is_file():
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("patch_pack_scope", scope_validator)
+        if spec is None or spec.loader is None:
+            errors.append("could not load patch_pack_scope.py")
+        else:
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            errors.extend(module.validate_pack(root))
+    else:
+        errors.append("missing validator helper: scripts/patch_pack_scope.py")
 
     if errors:
         for error in errors:

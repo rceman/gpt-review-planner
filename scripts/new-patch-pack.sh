@@ -16,6 +16,8 @@ destination="$output_root/$patch_id"
 
 mkdir -p "$output_root"
 cp -a "$source_dir" "$destination"
+cp "$repo_root/scripts/patch_pack_scope.py" "$destination/scripts/patch_pack_scope.py"
+chmod +x "$destination/scripts/patch_pack_scope.py"
 
 python - "$destination" "$patch_id" <<'PY'
 from pathlib import Path

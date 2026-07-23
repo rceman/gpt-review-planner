@@ -168,6 +168,59 @@ host_target() {
   esac
 }
 
+bash_login_shell_requested() {
+  local index=1
+  local argument short_flags
+
+  while ((index < ${#command_args[@]})); do
+    argument="${command_args[index]}"
+    case "$argument" in
+      --)
+        return 1
+        ;;
+      --login)
+        return 0
+        ;;
+      --init-file|--rcfile)
+        ((index += 2))
+        continue
+        ;;
+      --init-file=*|--rcfile=*)
+        ((index += 1))
+        continue
+        ;;
+      --*)
+        ((index += 1))
+        continue
+        ;;
+      -*)
+        short_flags="${argument#-}"
+        [[ "$short_flags" == *l* ]] && return 0
+        [[ "$short_flags" == *c* ]] && return 1
+        if [[ "$short_flags" == "O" || "$short_flags" == "o" ]]; then
+          ((index += 2))
+        else
+          ((index += 1))
+        fi
+        continue
+        ;;
+      +O|+o)
+        ((index += 2))
+        continue
+        ;;
+      +*)
+        ((index += 1))
+        continue
+        ;;
+      *)
+        return 1
+        ;;
+    esac
+  done
+
+  return 1
+}
+
 emit_or_run() {
   local source="$1"
   local rustc_bin="$2"
@@ -188,9 +241,9 @@ emit_or_run() {
   fi
 
   if ((${#command_args[@]} > 0)); then
+    local command_name
     command_name="${command_args[0]##*/}"
-    command_flags="${command_args[1]:-}"
-    if [[ "$command_name" == "bash" ]] &&        ([[ "$command_flags" == "--login" ]] || [[ "$command_flags" == -*l* ]]); then
+    if [[ "$command_name" == "bash" ]] && bash_login_shell_requested; then
       fail "refusing to launch a Bash login shell; it may replace PATH and hide the prepared compiler. Use 'bash -c' instead of 'bash -lc'."
     fi
     exec "${command_args[@]}"

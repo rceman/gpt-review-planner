@@ -48,6 +48,7 @@ jobs:
           cd dist
           sha256sum -c ./*.sha256
           python3 - <<'PY'
+          import hashlib
           import json
           from pathlib import Path
 
@@ -61,6 +62,12 @@ jobs:
           sidecar_name = checksum.read_text(encoding="utf-8").split()[1]
           assert sidecar_name == bundle.name, (sidecar_name, bundle.name)
           assert "/" not in sidecar_name and "\\" not in sidecar_name
+          digest = hashlib.sha256()
+          with bundle.open("rb") as handle:
+              for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                  digest.update(chunk)
+          assert manifest["sha256"] == digest.hexdigest()
+          assert manifest["size_bytes"] == bundle.stat().st_size
           PY
 
       - name: Prove strict offline bootstrap path

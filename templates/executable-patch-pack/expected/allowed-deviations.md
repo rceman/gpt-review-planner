@@ -11,4 +11,7 @@ Mechanical integration corrections are permitted when they preserve the behavior
 - fixture path resolution;
 - test harness integration.
 
-All material deviations must be documented.
+Mechanical corrections are allowed only inside paths already declared in
+`manifest.json`. A required change to any additional path is a blocking deviation:
+document it in `DEVIATIONS.md`, stop before merge, and request an updated patch pack
+or explicit owner approval.
