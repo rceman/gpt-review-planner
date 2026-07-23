@@ -493,9 +493,15 @@ Omit directories that are genuinely unused.
 
 The created, modified, and deleted paths in `manifest.json` are authoritative. When
 present, `changes.patch` and `overlay/` must match the manifest create/modify set,
-while `delete-paths.txt` must match the manifest delete set exactly. Before completion, the final repository diff from the
-pinned base revision must equal the complete manifest path set. An additional path is
-a blocking deviation and requires an updated pack or explicit owner approval.
+while `delete-paths.txt` must match the manifest delete set exactly. Patch paths must
+be parsed by Git in NUL-delimited mode so UTF-8 names and whitespace remain exact.
+
+Before completion, the final repository diff from the pinned base revision must
+match both the complete path set and each operation class. Treat `A` and untracked
+paths as created, `M`/`T` as modified, `D` as deleted, `R` as old deleted plus new
+created, and `C` as new created. An additional path or a created/modified/deleted
+classification mismatch is a blocking deviation and requires an updated patch pack
+or explicit owner approval.
 
 ---
 

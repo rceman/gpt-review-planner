@@ -517,13 +517,20 @@ fi
         root: Path,
         *,
         base_revision: str,
-        modified: list[str],
-        patch_paths: list[str],
-        overlay_paths: list[str],
+        modified: list[str] | None = None,
+        created: list[str] | None = None,
+        deleted: list[str] | None = None,
+        patch_paths: list[str] | None = None,
+        overlay_paths: list[str] | None = None,
     ) -> None:
         (root / "patch").mkdir(parents=True)
         (root / "overlay").mkdir()
         (root / "scripts").mkdir()
+        modified = modified or []
+        created = created or []
+        deleted = deleted or []
+        patch_paths = patch_paths or []
+        overlay_paths = overlay_paths or []
         manifest = {
             "patch_id": "TEST-SCOPE",
             "workflow": {
@@ -537,9 +544,9 @@ fi
                 "branch": "test",
                 "base_revision": base_revision,
             },
-            "files_created": [],
+            "files_created": created,
             "files_modified": modified,
-            "files_deleted": [],
+            "files_deleted": deleted,
             "locally_validated": [],
             "requires_agent_validation": [],
             "known_integration_risks": [],
@@ -548,11 +555,20 @@ fi
         }
         (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
         patch = "".join(
-            f"diff --git a/{path} b/{path}\n--- a/{path}\n+++ b/{path}\n"
+            f"diff --git a/{path} b/{path}\n"
+            "index 3367afd..3e75765 100644\n"
+            f"--- a/{path}\n"
+            f"+++ b/{path}\n"
+            "@@ -1 +1 @@\n"
+            "-old\n"
+            "+new\n"
             for path in patch_paths
         )
         (root / "patch/changes.patch").write_text(patch, encoding="utf-8")
-        (root / "patch/delete-paths.txt").write_text("", encoding="utf-8")
+        (root / "patch/delete-paths.txt").write_text(
+            "".join(f"{path}\n" for path in deleted),
+            encoding="utf-8",
+        )
         for relative in overlay_paths:
             target = root / "overlay" / relative
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -630,6 +646,159 @@ fi
             result = subprocess.run(command, capture_output=True, text=True)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("extra=b.txt", result.stderr)
+
+    def test_patch_pack_scope_accepts_unicode_and_space_patch_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            repository = temp / "repository"
+            repository.mkdir()
+            subprocess.run(["git", "init", "-q", str(repository)], check=True)
+            subprocess.run(["git", "-C", str(repository), "config", "user.email", "test@example.com"], check=True)
+            subprocess.run(["git", "-C", str(repository), "config", "user.name", "Test"], check=True)
+            paths = ["docs/Привет.md", "docs/file with spaces.md", "docs/Привет file.md"]
+            for relative in paths:
+                target = repository / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text("old\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(repository), "add", "."], check=True)
+            subprocess.run(["git", "-C", str(repository), "commit", "-qm", "base"], check=True)
+            for relative in paths:
+                (repository / relative).write_text("new\n", encoding="utf-8")
+            patch = subprocess.run(
+                ["git", "-C", str(repository), "diff", "--binary", "HEAD", "--"],
+                check=True,
+                stdout=subprocess.PIPE,
+            ).stdout
+
+            pack = temp / "pack"
+            pack.mkdir()
+            self._write_scope_pack(
+                pack,
+                base_revision=FAKE_COMMIT,
+                modified=paths,
+                overlay_paths=paths,
+            )
+            (pack / "patch/changes.patch").write_bytes(patch)
+            subprocess.run(
+                [
+                    "python3",
+                    str(ROOT / "scripts/patch_pack_scope.py"),
+                    "validate-pack",
+                    str(pack),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+    def test_patch_pack_scope_rejects_wrong_final_operation_types(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            repository = temp / "repository"
+            repository.mkdir()
+            subprocess.run(["git", "init", "-q", str(repository)], check=True)
+            subprocess.run(["git", "-C", str(repository), "config", "user.email", "test@example.com"], check=True)
+            subprocess.run(["git", "-C", str(repository), "config", "user.name", "Test"], check=True)
+            (repository / "a.txt").write_text("old\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(repository), "add", "a.txt"], check=True)
+            subprocess.run(["git", "-C", str(repository), "commit", "-qm", "base"], check=True)
+            base = subprocess.run(
+                ["git", "-C", str(repository), "rev-parse", "HEAD"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+
+            cases = (
+                ("declared-modified-actual-deleted", {"modified": ["a.txt"]}, "delete"),
+                ("declared-created-actual-modified", {"created": ["a.txt"]}, "modify"),
+            )
+            for name, declaration, operation in cases:
+                with self.subTest(name=name):
+                    subprocess.run(["git", "-C", str(repository), "reset", "--hard", "-q", base], check=True)
+                    if operation == "delete":
+                        (repository / "a.txt").unlink()
+                    else:
+                        (repository / "a.txt").write_text("new\n", encoding="utf-8")
+                    pack = temp / name
+                    pack.mkdir()
+                    self._write_scope_pack(
+                        pack,
+                        base_revision=base,
+                        patch_paths=["a.txt"],
+                        overlay_paths=["a.txt"],
+                        **declaration,
+                    )
+                    result = subprocess.run(
+                        [
+                            "python3",
+                            str(ROOT / "scripts/patch_pack_scope.py"),
+                            "verify-result",
+                            str(pack),
+                            str(repository),
+                        ],
+                        capture_output=True,
+                        text=True,
+                    )
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("final ", result.stderr)
+                    self.assertIn("scope mismatch", result.stderr)
+
+    def test_patch_pack_scope_accepts_rename_as_delete_plus_create(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            repository = temp / "repository"
+            repository.mkdir()
+            subprocess.run(["git", "init", "-q", str(repository)], check=True)
+            subprocess.run(["git", "-C", str(repository), "config", "user.email", "test@example.com"], check=True)
+            subprocess.run(["git", "-C", str(repository), "config", "user.name", "Test"], check=True)
+            (repository / "old.txt").write_text("same\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(repository), "add", "old.txt"], check=True)
+            subprocess.run(["git", "-C", str(repository), "commit", "-qm", "base"], check=True)
+            base = subprocess.run(
+                ["git", "-C", str(repository), "rev-parse", "HEAD"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+            subprocess.run(["git", "-C", str(repository), "mv", "old.txt", "new.txt"], check=True)
+
+            pack = temp / "pack"
+            pack.mkdir()
+            self._write_scope_pack(
+                pack,
+                base_revision=base,
+                created=["new.txt"],
+                deleted=["old.txt"],
+                patch_paths=["new.txt"],
+                overlay_paths=["new.txt"],
+            )
+            subprocess.run(
+                [
+                    "python3",
+                    str(ROOT / "scripts/patch_pack_scope.py"),
+                    "verify-result",
+                    str(pack),
+                    str(repository),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+    def test_patch_pack_scope_maps_copy_status_to_created(self) -> None:
+        script = ROOT / "scripts/patch_pack_scope.py"
+        spec = importlib.util.spec_from_file_location("patch_pack_scope", script)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        created, modified, deleted = module.parse_name_status(
+            b"C100\0source.txt\0copy.txt\0"
+        )
+        self.assertEqual(created, {"copy.txt"})
+        self.assertEqual(modified, set())
+        self.assertEqual(deleted, set())
 
     def test_new_patch_pack_includes_scope_verifier_and_deviation_report(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

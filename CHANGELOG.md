@@ -2,7 +2,7 @@
 
 All notable changes to this workflow are documented here.
 
-## 1.0.1 — 2026-07-22
+## 1.0.1 — 2026-07-23
 
 - Fixed release checksum sidecars so they contain only the bundle basename and
   work with `sha256sum -c` outside the GitHub runner workspace.
@@ -19,6 +19,10 @@ All notable changes to this workflow are documented here.
 - Added exact manifest/patch/overlay/delete/final-diff scope verification.
 - Added mandatory `DEVIATIONS.md` reports to generated patch packs.
 - Added CI verification of release-manifest SHA-256 and size metadata.
+- Made `changes.patch` path extraction Unicode- and whitespace-safe by delegating
+  parsing to `git apply --numstat -z`.
+- Made final scope verification operation-aware: created, modified, and deleted
+  manifest sets are checked independently, including rename and copy semantics.
 
 ## 1.0.0 — 2026-07-22
 
