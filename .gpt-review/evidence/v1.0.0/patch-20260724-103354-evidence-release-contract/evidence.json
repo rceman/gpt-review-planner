@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "8ea0ea3ada8ce36642473fefe5b3f0d0054159d0",
+  "requirements": [
+    {
+      "id": "R1",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/new-patch-pack.sh",
+          "lines": [87, 89],
+          "sha256": "7b22c72af53c651caf0cdbbd245a39081bfabb2c1874521a11cde0948f74517e"
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/verify-agent-evidence.py",
+          "lines": [24, 26],
+          "sha256": "f35b0a2dd556a0bed8f224a634eb22066a9a90adf1952163c0b75801b2e8b38a"
+        }
+      ]
+    },
+    {
+      "id": "R3",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/verify-agent-evidence.py",
+          "lines": [244, 246],
+          "sha256": "aeba3218a67e65e435e2b69d83ae1389c1a3a7842ea0ee22d0e476866691908e"
+        },
+        {
+          "kind": "test",
+          "path": "tests/test_agent_evidence.py",
+          "lines": [190, 192],
+          "sha256": "a66d70e737483f3311492cd15a07eac2e0872367a111a1ba8388b5ea4da2a61d"
+        }
+      ]
+    },
+    {
+      "id": "R4",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/verify-agent-evidence.py",
+          "lines": [358, 360],
+          "sha256": "8d6114434b2599b682579554244c2041fbdb98a5b1693cb09cd04401a06d5e27"
+        }
+      ]
+    },
+    {
+      "id": "R5",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/verify-agent-evidence.py",
+          "lines": [319, 321],
+          "sha256": "8085f971d61a704ff61c7f4702fe93758135ef33781ae411f9e27988331e6641"
+        }
+      ]
+    },
+    {
+      "id": "R6",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/verify-agent-evidence.py",
+          "lines": [560, 562],
+          "sha256": "6862278451eddbd0570e11c84e1be0a32baf2d18542821cd6e50042b804755ef"
+        },
+        {
+          "kind": "test",
+          "path": "tests/test_agent_evidence.py",
+          "lines": [143, 145],
+          "sha256": "7987c77a85dca073220a8add674506c4ca05b5551d285560c20f26abc9fb0d9f"
+        }
+      ]
+    },
+    {
+      "id": "R7",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "deletion",
+          "path": ".gpt-review/evidence/GPT-REVIEW-PLANNER-V1.0.1-REVIEW-FIX/AGENT_RESULT.md"
+        },
+        {
+          "kind": "deletion",
+          "path": ".gpt-review/evidence/GPT-REVIEW-PLANNER-V1.0.1-REVIEW-FIX/DEVIATIONS.md"
+        },
+        {
+          "kind": "deletion",
+          "path": "templates/executable-patch-pack/DEVIATIONS.md"
+        }
+      ]
+    },
+    {
+      "id": "R8",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/release.py",
+          "lines": [358, 360],
+          "sha256": "8e2eed0fc6790b3acbbceba235e21559d483ab6ac2f5dae341d0125a2dfe729f"
+        },
+        {
+          "kind": "json",
+          "path": "release-config.json",
+          "pointer": "/canonical_version_file",
+          "value": "VERSION"
+        }
+      ]
+    },
+    {
+      "id": "R9",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "documentation",
+          "path": "README.md",
+          "lines": [37, 39],
+          "sha256": "71461fcf41b6456810f187fbe2b079890fdcb12f5e6ac511ce8fdbc02792c3fb"
+        },
+        {
+          "kind": "source",
+          "path": "scripts/release.py",
+          "lines": [231, 233],
+          "sha256": "fdc7c4558a229c89f3122a66fdc8ce436ca5392b41f5994a42e39b43d6b3b185"
+        }
+      ]
+    },
+    {
+      "id": "R10",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "schemas/agent-evidence.schema.json",
+          "lines": [1, 3],
+          "sha256": "57aaa871b52739a75a513b056ee35fae693f090ecc30c8d963bb6c4c4711b978"
+        },
+        {
+          "kind": "test",
+          "path": "tests/test_agent_evidence.py",
+          "lines": [26, 28],
+          "sha256": "4db1c2cf19621cd00b302d07a743b2228e895f017dc08312665affe08e426691"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {"id": "pack", "status": "pass", "exit": 0, "summary": "Pack verifier and SHA256SUMS passed."},
+    {"id": "apply", "status": "pass", "exit": 0, "summary": "Self-contained applicator applied the payload at the exact base."},
+    {"id": "shell", "status": "pass", "exit": 0, "summary": "Shell syntax passed."},
+    {"id": "pycompile", "status": "pass", "exit": 0, "summary": "Python compilation passed."},
+    {"id": "unit", "status": "pass", "exit": 0, "tests": 46, "summary": "Ran 46 tests ... OK"},
+    {"id": "oracle", "status": "pass", "exit": 0, "tests": 2, "summary": "Ran 2 tests ... OK"},
+    {"id": "version", "status": "pass", "exit": 0, "summary": "PASS: version 1.0.1"},
+    {"id": "diff", "status": "pass", "exit": 0, "summary": "git diff --check passed."},
+    {"id": "scope", "status": "pass", "summary": "Implementation diff matched the amended manifest scope and operation classes."},
+    {"id": "ci-implementation", "status": "pass", "run": 30094306958, "job": 89484603043, "url": "https://github.com/rceman/gpt-review-planner/actions/runs/30094306958"},
+    {"id": "evidence", "status": "pass", "summary": "Evidence checker prepare and committed modes passed."}
+  ],
+  "deviations": [
+    {
+      "id": "D1",
+      "kind": "manifest-correction",
+      "summary": "Added tests/test_repository.py to the declared implementation scope to replace stale Markdown-evidence assertions with the approved JSON evidence contract.",
+      "workaround": "Amended the extracted pack manifest before implementation scope validation and copied that amended manifest byte-for-byte into evidence.",
+      "scope_changed": true,
+      "behavior_changed": false,
+      "requirements": ["R2", "R7", "R10"]
+    },
+    {
+      "id": "D2",
+      "kind": "manifest-correction",
+      "summary": "Removed the impossible self-referential evidence-head CI gate from committed evidence.",
+      "workaround": "Final evidence-head CI is validated after the evidence commit and reported only as external GitHub/PR metadata.",
+      "scope_changed": false,
+      "behavior_changed": false,
+      "requirements": ["R2", "R4", "R6"]
+    }
+  ]
+}

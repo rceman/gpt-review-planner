@@ -191,10 +191,6 @@ def validate_pack(pack_root: Path) -> list[str]:
     except ScopeError as exc:
         errors.append(str(exc))
 
-    deviations = pack_root / "DEVIATIONS.md"
-    if not deviations.is_file():
-        errors.append("missing required file: DEVIATIONS.md")
-
     scope_helper = pack_root / "scripts/patch_pack_scope.py"
     if not scope_helper.is_file():
         errors.append("missing required file: scripts/patch_pack_scope.py")
@@ -279,21 +275,6 @@ def parse_name_status(data: bytes) -> tuple[set[str], set[str], set[str]]:
     return created, modified, deleted
 
 
-def deviation_status(pack_root: Path) -> str:
-    path = pack_root / "DEVIATIONS.md"
-    try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except FileNotFoundError as exc:
-        raise ScopeError("missing DEVIATIONS.md") from exc
-    for line in lines:
-        if line.lower().startswith("status:"):
-            status = line.split(":", 1)[1].strip().lower()
-            if status not in {"none", "documented"}:
-                raise ScopeError("DEVIATIONS.md Status must be 'none' or 'documented'")
-            return status
-    raise ScopeError("DEVIATIONS.md must contain 'Status: none' or 'Status: documented'")
-
-
 def verify_result(pack_root: Path, repo: Path) -> list[str]:
     errors = validate_pack(pack_root)
     if errors:
@@ -344,7 +325,6 @@ def verify_result(pack_root: Path, repo: Path) -> list[str]:
         if check.returncode != 0:
             errors.append("git diff --check failed:\n" + check.stdout.rstrip())
 
-        deviation_status(pack_root)
     except ScopeError as exc:
         errors.append(str(exc))
 

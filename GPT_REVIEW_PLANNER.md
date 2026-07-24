@@ -479,7 +479,7 @@ Recommended structure:
 ├── PATCH_SPEC.md
 ├── BEHAVIOR_CONTRACT.md
 ├── VALIDATION_REPORT.md
-├── DEVIATIONS.md
+├── evidence.json
 ├── manifest.json
 ├── patch/
 │   ├── changes.patch
@@ -512,7 +512,7 @@ Omit directories that are genuinely unused.
 - `VALIDATION_REPORT.md`: separate GPT static checks, GPT runtime checks not
   performed, required agent gates, and agent runtime results.
 - `manifest.json`: machine-readable scope, risks, required gates, and workflow pin.
-- `DEVIATIONS.md`: mandatory agent deviation status and evidence; `Status: none` is explicit.
+- `evidence.json`: compact implementation-commit proofs, gate results, and structured deviations.
 - `patch_pack_scope.py`: validates pack payload scope and the final repository diff.
 
 The created, modified, and deleted paths in `manifest.json` are authoritative. When
@@ -640,19 +640,19 @@ Requires explicit approval:
 
 ## 13. Deviation protocol
 
-Every patch execution must contain `DEVIATIONS.md`. Use `Status: none` when the
-agent made no deviation. Use `Status: documented` and record the following when a
-deviation is required:
+Every completed evidence record contains a `deviations` array. Use an empty array
+when the agent made no deviation. Add a structured entry when a deviation is
+required:
 
 ```text
-Deviation ID:
-Original implementation:
-Observed failure:
-Repository evidence:
-Changed implementation:
-Behavioral impact:
-Tests proving correctness:
-Approval required:
+{
+  "id": "D1",
+  "kind": "integration",
+  "summary": "...",
+  "scope_changed": false,
+  "behavior_changed": false,
+  "requirements": ["R2"]
+}
 ```
 
 A successful build is not sufficient justification for a behavioral deviation.
@@ -949,3 +949,31 @@ GPT reduces the task to constrained integration and verification.
 The local agent supplies environment execution and proof.
 
 The two models must complement rather than duplicate each other.
+
+## Committed JSON evidence and release automation
+
+Every new patch pack receives an immutable UTC identity:
+
+```text
+patch-<YYYYMMDD-HHMMSS>-<one-to-three-word-slug>
+```
+
+The manifest records a concise title and description, the last published target baseline tag, exact target base commit, implementation scope, stable requirement IDs, acceptance criteria, required gate definitions, and the evidence directory:
+
+```text
+.gpt-review/evidence/<baseline-release>/<patch-id>/
+```
+
+The local coding agent creates one implementation commit followed by one direct evidence-only commit containing exactly `manifest.json` and `evidence.json`. The manifest copy is byte-identical to the patch-pack manifest. The compact evidence file contains only the validated implementation SHA, requirement statuses and verifiable proofs, compact gate results, and structured deviations. It must not contain its own evidence commit SHA or repeat commands and expected scope already present in the manifest.
+
+Each passing requirement cites implementation-commit proofs using source/test/workflow/documentation line ranges with exact snippet SHA-256, JSON pointer/value proofs, or deletion proofs. Gate commands remain in the manifest; evidence records results by gate ID. Deviations are embedded as compact JSON entries rather than a separate Markdown report.
+
+Committed gate results are limited to facts knowable before the evidence commit:
+local gates, implementation scope, evidence preparation, and implementation CI.
+Evidence-head/final-head CI is external GitHub/PR metadata. The local agent
+waits for and reports that result after pushing evidence, but never amends
+evidence to insert its own CI run or commit SHA.
+
+`scripts/verify-agent-evidence.py` validates the implementation diff, proof hashes, requirement and gate completeness, direct commit ancestry, byte-identical manifest preservation, and exact two-file evidence diff without rerunning project tests.
+
+Repository versions are controlled by `VERSION`, `release-config.json`, and `scripts/release.py`. Concrete current versions are prohibited in README. The local agent prepares synchronized version files, executes quality gates, creates the release commit, waits for CI on that commit, and only then creates and explicitly pushes the immutable tag.

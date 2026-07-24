@@ -1,92 +1,66 @@
 # Release Checklist
 
-## Patch release `v1.0.1`
+All executable gates belong to the local coding agent. GPT performs static/artifact review and reviews committed agent evidence without rerunning tests.
 
-All executable gates in this checklist belong to the local coding agent. GPT
-performs only static/artifact review, records runtime checks as not executed by
-GPT, and reviews the agent's evidence without rerunning tests.
+## Prepare the release commit
 
-1. Apply the final pre-release correction patch to the merged `main` base commit:
-
-```text
-56395da967151bb71d8596d8498be8ecfc811eac
-```
-
-2. Have the local coding agent run the static, compile, and unit gates:
+1. Start from the exact approved branch and confirm the worktree is clean.
+2. Select the intended semantic version.
+3. Update every configured version-bearing file through the canonical script:
 
 ```bash
-bash -n setup.sh update.sh scripts/*.sh
-python -m compileall scripts tests examples
-python -m unittest discover -s tests -v
-python -m unittest discover -s examples/rust-domain-feature/reference/python -v
+python scripts/release.py prepare X.Y.Z
+python scripts/release.py check
+git diff --check
 ```
 
-3. Confirm the login-shell guard rejects `-lc` even after `-O`, `-o`, and
-   long Bash options, while ordinary script arguments remain allowed.
-4. Confirm generated patch packs contain `DEVIATIONS.md` and reject any final
-   repository path outside `manifest.json`.
-5. Confirm `changes.patch` validation accepts UTF-8 paths, spaces, and their
-   combination without relying on quoted `diff --git` header parsing.
-6. Confirm final-result validation distinguishes created, modified, and deleted
-   operations and maps rename/copy statuses according to the documented contract.
-7. Have the agent commit and push the validated branch. Merge only after owner
-   approval.
-8. Confirm GitHub Actions `Validate` passes.
-9. Confirm `Build Offline Rust Toolchain` passes.
-10. Open the successful toolchain run and verify artifact
-    `rustc-lite-linux-x86_64` contains exactly:
-
-```text
-rustc-lite-<resolved-version>-x86_64-unknown-linux-gnu.tar.zst
-rustc-lite-<resolved-version>-x86_64-unknown-linux-gnu.tar.zst.sha256
-rustc-lite-manifest.json
-```
-
-11. Confirm the sidecar is portable:
+4. Review the version-only diff. Do not edit version-bearing files manually.
+5. Run every repository quality gate required by the patch and project.
+6. Create the release commit:
 
 ```bash
-cd /path/to/extracted/artifact
-sha256sum -c rustc-lite-*.sha256
+python scripts/release.py commit
 ```
 
-12. Have the local coding agent run the dependency-free benchmark helper:
+7. Push the release commit or merge its pull request.
+8. Wait for required CI workflows to pass on the exact release commit.
+
+## Create the release tag
+
+9. Check out the validated release commit on the release branch, normally `main`.
+10. Confirm the worktree is clean and version consistency still passes:
 
 ```bash
-python scripts/benchmark-offline-rust.py \
-  --artifact-zip /path/to/rustc-lite-linux-x86_64.zip
+python scripts/release.py check
 ```
 
-13. Confirm the benchmark proves:
-    - checksum verification;
-    - strict zero-network cold extraction;
-    - `rustc` and `cargo` availability;
-    - standalone Rust compilation;
-    - all Rust tests pass;
-    - warm-cache reuse.
-
-14. Require the patch-pack report to contain:
-    - `GPT_STATIC_CHECKS_PERFORMED`;
-    - `GPT_RUNTIME_CHECKS_NOT_PERFORMED`;
-    - `AGENT_RUNTIME_GATES_REQUIRED`;
-    - `AGENT_RUNTIME_RESULTS` with command, result, and evidence location.
-    Before execution, `AGENT_RUNTIME_RESULTS` must say
-    `Pending local-agent execution.`.
-15. Create and push tag `v1.0.1` from the exact validated `main` commit only
-    after owner approval.
-16. Confirm the tag workflow creates or updates Release `v1.0.1` and attaches
-    all three files.
-17. Record the successful Actions run URL in release notes so ChatGPT can fetch
-    the artifact through the connected GitHub integration.
-18. Update one disposable project pin:
+11. Create the annotated tag:
 
 ```bash
-bash update.sh --project /tmp/test-project --version v1.0.1
+python scripts/release.py tag
 ```
 
-19. Confirm `.gpt-workflow.lock` contains tag `v1.0.1` and its exact commit SHA.
+12. Push the tag explicitly:
 
-## Historical initial release `v1.0.0`
+```bash
+RELEASE_TAG="v$(cat VERSION)"
+git push origin "$RELEASE_TAG"
+```
 
-The initial release established the repository, workflows, setup/update scripts,
-and the first offline Rust artifact. It remains useful only as a regression input
-for proving that `v1.0.1` can verify legacy absolute-path checksum sidecars.
+13. Confirm the tag workflow runs:
+
+```bash
+python scripts/release.py verify-tag "$RELEASE_TAG"
+```
+
+14. Verify the GitHub Release and all expected artifacts, checksums, and provenance metadata.
+15. Record the release commit, tag, CI run, and release URL in the release evidence.
+
+## Prohibited release shortcuts
+
+- Do not place a concrete current version in `README.md`.
+- Do not manually edit one version file without synchronizing the configured set.
+- Do not create a tag before CI passes on the release commit.
+- Do not force-move or replace a published release tag.
+- Do not let GitHub Actions silently invent or increment a version.
+- Do not combine implementation changes and a release-only version bump unless the approved patch explicitly requires it.

@@ -1,105 +1,39 @@
-# Upload and First Release
+# Publish and Release on GitHub
 
-Target repository:
+## First publication
 
-```text
-https://github.com/rceman/gpt-review-planner
-```
+1. Create the repository and push the initial `main` branch.
+2. Enable the required GitHub Actions workflows and branch protections.
+3. Run `python scripts/release.py check` on the exact commit intended for publication.
+4. Wait for all required workflows to pass.
+5. Create the first annotated release tag with `python scripts/release.py tag`.
+6. Push the tag explicitly and verify the generated GitHub Release.
 
-## 1. Upload source
+## Subsequent releases
 
-1. Extract `gpt-review-planner-v1.0.0.zip` locally.
-2. Open the extracted `gpt-review-planner-v1.0.0` directory.
-3. In the GitHub repository, choose **Add file → Upload files**.
-4. Upload the directory contents, not the outer directory itself.
-5. Confirm these hidden/configuration paths are included:
-   - `.github/workflows/validate.yml`;
-   - `.github/workflows/build-offline-rust.yml`;
-   - `.gitignore`;
-   - `.editorconfig`.
-6. Commit directly to `main` with a message such as:
+Use [`docs/RELEASE_PROCESS.md`](docs/RELEASE_PROCESS.md) and [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md). The canonical order is:
 
 ```text
-Initial GPT Review Planner v1.0.0
+prepare version files
+→ agent quality gates
+→ release commit
+→ push or merge
+→ CI on exact release commit
+→ annotated tag
+→ explicit tag push
+→ GitHub Release verification
 ```
 
-## 2. Verify GitHub Actions
+GitHub Actions validates versions and tags, but it does not choose the next version and does not create hidden version-bump commits.
 
-Open the repository **Actions** tab and wait for both workflows:
+## Install a published workflow version
 
-```text
-Validate
-Build Offline Rust Toolchain
+```bash
+RELEASE_TAG="vX.Y.Z"
+
+bash setup.sh \
+  --project /path/to/project \
+  --version "$RELEASE_TAG"
 ```
 
-Both must be green.
-
-Open the successful `Build Offline Rust Toolchain` run and confirm the artifact:
-
-```text
-rustc-lite-linux-x86_64
-```
-
-The artifact ZIP must contain:
-
-```text
-rustc-lite-<resolved-version>-x86_64-unknown-linux-gnu.tar.zst
-rustc-lite-<resolved-version>-x86_64-unknown-linux-gnu.tar.zst.sha256
-```
-
-## 3. Publish `v1.0.0`
-
-Using github.com:
-
-1. Open **Releases**.
-2. Choose **Draft a new release**.
-3. Choose **Create new tag** and enter `v1.0.0`.
-4. Target the validated `main` commit.
-5. Set release title to `v1.0.0`.
-6. Publish the release.
-
-The tag triggers `Build Offline Rust Toolchain` again. The workflow detects the
-existing release and uploads or replaces the Rust bundle and SHA-256 sidecar.
-
-After the tag workflow succeeds, refresh the release and confirm both assets are
-attached.
-
-## 4. Request local-agent runtime validation and GPT review
-
-Send GPT:
-
-```text
-Have the local coding agent verify https://github.com/rceman/gpt-review-planner
-after the v1.0.0 release. The agent should check both workflows, download the
-rustc-lite artifact, measure cold and warm bootstrap, and run the standalone Rust
-tests. GPT should review the agent's evidence without rerunning the tests.
-```
-
-GPT can inspect the workflow run and coordinate artifact download through the
-connected GitHub integration; executable gates remain local-agent work.
-
-## 5. Publish correction release `v1.0.1`
-
-After merging the `v1.0.1` correction patch:
-
-1. Confirm both workflows are green on the merged `main` commit.
-2. Open the successful `Build Offline Rust Toolchain` run.
-3. Confirm artifact `rustc-lite-linux-x86_64` contains the bundle, portable
-   `.sha256` sidecar, and `rustc-lite-manifest.json`.
-4. Copy the complete Actions run URL. This is the canonical input for ChatGPT
-   sandbox download because the GitHub connector can resolve the run to an
-   `artifact_id` even when the sandbox shell cannot reach GitHub.
-5. Create tag/release `v1.0.1` from the exact validated commit.
-6. Confirm all three release assets are attached.
-7. Ask the local coding agent to execute the gates using the Actions run URL,
-   then ask GPT to review the evidence, not rerun the gates:
-
-```text
-Use this Build Offline Rust Toolchain run:
-https://github.com/rceman/gpt-review-planner/actions/runs/<RUN_ID>
-
-Download artifact rustc-lite-linux-x86_64 through the GitHub connector, run
-scripts/benchmark-offline-rust.py, and report checksum, cold bootstrap,
-standalone Rust test, and warm-cache results. GPT will perform static/artifact
-review only and will not rerun these commands.
-```
+Projects pin both the tag and its exact commit SHA in `.gpt-workflow.lock`.

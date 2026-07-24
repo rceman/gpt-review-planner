@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "canonical_version_file": "VERSION",
+  "tag_prefix": "v",
+  "release_commit_message": "chore(release): v{version}",
+  "version_files": [
+    {
+      "path": "VERSION",
+      "kind": "plain"
+    }
+  ],
+  "forbidden_version_patterns": [
+    {
+      "path": "README.md",
+      "regex": "(?i)current\\s+version\\s*:"
+    },
+    {
+      "path": "README.md",
+      "regex": "(?<![A-Za-z0-9])v?\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?(?![A-Za-z0-9])"
+    }
+  ],
+  "changelog": {
+    "path": "CHANGELOG.md",
+    "unreleased_heading": "## Unreleased",
+    "release_heading": "## {version} \u2014 {date}"
+  }
+}
