@@ -1,0 +1,250 @@
+{
+  "schema_version": 2,
+  "patch_id": "patch-20260724-103354-evidence-release-contract",
+  "title": "Evidence and release contract",
+  "description": "Adds compact committed JSON evidence with requirement proofs and script-driven release versioning.",
+  "created_at": "2026-07-24T10:33:54Z",
+  "patch_timestamp": "20260724-103354",
+  "patch_slug": "evidence-release-contract",
+  "baseline_release": "v1.0.0",
+  "evidence_directory": ".gpt-review/evidence/v1.0.0/patch-20260724-103354-evidence-release-contract",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v1.0.1-pre-release",
+    "commit": "e6329723b12712a5995130c265ebd57beb6c0d5a",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "rceman/gpt-review-planner",
+    "branch": "feature/json-evidence-release-contract",
+    "base_revision": "e6329723b12712a5995130c265ebd57beb6c0d5a"
+  },
+  "files_created": [
+    "docs/AGENT_EVIDENCE.md",
+    "docs/RELEASE_PROCESS.md",
+    "release-config.json",
+    "schemas/agent-evidence.schema.json",
+    "scripts/release.py",
+    "scripts/verify-agent-evidence.py",
+    "templates/executable-patch-pack/evidence.json",
+    "tests/test_agent_evidence.py",
+    "tests/test_release.py"
+  ],
+  "files_modified": [
+    ".github/workflows/build-offline-rust.yml",
+    ".github/workflows/validate.yml",
+    "CHANGELOG.md",
+    "GPT_REVIEW_PLANNER.md",
+    "README.md",
+    "RELEASE_CHECKLIST.md",
+    "UPLOAD_TO_GITHUB.md",
+    "docs/PATCH_PACK_FORMAT.md",
+    "docs/VERSIONING.md",
+    "prompts/AGENT_APPLY_PATCH_PACK.md",
+    "prompts/GPT_CREATE_PATCH_PACK.md",
+    "prompts/GPT_REVIEW_AGENT_RESULT.md",
+    "schemas/patch-manifest.schema.json",
+    "scripts/new-patch-pack.sh",
+    "scripts/patch_pack_scope.py",
+    "scripts/validate-patch-pack.py",
+    "tests/test_repository.py",
+    "templates/executable-patch-pack/AGENT_PROMPT.md",
+    "templates/executable-patch-pack/README_FIRST.md",
+    "templates/executable-patch-pack/VALIDATION_REPORT.md",
+    "templates/executable-patch-pack/manifest.json",
+    "templates/executable-patch-pack/scripts/verify-agent-result.sh",
+    "templates/project/AGENTS.managed-block.md"
+  ],
+  "files_deleted": [
+    ".gpt-review/evidence/GPT-REVIEW-PLANNER-V1.0.1-REVIEW-FIX/AGENT_RESULT.md",
+    ".gpt-review/evidence/GPT-REVIEW-PLANNER-V1.0.1-REVIEW-FIX/DEVIATIONS.md",
+    "templates/executable-patch-pack/DEVIATIONS.md"
+  ],
+  "requirements": [
+    {
+      "id": "R1",
+      "summary": "Use timestamped patch identity",
+      "acceptance": [
+        "Patch IDs use UTC YYYYMMDD-HHMMSS and a one-to-three-word slug.",
+        "Evidence directories are grouped by the last published baseline tag."
+      ]
+    },
+    {
+      "id": "R2",
+      "summary": "Commit compact JSON evidence",
+      "acceptance": [
+        "Evidence commits contain exactly manifest.json and evidence.json.",
+        "The manifest copy is byte-identical to the patch-pack manifest.",
+        "Evidence does not contain its own evidence commit SHA or repeat manifest commands and expected scope."
+      ]
+    },
+    {
+      "id": "R3",
+      "summary": "Prove every requirement",
+      "acceptance": [
+        "Every manifest requirement appears exactly once in evidence.",
+        "Passing requirements include verifiable implementation-commit proofs.",
+        "Text proofs validate path, inclusive lines, snippet SHA-256, and optional symbol.",
+        "JSON pointer and deletion proofs are supported."
+      ]
+    },
+    {
+      "id": "R4",
+      "summary": "Record compact gate results",
+      "acceptance": [
+        "Gate definitions and commands live only in manifest.json.",
+        "Evidence records compact results by gate ID.",
+        "Every required gate appears exactly once and passes."
+      ]
+    },
+    {
+      "id": "R5",
+      "summary": "Embed structured deviations",
+      "acceptance": [
+        "Deviations are stored inside evidence.json.",
+        "Accepted deviations cannot claim changed behavior; only an explicitly owner-approved manifest-correction deviation may claim changed scope.",
+        "Markdown deviation templates are removed."
+      ]
+    },
+    {
+      "id": "R6",
+      "summary": "Verify two commit history",
+      "acceptance": [
+        "The evidence commit directly follows the implementation commit.",
+        "Prepare and committed modes validate exact two-file evidence scope.",
+        "The checker does not rerun project quality gates."
+      ]
+    },
+    {
+      "id": "R7",
+      "summary": "Remove obsolete evidence",
+      "acceptance": [
+        "The old long-name evidence directory is deleted.",
+        "No legacy manifest is reconstructed or migrated."
+      ]
+    },
+    {
+      "id": "R8",
+      "summary": "Automate repository versions",
+      "acceptance": [
+        "VERSION is canonical.",
+        "Configured plain, JSON, and TOML version fields are synchronized through scripts/release.py.",
+        "Release preparation, commit, tag, and tag verification are separate explicit operations."
+      ]
+    },
+    {
+      "id": "R9",
+      "summary": "Remove README version literals",
+      "acceptance": [
+        "README contains no concrete current semantic version.",
+        "README installation and release examples use generic immutable tag placeholders.",
+        "CI checks version consistency and tag identity."
+      ]
+    },
+    {
+      "id": "R10",
+      "summary": "Integrate schemas tests documentation",
+      "acceptance": [
+        "Patch and evidence JSON schemas are present.",
+        "Patch generation and validation understand requirements, gates, and pending evidence templates.",
+        "Dependency-free tests cover evidence proofs and release automation."
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "pack",
+      "name": "Patch pack verification",
+      "kind": "command",
+      "command": "python3 scripts/verify-pack.py"
+    },
+    {
+      "id": "apply",
+      "name": "Patch application",
+      "kind": "command",
+      "command": "python3 scripts/apply.py <repository>"
+    },
+    {
+      "id": "shell",
+      "name": "Shell syntax",
+      "kind": "command",
+      "command": "bash -n setup.sh update.sh scripts/*.sh templates/executable-patch-pack/scripts/*.sh"
+    },
+    {
+      "id": "pycompile",
+      "name": "Python compile",
+      "kind": "command",
+      "command": "python3 -m compileall -q scripts tests examples"
+    },
+    {
+      "id": "unit",
+      "name": "Repository unit tests",
+      "kind": "command",
+      "command": "python3 -m unittest discover -s tests -v"
+    },
+    {
+      "id": "oracle",
+      "name": "Example oracle tests",
+      "kind": "command",
+      "command": "python3 -m unittest discover -s examples/rust-domain-feature/reference/python -v"
+    },
+    {
+      "id": "version",
+      "name": "Version consistency",
+      "kind": "command",
+      "command": "python3 scripts/release.py check"
+    },
+    {
+      "id": "diff",
+      "name": "Git diff check",
+      "kind": "command",
+      "command": "git diff --check"
+    },
+    {
+      "id": "scope",
+      "name": "Exact implementation scope",
+      "kind": "scope"
+    },
+    {
+      "id": "ci-implementation",
+      "name": "Implementation Validate workflow",
+      "kind": "github-actions",
+      "workflow": "Validate",
+      "head": "implementation"
+    },
+    {
+      "id": "evidence",
+      "name": "Committed evidence verification",
+      "kind": "evidence"
+    }
+  ],
+  "gpt_static_checks_performed": [
+    "reviewed current main, merged PR metadata, README, VERSION, workflows, schemas, templates, and patch generator",
+    "designed compact JSON evidence with requirement proofs, gate IDs, structured deviations, and two-commit verification",
+    "prepared release automation, schemas, tests, documentation, self-contained applicator, and pack verifier",
+    "performed static syntax, JSON, declared-scope, and archive-integrity checks only"
+  ],
+  "gpt_runtime_checks_not_performed": [
+    "repository unit tests",
+    "example oracle tests",
+    "Python compileall",
+    "shell syntax execution",
+    "GitHub Actions",
+    "Rust compilation or tests",
+    "release commit or tag creation"
+  ],
+  "known_integration_risks": [
+    "The release script rewrites configured JSON version files using stable two-space formatting.",
+    "TOML version updates require an explicitly configured table and key.",
+    "The obsolete evidence files are intentionally deleted; their prior contents remain available in Git history.",
+    "GitHub Release publication is exercised only after an explicit validated tag push."
+  ],
+  "forbidden_deviations": [
+    "Do not change VERSION; it must remain 1.0.1 in the implementation commit.",
+    "Do not create or push a tag, merge a pull request, or publish a Release without owner approval.",
+    "Do not add a concrete current project version to README.md.",
+    "Do not create Markdown AGENT_RESULT or DEVIATIONS evidence files.",
+    "Do not add evidence_commit, patch identity, commands, or expected scope to evidence.json.",
+    "Do not weaken exact implementation scope, proof hash, gate completeness, or evidence diff verification."
+  ]
+}
