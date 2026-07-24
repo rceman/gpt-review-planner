@@ -64,7 +64,7 @@ GPT is responsible for:
 - writing the principal production implementation;
 - writing migration, compatibility, and rollout logic;
 - preparing machine-applicable patches or complete overlay files;
-- performing all reasonable dependency-free validation;
+- performing GPT static review and non-runtime artifact validation only;
 - documenting what was and was not executed;
 - reviewing the local agent's integrated result;
 - producing correction patches when the result is incomplete.
@@ -99,6 +99,71 @@ The project owner controls:
 - material dependency additions;
 - acceptance of behavioral changes;
 - final approval.
+
+### 3.4 Normative test-execution policy
+
+The validation roles are strictly separated.
+
+#### GPT / ChatGPT architect-reviewer
+
+GPT may:
+
+- analyze the repository statically;
+- write specifications, fixtures, production code, and tests;
+- prepare patches, overlays, manifests, expected file scopes, and review reports;
+- perform non-runtime artifact checks such as archive integrity, manifest
+  consistency, patch/overlay/file-scope consistency, unresolved-placeholder
+  detection, textual inspection, AST-level inspection, and syntax-only checks
+  that do not compile or execute project code.
+
+GPT must not:
+
+- install or update project dependencies;
+- run unit, integration, end-to-end, benchmark, or property tests;
+- compile or build the project;
+- run formatters or linters that execute project tooling;
+- start project services, databases, browsers, containers, or application
+  binaries;
+- claim runtime validation based on its own sandbox execution.
+
+GPT writes tests but leaves every executable quality gate to the local coding
+agent. A test written by GPT is neither executed nor passing until the local
+coding agent runs it and records the result.
+
+#### Local coding agent
+
+The local coding agent applies the GPT-authored patch, restores or installs
+dependencies, runs formatting, compilation, linting, unit, integration, E2E,
+benchmark, and other runtime gates, fixes only verified narrow integration
+defects, adds regression coverage for each correction, and records exact
+commands, outputs, failures, fixes, and final results.
+
+GPT then reviews the final diff, declared versus actual file scope,
+agent-reported test evidence, deviations, and acceptance-gate results. GPT does
+not rerun tests during this review.
+
+Use these exact report terms:
+
+- `GPT static review`;
+- `GPT artifact validation`;
+- `agent runtime validation`;
+- `agent-executed quality gates`;
+- `runtime validation not executed by GPT`.
+
+Every patch-pack report also has these mandatory sections:
+
+```text
+GPT_STATIC_CHECKS_PERFORMED
+GPT_RUNTIME_CHECKS_NOT_PERFORMED
+AGENT_RUNTIME_GATES_REQUIRED
+AGENT_RUNTIME_RESULTS
+```
+
+Before agent execution, `AGENT_RUNTIME_RESULTS` says
+`Pending local-agent execution.`.
+
+Avoid ambiguous claims such as “GPT validates the tests,” “GPT runs
+validation,” “locally validated by GPT,” or “GPT executes smoke tests.”
 
 ---
 
@@ -191,11 +256,15 @@ GPT compares an archive, branch, commit, or diff against approved requirements, 
 
 ### 5.3 Defect repair
 
-GPT reproduces the defect through a test or fixture, identifies the root cause, writes the fix, and delegates environment validation.
+GPT specifies a reproducing test or fixture, identifies the root cause from
+static evidence, writes the fix, and delegates test execution and environment
+validation to the local coding agent.
 
 ### 5.4 Refactor
 
-GPT first captures existing behavior with characterization tests, then prepares the structural change. The local agent proves behavioral equivalence.
+GPT first defines characterization tests and expected behavior, then prepares the
+structural change. The local agent executes the tests and proves behavioral
+equivalence.
 
 ### 5.5 Architecture planning
 
@@ -328,72 +397,25 @@ Write:
 
 Avoid placeholders such as `TODO`, `unimplemented!()`, fake production mocks, or constant success returns.
 
-### Phase 6 — Dependency-free validation
+### Phase 6 — GPT static and artifact validation
 
-Run every inexpensive check available without dependency restoration.
-
-Examples:
+GPT may perform only checks that inspect text, metadata, or archive structure
+without compiling or executing project code. Examples include:
 
 ```bash
-# Rust
-rustfmt --check path/to/file.rs
-rustc --edition=2021 --test path/to/standalone_kernel.rs
-
-# Python
-python -m unittest discover
-python -m compileall .
-
-# JavaScript
-node --check path/to/file.js
-node --test
-
-# PHP
-php -l path/to/file.php
-
-# Repository
+# Artifact and repository metadata
 git diff --check
 find . -name '*Zone.Identifier*' -o -name '*Zone.Identifier'
 ```
 
-Also scan for placeholders, missing exports, broken fixture paths, accidental dependency changes, secrets, machine-specific paths, and out-of-scope files.
+GPT may also scan for placeholders, broken fixture paths, accidental dependency
+changes, secrets, machine-specific paths, and out-of-scope files. These checks
+are static or artifact checks, not tests or runtime validation.
 
-#### Fast Rust compiler bootstrap
-
-If `rustc` is missing, do not immediately delegate standalone Rust validation or
-install the full project environment. Use the canonical bootstrap first:
-
-```bash
-bash scripts/bootstrap-rustc.sh
-```
-
-For a compile-and-test operation in one prepared environment:
-
-```bash
-bash scripts/bootstrap-rustc.sh -- bash -c '
-  rustc --edition=2021 --test path/to/kernel.rs -o /tmp/kernel-tests
-  /tmp/kernel-tests
-'
-```
-
-The bootstrap must use this priority:
-
-1. reuse an existing working compiler when available;
-2. otherwise reuse a previously extracted workflow-managed cache;
-3. otherwise use an explicit or repository-bundled offline `rustc-lite` archive;
-4. otherwise use an explicitly configured GitHub Release asset URL;
-5. only then download the official target-specific `rustup-init`;
-6. verify every downloaded or supplied artifact with SHA-256;
-7. install network toolchains with the official `minimal` profile;
-8. honor a project `rust-toolchain.toml` or `rust-toolchain` when rustup mode is requested.
-
-Do not commit Rust compiler payloads to ordinary Git history. GitHub Actions
-must build them from the official minimal toolchain and publish them as
-versioned workflow artifacts and GitHub Release assets. A self-contained patch
-or project archive may include the matching bundle when a truly zero-network
-sandbox is required; its SHA-256 sidecar and provenance manifest are mandatory.
-
-See `docs/FAST_RUSTC_BOOTSTRAP.md` for commands, cache layout, limitations, and
-toolchain-selection rules.
+Dependency restoration, compiler bootstrap, syntax checks that execute a
+compiler, formatting, linting, compilation, tests, benchmarks, and smoke checks
+belong to the local coding agent. GPT records them under
+`GPT_RUNTIME_CHECKS_NOT_PERFORMED` and `AGENT_RUNTIME_GATES_REQUIRED`.
 
 ### Phase 7 — Package the Executable Patch Pack
 
@@ -434,14 +456,15 @@ For Rust, prefer:
 - no async runtime in the domain kernel;
 - no transport or persistence inside the kernel.
 
-Example validation:
+Example agent runtime gate:
 
 ```bash
 rustc --edition=2021 --test damage_kernel.rs -o /tmp/damage-kernel-tests
 /tmp/damage-kernel-tests
 ```
 
-This validates domain behavior without claiming full workspace integration.
+The local coding agent executes this gate and reports its output. GPT may review
+the code and the agent's evidence, but does not run the compiler or tests.
 
 ---
 
@@ -486,34 +509,40 @@ Omit directories that are genuinely unused.
 - `AGENT_PROMPT.md`: one self-contained local-agent mission.
 - `PATCH_SPEC.md`: architecture, exact file changes, schemas, migrations, tests, acceptance.
 - `BEHAVIOR_CONTRACT.md`: normative behavior.
-- `VALIDATION_REPORT.md`: exact checks GPT executed and did not execute.
+- `VALIDATION_REPORT.md`: separate GPT static checks, GPT runtime checks not
+  performed, required agent gates, and agent runtime results.
 - `manifest.json`: machine-readable scope, risks, required gates, and workflow pin.
 - `DEVIATIONS.md`: mandatory agent deviation status and evidence; `Status: none` is explicit.
 - `patch_pack_scope.py`: validates pack payload scope and the final repository diff.
 
 The created, modified, and deleted paths in `manifest.json` are authoritative. When
 present, `changes.patch` and `overlay/` must match the manifest create/modify set,
-while `delete-paths.txt` must match the manifest delete set exactly. Before completion, the final repository diff from the
-pinned base revision must equal the complete manifest path set. An additional path is
-a blocking deviation and requires an updated pack or explicit owner approval.
+while `delete-paths.txt` must match the manifest delete set exactly. Patch paths must
+be parsed by Git in NUL-delimited mode so UTF-8 names and whitespace remain exact.
+
+Before completion, the final repository diff from the pinned base revision must
+match both the complete path set and each operation class. Treat `A` and untracked
+paths as created, `M`/`T` as modified, `D` as deleted, `R` as old deleted plus new
+created, and `C` as new created. An additional path or a created/modified/deleted
+classification mismatch is a blocking deviation and requires an updated patch pack
+or explicit owner approval.
 
 ---
 
 ## 10. Confidence classification
 
-### GREEN — locally validated
+### GREEN — GPT static review complete
 
 Examples:
 
-- standalone native tests passed;
-- reference oracle passed;
-- fixtures validated;
-- syntax and formatting checked;
-- generated patch checked.
+- archive and manifest structure checked;
+- fixtures and patch payloads inspected;
+- generated patch scope checked;
+- textual or AST-level inspection completed.
 
-GREEN does not imply full workspace integration unless that workspace was actually built and tested.
+GREEN does not imply compilation, runtime validation, or passing tests.
 
-### YELLOW — complete implementation requiring environment validation
+### YELLOW — agent runtime validation required
 
 Examples:
 
@@ -525,7 +554,8 @@ Examples:
 - serialization adapter;
 - workspace integration test.
 
-YELLOW code must still be complete, not a placeholder.
+YELLOW code must still be complete, not a placeholder. The local coding agent
+must execute and report the required quality gates.
 
 ### RED — unresolved or blocked
 
@@ -663,12 +693,14 @@ Review:
 
 ### Test quality
 
-- real behavior executed;
-- assertions meaningful;
+- agent evidence shows real behavior executed;
+- assertions are meaningful;
 - negative and regression cases present;
 - deterministic;
 - not over-mocked;
 - capable of failing when implementation is broken.
+
+GPT reviews the agent's evidence and does not rerun these tests.
 
 ### Deviations
 
@@ -678,7 +710,8 @@ Each deviation must be accepted, corrected, or rejected.
 
 ## 15. Quality gates and Definition of Done
 
-A task is complete only when applicable gates pass:
+A task is complete only when applicable gates pass under the local coding
+agent's execution. GPT may review the evidence but does not execute these gates:
 
 - repository cleanliness;
 - formatting;
@@ -711,7 +744,7 @@ Completion requires:
 6. failures and skips documented;
 7. deviations reviewed;
 8. docs and ADRs updated;
-9. final result reviewed;
+9. final result reviewed by GPT using agent evidence without rerunning tests;
 10. final artifact reproducible where requested.
 
 Compilation alone is not completion.
@@ -881,11 +914,13 @@ Inspect the supplied repository or archive and prepare an Executable Patch Pack.
 Own the architecture, behavior contract, fixtures, native tests, review, and
 principal production implementation.
 
-Do not install dependencies or run expensive full-project gates unless necessary.
-Perform every available dependency-free validation.
+Do not install dependencies, compile, or execute project tests, benchmarks, or
+runtime smoke checks. Perform only GPT static review and non-runtime artifact
+validation, and report runtime validation as not executed by GPT.
 
-Leave the local agent only repository integration, compilation, runtime test
-execution, evidence collection, and minimal integration corrections.
+Leave the local agent dependency restoration, formatting, compilation, linting,
+runtime test execution, benchmarks, evidence collection, and minimal integration
+corrections.
 ```
 
 ---

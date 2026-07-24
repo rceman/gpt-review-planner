@@ -11,7 +11,10 @@ This example demonstrates:
 The example is intentionally small. Its purpose is to show artifact shape and
 responsibility boundaries, not to prescribe a game-specific damage formula.
 
-## Quick validation
+## Local coding agent runtime gates
+
+GPT writes this Rust test and the Python oracle but does not compile or execute
+them. The local coding agent runs both commands and records the results.
 
 From the workflow repository root:
 

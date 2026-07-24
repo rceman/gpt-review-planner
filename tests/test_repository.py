@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import tempfile
 import unittest
@@ -517,13 +519,20 @@ fi
         root: Path,
         *,
         base_revision: str,
-        modified: list[str],
-        patch_paths: list[str],
-        overlay_paths: list[str],
+        modified: list[str] | None = None,
+        created: list[str] | None = None,
+        deleted: list[str] | None = None,
+        patch_paths: list[str] | None = None,
+        overlay_paths: list[str] | None = None,
     ) -> None:
         (root / "patch").mkdir(parents=True)
         (root / "overlay").mkdir()
         (root / "scripts").mkdir()
+        modified = modified or []
+        created = created or []
+        deleted = deleted or []
+        patch_paths = patch_paths or []
+        overlay_paths = overlay_paths or []
         manifest = {
             "patch_id": "TEST-SCOPE",
             "workflow": {
@@ -537,22 +546,33 @@ fi
                 "branch": "test",
                 "base_revision": base_revision,
             },
-            "files_created": [],
+            "files_created": created,
             "files_modified": modified,
-            "files_deleted": [],
-            "locally_validated": [],
-            "requires_agent_validation": [],
+            "files_deleted": deleted,
+            "gpt_static_checks_performed": [],
+            "gpt_runtime_checks_not_performed": [],
+            "agent_runtime_gates_required": [],
+            "agent_runtime_results": "Pending local-agent execution.",
             "known_integration_risks": [],
             "forbidden_deviations": [],
             "required_quality_gates": [],
         }
         (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
         patch = "".join(
-            f"diff --git a/{path} b/{path}\n--- a/{path}\n+++ b/{path}\n"
+            f"diff --git a/{path} b/{path}\n"
+            "index 3367afd..3e75765 100644\n"
+            f"--- a/{path}\n"
+            f"+++ b/{path}\n"
+            "@@ -1 +1 @@\n"
+            "-old\n"
+            "+new\n"
             for path in patch_paths
         )
         (root / "patch/changes.patch").write_text(patch, encoding="utf-8")
-        (root / "patch/delete-paths.txt").write_text("", encoding="utf-8")
+        (root / "patch/delete-paths.txt").write_text(
+            "".join(f"{path}\n" for path in deleted),
+            encoding="utf-8",
+        )
         for relative in overlay_paths:
             target = root / "overlay" / relative
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -631,6 +651,242 @@ fi
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("extra=b.txt", result.stderr)
 
+    def test_patch_pack_scope_accepts_unicode_and_space_patch_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            repository = temp / "repository"
+            repository.mkdir()
+            subprocess.run(["git", "init", "-q", str(repository)], check=True)
+            subprocess.run(["git", "-C", str(repository), "config", "user.email", "test@example.com"], check=True)
+            subprocess.run(["git", "-C", str(repository), "config", "user.name", "Test"], check=True)
+            paths = ["docs/Привет.md", "docs/file with spaces.md", "docs/Привет file.md"]
+            for relative in paths:
+                target = repository / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text("old\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(repository), "add", "."], check=True)
+            subprocess.run(["git", "-C", str(repository), "commit", "-qm", "base"], check=True)
+            for relative in paths:
+                (repository / relative).write_text("new\n", encoding="utf-8")
+            patch = subprocess.run(
+                ["git", "-C", str(repository), "diff", "--binary", "HEAD", "--"],
+                check=True,
+                stdout=subprocess.PIPE,
+            ).stdout
+
+            pack = temp / "pack"
+            pack.mkdir()
+            self._write_scope_pack(
+                pack,
+                base_revision=FAKE_COMMIT,
+                modified=paths,
+                overlay_paths=paths,
+            )
+            (pack / "patch/changes.patch").write_bytes(patch)
+            subprocess.run(
+                [
+                    "python3",
+                    str(ROOT / "scripts/patch_pack_scope.py"),
+                    "validate-pack",
+                    str(pack),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+    def test_patch_pack_scope_rejects_wrong_final_operation_types(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            repository = temp / "repository"
+            repository.mkdir()
+            subprocess.run(["git", "init", "-q", str(repository)], check=True)
+            subprocess.run(["git", "-C", str(repository), "config", "user.email", "test@example.com"], check=True)
+            subprocess.run(["git", "-C", str(repository), "config", "user.name", "Test"], check=True)
+            (repository / "a.txt").write_text("old\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(repository), "add", "a.txt"], check=True)
+            subprocess.run(["git", "-C", str(repository), "commit", "-qm", "base"], check=True)
+            base = subprocess.run(
+                ["git", "-C", str(repository), "rev-parse", "HEAD"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+
+            cases = (
+                ("declared-modified-actual-deleted", {"modified": ["a.txt"]}, "delete"),
+                ("declared-created-actual-modified", {"created": ["a.txt"]}, "modify"),
+            )
+            for name, declaration, operation in cases:
+                with self.subTest(name=name):
+                    subprocess.run(["git", "-C", str(repository), "reset", "--hard", "-q", base], check=True)
+                    if operation == "delete":
+                        (repository / "a.txt").unlink()
+                    else:
+                        (repository / "a.txt").write_text("new\n", encoding="utf-8")
+                    pack = temp / name
+                    pack.mkdir()
+                    self._write_scope_pack(
+                        pack,
+                        base_revision=base,
+                        patch_paths=["a.txt"],
+                        overlay_paths=["a.txt"],
+                        **declaration,
+                    )
+                    result = subprocess.run(
+                        [
+                            "python3",
+                            str(ROOT / "scripts/patch_pack_scope.py"),
+                            "verify-result",
+                            str(pack),
+                            str(repository),
+                        ],
+                        capture_output=True,
+                        text=True,
+                    )
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("final ", result.stderr)
+                    self.assertIn("scope mismatch", result.stderr)
+
+    def test_patch_pack_scope_accepts_rename_as_delete_plus_create(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            repository = temp / "repository"
+            repository.mkdir()
+            subprocess.run(["git", "init", "-q", str(repository)], check=True)
+            subprocess.run(["git", "-C", str(repository), "config", "user.email", "test@example.com"], check=True)
+            subprocess.run(["git", "-C", str(repository), "config", "user.name", "Test"], check=True)
+            (repository / "old.txt").write_text("same\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(repository), "add", "old.txt"], check=True)
+            subprocess.run(["git", "-C", str(repository), "commit", "-qm", "base"], check=True)
+            base = subprocess.run(
+                ["git", "-C", str(repository), "rev-parse", "HEAD"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+            subprocess.run(["git", "-C", str(repository), "mv", "old.txt", "new.txt"], check=True)
+
+            pack = temp / "pack"
+            pack.mkdir()
+            self._write_scope_pack(
+                pack,
+                base_revision=base,
+                created=["new.txt"],
+                deleted=["old.txt"],
+                patch_paths=["new.txt"],
+                overlay_paths=["new.txt"],
+            )
+            subprocess.run(
+                [
+                    "python3",
+                    str(ROOT / "scripts/patch_pack_scope.py"),
+                    "verify-result",
+                    str(pack),
+                    str(repository),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+    def test_patch_pack_scope_maps_copy_status_to_created(self) -> None:
+        script = ROOT / "scripts/patch_pack_scope.py"
+        spec = importlib.util.spec_from_file_location("patch_pack_scope", script)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        created, modified, deleted = module.parse_name_status(
+            b"C100\0source.txt\0copy.txt\0"
+        )
+        self.assertEqual(created, {"copy.txt"})
+        self.assertEqual(modified, set())
+        self.assertEqual(deleted, set())
+
+    def test_patch_pack_scope_preserves_leading_and_trailing_spaces(self) -> None:
+        script = ROOT / "scripts/patch_pack_scope.py"
+        spec = importlib.util.spec_from_file_location("patch_pack_scope", script)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        paths = {" leading.txt", "trailing.txt ", " both sides "}
+        encoded = b"".join(b"1\t1\t" + path.encode("utf-8") + b"\0" for path in paths)
+        self.assertEqual(module.parse_numstat_z(encoded), paths)
+        for path in paths:
+            self.assertEqual(module.normalize_repo_path(path, source="test"), path)
+
+    def test_patch_pack_scope_rejects_newline_and_nul_paths(self) -> None:
+        script = ROOT / "scripts/patch_pack_scope.py"
+        spec = importlib.util.spec_from_file_location("patch_pack_scope", script)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        for path in ("line\nfeed.txt", "carriage\rreturn.txt", "nul\0path.txt"):
+            with self.subTest(path=repr(path)):
+                with self.assertRaises(module.ScopeError):
+                    module.normalize_repo_path(path, source="test")
+
+    def test_patch_pack_scope_parses_native_rename_and_copy_numstat(self) -> None:
+        script = ROOT / "scripts/patch_pack_scope.py"
+        spec = importlib.util.spec_from_file_location("patch_pack_scope", script)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        data = (
+            b"0\t0\t\0old name.txt\0new name.txt\0"
+            b"12\t0\tregular.txt\0"
+            b"0\t0\t\0source.txt\0copy.txt\0"
+        )
+        self.assertEqual(
+            module.parse_numstat_z(data),
+            {"old name.txt", "new name.txt", "regular.txt", "source.txt", "copy.txt"},
+        )
+
+    def test_delete_paths_preserves_significant_spaces(self) -> None:
+        script = ROOT / "scripts/patch_pack_scope.py"
+        spec = importlib.util.spec_from_file_location("patch_pack_scope", script)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "delete-paths.txt"
+            path.write_text(" leading.txt\ntrailing.txt \n# comment\n\n", encoding="utf-8")
+            self.assertEqual(module.delete_paths(path), {" leading.txt", "trailing.txt "})
+
+    def test_gpt_policy_enforcement_covers_all_normative_surfaces_and_wording(self) -> None:
+        source = inspect.getsource(self.test_gpt_facing_policy_forbids_runtime_execution_instructions)
+        for surface in (
+            "prompts/AGENT_APPLY_PATCH_PACK.md",
+            "templates/project/AGENTS.managed-block.md",
+        ):
+            self.assertIn(surface, source)
+        for wording in ("may", "runs", "executes", "performs", "is responsible for"):
+            self.assertIn(wording, source.lower())
+
+    def test_historical_benchmark_has_truthful_legacy_provenance(self) -> None:
+        fixture = json.loads(
+            (ROOT / "benchmarks/chatgpt-sandbox-rust-1.97.1.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(fixture["executor"], "GPT/ChatGPT legacy run")
+        self.assertIn("must not be repeated by GPT", fixture["policy_status"])
+        documentation = (ROOT / "docs/CHATGPT_RUST_SANDBOX_BOOTSTRAP.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("before the current role-separation policy", documentation)
+        self.assertIn("executed by GPT/ChatGPT", documentation)
+        self.assertNotIn("historical agent evidence", documentation)
+
     def test_new_patch_pack_includes_scope_verifier_and_deviation_report(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             subprocess.run(
@@ -664,6 +920,113 @@ fi
         path = ROOT / "templates/executable-patch-pack/manifest.json"
         data = json.loads(path.read_text(encoding="utf-8"))
         self.assertEqual(data["workflow"]["document"], "GPT_REVIEW_PLANNER.md")
+
+    def test_gpt_facing_policy_forbids_runtime_execution_instructions(self) -> None:
+        surfaces = (
+            "GPT_REVIEW_PLANNER.md",
+            "README.md",
+            "docs/PATCH_PACK_FORMAT.md",
+            "RELEASE_CHECKLIST.md",
+            "UPLOAD_TO_GITHUB.md",
+            "docs/FAST_RUSTC_BOOTSTRAP.md",
+            "docs/CHATGPT_RUST_SANDBOX_BOOTSTRAP.md",
+            "prompts/AGENT_APPLY_PATCH_PACK.md",
+            "prompts/GPT_CREATE_PATCH_PACK.md",
+            "templates/executable-patch-pack/AGENT_PROMPT.md",
+            "templates/executable-patch-pack/VALIDATION_REPORT.md",
+            "templates/project/AGENTS.managed-block.md",
+            "examples/rust-domain-feature/README.md",
+            "examples/rust-domain-feature/VALIDATION_REPORT.md",
+        )
+        explicit_gpt_runtime_instruction = re.compile(
+            r"\bGPT(?:\s*/\s*ChatGPT)?\s+"
+            r"(?:(?:must|should|can|may)\s+(?!not\b)|)"
+            r"(?:run|runs|execute|executes|compile|compiles|build|builds|"
+            r"install|installs)\b|"
+            r"(?:perform|performs)\s+(?:unit|integration|end-to-end|E2E|"
+            r"property|benchmark|runtime|smoke|project|dependency)",
+            re.IGNORECASE,
+        )
+        # This explicitly covers the phrase "is responsible for".
+        responsibility_assignment = re.compile(
+            r"\bGPT(?:\s*/\s*ChatGPT)?\s+is\s+responsible\s+for\s+"
+            r"(?:running|executing|performing|compiling|building|installing)\b",
+            re.IGNORECASE,
+        )
+        imperative_runtime_instruction = re.compile(
+            r"^(?:run|execute|perform|compile|build|install)\b.*"
+            r"(?:test|benchmark|compiler|project|dependencies|runtime|smoke)",
+            re.IGNORECASE | re.MULTILINE,
+        )
+
+        for relative in surfaces:
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            prohibited_lines = []
+            for line in text.splitlines():
+                lower = line.lower()
+                if any(
+                    marker in lower
+                    for marker in (
+                        "ambiguous claims",
+                        "locally validated by gpt",
+                        "gpt executes smoke tests",
+                    )
+                ):
+                    continue
+                if any(marker in lower for marker in ("must not", "does not", "do not", "not executed by gpt")):
+                    continue
+                if explicit_gpt_runtime_instruction.search(line) or responsibility_assignment.search(line):
+                    prohibited_lines.append(line)
+                if "gpt" in lower and imperative_runtime_instruction.search(line):
+                    prohibited_lines.append(line)
+            self.assertEqual(
+                prohibited_lines,
+                [],
+                f"GPT-facing surface assigns runtime execution: {relative}: {prohibited_lines}",
+            )
+
+        workflow = (ROOT / "GPT_REVIEW_PLANNER.md").read_text(encoding="utf-8")
+        for section in (
+            "GPT_STATIC_CHECKS_PERFORMED",
+            "GPT_RUNTIME_CHECKS_NOT_PERFORMED",
+            "AGENT_RUNTIME_GATES_REQUIRED",
+            "AGENT_RUNTIME_RESULTS",
+            "runtime validation not executed by GPT",
+        ):
+            self.assertIn(section, workflow)
+
+    def test_validation_report_and_manifest_separate_gpt_and_agent_evidence(self) -> None:
+        report = (ROOT / "templates/executable-patch-pack/VALIDATION_REPORT.md").read_text(
+            encoding="utf-8"
+        )
+        for section in (
+            "GPT_STATIC_CHECKS_PERFORMED",
+            "GPT_RUNTIME_CHECKS_NOT_PERFORMED",
+            "AGENT_RUNTIME_GATES_REQUIRED",
+            "AGENT_RUNTIME_RESULTS",
+            "Pending local-agent execution.",
+            "Written by GPT",
+            "Executed by agent",
+            "Evidence or log location",
+        ):
+            self.assertIn(section, report)
+
+        manifest = json.loads(
+            (ROOT / "templates/executable-patch-pack/manifest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        for field in (
+            "gpt_static_checks_performed",
+            "gpt_runtime_checks_not_performed",
+            "agent_runtime_gates_required",
+            "agent_runtime_results",
+        ):
+            self.assertIn(field, manifest)
+        self.assertEqual(
+            manifest["agent_runtime_results"],
+            "Pending local-agent execution.",
+        )
 
 
 if __name__ == "__main__":

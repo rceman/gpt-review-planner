@@ -2,10 +2,43 @@
 
 Canonical workflow and tooling for a two-model software delivery process:
 
-- **GPT** owns architecture, behavior, fixtures, tests, review, and the principal implementation.
-- **The local coding agent** applies, integrates, compiles, runs runtime tests, fixes narrow integration defects, and produces evidence.
+- **GPT** owns architecture, behavior, fixtures, tests, static review, and the principal implementation. GPT does not execute runtime quality gates.
+- **The local coding agent** applies, integrates, restores dependencies, compiles, runs runtime tests, fixes narrow integration defects, and produces evidence.
 
 Current version: **1.0.1**
+
+## Test-execution policy
+
+Validation roles are strictly separated.
+
+GPT / ChatGPT may perform static repository analysis, write specifications,
+fixtures, production code, and tests, prepare patch-pack artifacts, and inspect
+archives, manifests, paths, placeholders, text, or ASTs. GPT may perform
+syntax-only checks only when they do not compile or execute project code.
+
+GPT must not install or update dependencies, compile or build the project, run
+formatters or project linters, execute unit/integration/E2E/property tests,
+benchmarks, runtime smoke tests, or start services, databases, browsers,
+containers, or application binaries. GPT-authored reports must say
+`runtime validation not executed by GPT`.
+
+The local coding agent owns dependency restoration, formatting, compilation,
+linting, unit/integration/E2E tests, benchmarks, runtime smoke tests, narrow
+integration fixes, regression coverage for those fixes, and exact evidence.
+GPT reviews the final diff, scope, deviations, and agent-reported results
+without rerunning tests.
+
+Patch-pack reports use these mandatory sections:
+
+```text
+GPT_STATIC_CHECKS_PERFORMED
+GPT_RUNTIME_CHECKS_NOT_PERFORMED
+AGENT_RUNTIME_GATES_REQUIRED
+AGENT_RUNTIME_RESULTS
+```
+
+Before the local agent executes a pack, `AGENT_RUNTIME_RESULTS` must contain
+`Pending local-agent execution.`.
 
 For first-time GitHub publication, follow [`UPLOAD_TO_GITHUB.md`](UPLOAD_TO_GITHUB.md).
 
@@ -136,8 +169,10 @@ are stored as Actions artifacts and GitHub Release assets, not committed to Git.
 See [`docs/FAST_RUSTC_BOOTSTRAP.md`](docs/FAST_RUSTC_BOOTSTRAP.md).
 
 For ChatGPT sandboxes whose shell cannot reach GitHub, provide the successful
-`Build Offline Rust Toolchain` Actions run URL. GPT can download the named
-workflow artifact through the connected GitHub integration and run:
+`Build Offline Rust Toolchain` Actions run URL. The connected GitHub integration
+can acquire the named workflow artifact; the local coding agent must execute the
+benchmark and return evidence to GPT. GPT reviews that evidence and does not run
+the benchmark.
 
 ```bash
 python scripts/benchmark-offline-rust.py \
@@ -147,11 +182,14 @@ python scripts/benchmark-offline-rust.py \
 The exact connector procedure and measured baseline are documented in
 [`docs/CHATGPT_RUST_SANDBOX_BOOTSTRAP.md`](docs/CHATGPT_RUST_SANDBOX_BOOTSTRAP.md).
 
-## Run repository tests
+## Local coding agent runtime gates
 
 ```bash
 python -m unittest discover -s tests -v
 ```
+
+The local coding agent executes this command and records its output. GPT may
+write or review these tests but does not execute them.
 
 ## Versioning
 

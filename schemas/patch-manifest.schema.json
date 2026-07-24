@@ -11,8 +11,10 @@
     "files_created",
     "files_modified",
     "files_deleted",
-    "locally_validated",
-    "requires_agent_validation",
+    "gpt_static_checks_performed",
+    "gpt_runtime_checks_not_performed",
+    "agent_runtime_gates_required",
+    "agent_runtime_results",
     "known_integration_risks",
     "forbidden_deviations",
     "required_quality_gates"
@@ -93,17 +95,27 @@
       },
       "uniqueItems": true
     },
-    "locally_validated": {
+    "gpt_static_checks_performed": {
       "type": "array",
       "items": {
         "type": "string"
       }
     },
-    "requires_agent_validation": {
+    "gpt_runtime_checks_not_performed": {
       "type": "array",
       "items": {
         "type": "string"
       }
+    },
+    "agent_runtime_gates_required": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "agent_runtime_results": {
+      "type": "string",
+      "minLength": 1
     },
     "known_integration_risks": {
       "type": "array",

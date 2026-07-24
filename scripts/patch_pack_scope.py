@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shlex
 import subprocess
 import sys
 from pathlib import Path, PurePosixPath
@@ -15,9 +14,11 @@ class ScopeError(ValueError):
 
 
 def normalize_repo_path(raw: str, *, source: str) -> str:
-    value = raw.strip()
-    if not value:
+    value = raw
+    if value == "":
         raise ScopeError(f"{source}: empty repository path")
+    if any(character in value for character in ("\0", "\n", "\r")):
+        raise ScopeError(f"{source}: NUL and newline characters are not supported in repository paths")
     if "\\" in value:
         raise ScopeError(f"{source}: paths must use '/' separators: {value!r}")
     path = PurePosixPath(value)
@@ -69,32 +70,66 @@ def load_manifest(pack_root: Path) -> tuple[dict[str, object], set[str], set[str
     return manifest, created, modified, deleted
 
 
-def strip_diff_prefix(token: str) -> str:
-    if token.startswith("a/") or token.startswith("b/"):
-        token = token[2:]
-    return normalize_repo_path(token, source="changes.patch")
+def decode_repo_path(raw: bytes, *, source: str) -> str:
+    try:
+        value = raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ScopeError(f"{source}: repository path is not valid UTF-8") from exc
+    return normalize_repo_path(value, source=source)
+
+
+def parse_numstat_z(data: bytes) -> set[str]:
+    fields = data.split(b"\0")
+    paths: set[str] = set()
+    index = 0
+    record_number = 0
+
+    while index < len(fields):
+        record = fields[index]
+        index += 1
+        if not record:
+            continue
+        record_number += 1
+        columns = record.split(b"\t", 2)
+        if len(columns) != 3:
+            raise ScopeError(f"changes.patch numstat record {record_number} is malformed")
+        raw_path = columns[2]
+        if raw_path:
+            paths.add(decode_repo_path(raw_path, source=f"changes.patch:{record_number}"))
+            continue
+
+        if index + 1 >= len(fields) or not fields[index] or not fields[index + 1]:
+            raise ScopeError(
+                f"changes.patch numstat rename/copy record {record_number} is missing old/new paths"
+            )
+        old_path = decode_repo_path(fields[index], source=f"changes.patch:{record_number} old path")
+        new_path = decode_repo_path(fields[index + 1], source=f"changes.patch:{record_number} new path")
+        index += 2
+        paths.add(old_path)
+        paths.add(new_path)
+
+    return paths
 
 
 def patch_paths(path: Path) -> set[str]:
-    if not path.is_file() or not path.read_text(encoding="utf-8").strip():
+    if not path.is_file() or not path.read_bytes().strip():
         return set()
 
-    result: set[str] = set()
-    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-        if not line.startswith("diff --git "):
-            continue
-        try:
-            parts = shlex.split(line)
-        except ValueError as exc:
-            raise ScopeError(f"changes.patch:{line_number}: malformed diff header: {exc}") from exc
-        if len(parts) != 4:
-            raise ScopeError(f"changes.patch:{line_number}: malformed diff header")
-        result.add(strip_diff_prefix(parts[2]))
-        result.add(strip_diff_prefix(parts[3]))
+    result = subprocess.run(
+        ["git", "apply", "--numstat", "-z", "--", str(path)],
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if result.returncode != 0:
+        message = result.stderr.decode("utf-8", errors="replace").strip()
+        raise ScopeError(f"changes.patch could not be parsed by git apply --numstat: {message}")
 
-    if not result:
-        raise ScopeError("changes.patch is non-empty but contains no 'diff --git' headers")
-    return result
+    paths = parse_numstat_z(result.stdout)
+
+    if not paths:
+        raise ScopeError("changes.patch is non-empty but git apply reported no changed paths")
+    return paths
 
 
 def overlay_paths(root: Path) -> set[str]:
@@ -113,10 +148,9 @@ def delete_paths(path: Path) -> set[str]:
         return set()
     result: set[str] = set()
     for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-        value = line.strip()
-        if not value or value.startswith("#"):
+        if line == "" or line.startswith("#"):
             continue
-        normalized = normalize_repo_path(value, source=f"delete-paths.txt:{line_number}")
+        normalized = normalize_repo_path(line, source=f"delete-paths.txt:{line_number}")
         if normalized in result:
             raise ScopeError(f"delete-paths.txt:{line_number}: duplicate path: {normalized}")
         result.add(normalized)
@@ -186,8 +220,63 @@ def nul_paths(data: bytes, *, source: str) -> set[str]:
     for raw in data.split(b"\0"):
         if not raw:
             continue
-        result.add(normalize_repo_path(raw.decode("utf-8"), source=source))
+        result.add(decode_repo_path(raw, source=source))
     return result
+
+
+def parse_name_status(data: bytes) -> tuple[set[str], set[str], set[str]]:
+    created: set[str] = set()
+    modified: set[str] = set()
+    deleted: set[str] = set()
+    fields = data.split(b"\0")
+    index = 0
+
+    while index < len(fields):
+        raw_status = fields[index]
+        index += 1
+        if not raw_status:
+            continue
+        try:
+            status = raw_status.decode("ascii")
+        except UnicodeDecodeError as exc:
+            raise ScopeError("git diff emitted a non-ASCII status") from exc
+        code = status[:1]
+
+        if code in {"A", "M", "T", "D"}:
+            if index >= len(fields) or not fields[index]:
+                raise ScopeError(f"git diff status {status!r} is missing its path")
+            path = decode_repo_path(fields[index], source=f"git diff status {status}")
+            index += 1
+            if code == "A":
+                created.add(path)
+            elif code in {"M", "T"}:
+                modified.add(path)
+            else:
+                deleted.add(path)
+            continue
+
+        if code in {"R", "C"}:
+            if index + 1 >= len(fields) or not fields[index] or not fields[index + 1]:
+                raise ScopeError(f"git diff status {status!r} is missing old/new paths")
+            old_path = decode_repo_path(fields[index], source=f"git diff status {status} old path")
+            new_path = decode_repo_path(fields[index + 1], source=f"git diff status {status} new path")
+            index += 2
+            if code == "R":
+                deleted.add(old_path)
+            created.add(new_path)
+            continue
+
+        raise ScopeError(f"unsupported git diff status: {status!r}")
+
+    overlaps = {
+        "created/modified": created & modified,
+        "created/deleted": created & deleted,
+        "modified/deleted": modified & deleted,
+    }
+    for label, paths in overlaps.items():
+        if paths:
+            raise ScopeError(f"actual git status sets overlap ({label}): {', '.join(sorted(paths))}")
+    return created, modified, deleted
 
 
 def deviation_status(pack_root: Path) -> str:
@@ -220,14 +309,30 @@ def verify_result(pack_root: Path, repo: Path) -> list[str]:
             raise ScopeError("manifest.target.base_revision is required")
         run_git(repo, "rev-parse", "--verify", f"{base}^{{commit}}")
 
-        declared = created | modified | deleted
-        actual = nul_paths(run_git(repo, "diff", "--name-only", "-z", base, "--"), source="git diff")
-        actual |= nul_paths(
+        actual_created, actual_modified, actual_deleted = parse_name_status(
+            run_git(
+                repo,
+                "diff",
+                "--name-status",
+                "-z",
+                "--find-renames",
+                "--find-copies",
+                base,
+                "--",
+            )
+        )
+        actual_created |= nul_paths(
             run_git(repo, "ls-files", "--others", "--exclude-standard", "-z"),
             source="git untracked",
         )
-        if actual != declared:
-            errors.append(format_mismatch("final repository diff vs manifest", declared, actual))
+
+        for label, expected, actual in (
+            ("created files", created, actual_created),
+            ("modified files", modified, actual_modified),
+            ("deleted files", deleted, actual_deleted),
+        ):
+            if actual != expected:
+                errors.append(format_mismatch(f"final {label} vs manifest", expected, actual))
 
         check = subprocess.run(
             ["git", "-C", str(repo), "diff", "--check", base, "--"],

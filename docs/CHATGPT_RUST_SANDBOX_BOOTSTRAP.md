@@ -2,8 +2,10 @@
 
 ## Purpose
 
-This is the canonical fast path when ChatGPT needs `rustc` in a sandbox whose
-shell cannot reach GitHub or `static.rust-lang.org`.
+This is the canonical artifact-acquisition path when the local coding agent
+needs `rustc` in a sandbox whose shell cannot reach GitHub or
+`static.rust-lang.org`. GPT may coordinate the artifact request and review the
+returned evidence, but does not execute the compiler or benchmark.
 
 Do not ask the user to download and re-upload the compiler when a successful
 GitHub Actions run is available through the connected GitHub app.
@@ -39,16 +41,16 @@ workflow artifacts by `artifact_id`, but it may not expose Release assets.
    - head tag or branch;
    - head commit SHA.
 4. Call `GitHub.download_workflow_artifact` using the returned artifact ID.
-5. Use the materialized ZIP path returned by the connector, normally under
-   `/mnt/data/`.
-6. Run the benchmark helper:
+5. Give the materialized ZIP path returned by the connector, normally under
+   `/mnt/data/`, to the local coding agent.
+6. The local coding agent runs the benchmark helper:
 
 ```bash
 python scripts/benchmark-offline-rust.py \
   --artifact-zip /mnt/data/rustc-lite-linux-x86_64.zip
 ```
 
-The helper performs:
+The local agent's helper performs:
 
 ```text
 artifact ZIP extraction
@@ -60,7 +62,7 @@ artifact ZIP extraction
 → warm-cache compilation and test execution
 ```
 
-## Direct bootstrap command
+## Direct bootstrap command for the local coding agent
 
 When custom test commands are needed, first extract the Actions artifact ZIP,
 then run:
@@ -85,7 +87,7 @@ bash scripts/bootstrap-rustc.sh \
 Use `bash -c`, not `bash -lc`. A login shell may reconstruct `PATH` and hide the
 bundle compiler that `bootstrap-rustc.sh` just activated.
 
-## Validation rules
+## Agent runtime evidence rules
 
 - The `.sha256` sidecar must be beside the `.tar.zst` bundle.
 - Verification uses the first SHA-256 token; older `v1.0.0` sidecars contain an
@@ -96,8 +98,9 @@ bundle compiler that `bootstrap-rustc.sh` just activated.
 - The first run must use `--force-managed --no-network --offline-bundle` with an
   empty cache.
 - The warm run must omit `--offline-bundle` and prove cache discovery.
-- Report ZIP extraction, cold compile/test, warm compile/test, Rust version,
-  bundle size, and bundle SHA-256 separately.
+- The agent reports ZIP extraction, cold compile/test, warm compile/test, Rust
+  version, bundle size, and bundle SHA-256 separately.
+- GPT records these as agent-reported evidence and does not rerun the benchmark.
 
 ## Observed `v1.0.0` baseline
 
@@ -112,10 +115,16 @@ Head commit: b19c7abc2b7fb5f841ee3350df931bbc95227c00
 Rust: 1.97.1 x86_64-unknown-linux-gnu
 ```
 
-Five complete local benchmark repetitions were executed in the ChatGPT Linux
-sandbox on 2026-07-22. Each repetition extracted the artifact ZIP, created an
-empty toolchain cache, performed strict offline bootstrap, compiled and ran two
-Rust tests, then repeated compile/test from the warm cache.
+Five complete benchmark repetitions were recorded in the ChatGPT Linux sandbox
+on 2026-07-22 before the current role-separation policy was adopted. They were
+executed by GPT/ChatGPT and are retained only as a legacy performance baseline.
+This historical execution does not comply with the current policy and must not be
+repeated by GPT. Future benchmark, compiler, and test execution belongs exclusively
+to the local coding agent, whose evidence GPT reviews without rerunning it.
+
+Each historical repetition extracted the artifact ZIP, created an empty toolchain
+cache, performed strict offline bootstrap, compiled and ran two Rust tests, then
+repeated compile/test from the warm cache.
 
 ```text
 Artifact ZIP:                           194,052,235 bytes

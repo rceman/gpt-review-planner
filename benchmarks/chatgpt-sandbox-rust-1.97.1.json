@@ -2,6 +2,8 @@
   "format": "gpt-review-planner-rust-benchmark-v1",
   "observed_at": "2026-07-22",
   "environment": "ChatGPT Linux sandbox",
+  "executor": "GPT/ChatGPT legacy run",
+  "policy_status": "pre-policy historical baseline; must not be repeated by GPT",
   "source": {
     "repository": "rceman/gpt-review-planner",
     "workflow_run_id": 29910237409,
