@@ -33,10 +33,13 @@ The local agent provides environment execution and evidence.
 For attached code projects, use the [canonical archive-review guide](docs/PROJECT_ARCHIVE_REVIEW.md),
 the [review-and-implement prompt](prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md),
 the [review-only prompt](prompts/GPT_PROJECT_ARCHIVE_REVIEW_ONLY.md), and the
-[local archive-preparation prompt](prompts/AGENT_PREPARE_PROJECT_ARCHIVE_FOR_REVIEW.md).
+[local archive-preparation prompt](prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md).
 Prepared archives are preferred for recurring projects and must use official
 tooling to generate `.gpt-workflow.lock`; raw archives may use an immutable prompt
 URL without a lock. Immutable tag or commit links are preferred over `main`.
+The universal preparation flow also generates `.gpt-review/archive-manifest.json`
+for provenance and task context. Downstream workflow metadata never changes the
+complete archive inclusion contract.
 
 The local agent must receive enough exact code, fixtures, tests, file paths, and acceptance criteria that its task becomes a constrained integration and verification problem rather than a new implementation project.
 

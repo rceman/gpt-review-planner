@@ -78,7 +78,7 @@ class RepositoryTest(unittest.TestCase):
             "docs/PROJECT_ARCHIVE_REVIEW.md",
             "prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md",
             "prompts/GPT_PROJECT_ARCHIVE_REVIEW_ONLY.md",
-            "prompts/AGENT_PREPARE_PROJECT_ARCHIVE_FOR_REVIEW.md",
+            "prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md",
         )
         for relative in required:
             self.assertTrue((ROOT / relative).is_file(), relative)
@@ -171,6 +171,95 @@ class RepositoryTest(unittest.TestCase):
             nested_agents = (project / "docs/AGENTS.md").read_text(encoding="utf-8")
             self.assertIn("../.gpt-workflow.lock", nested_agents)
             self.assertIn("Existing instructions.", agents)
+
+    def test_archive_manifest_validator_contract(self) -> None:
+        validator = ROOT / "scripts/validate-project-archive-manifest.py"
+        self.assertTrue(validator.is_file())
+        with tempfile.TemporaryDirectory() as temp_dir:
+            project = Path(temp_dir) / "project"
+            manifest_path = project / ".gpt-review/archive-manifest.json"
+            project.mkdir()
+            manifest_path.parent.mkdir()
+            lock = {
+                "schema_version": 1,
+                "repository": "https://example.invalid/workflow",
+                "version": "vX.Y.Z",
+                "commit": FAKE_COMMIT,
+                "document": "GPT_REVIEW_PLANNER.md",
+                "generated_at": "2026-07-25T00:00:00Z",
+            }
+            (project / ".gpt-workflow.lock").write_text(
+                json.dumps(lock), encoding="utf-8"
+            )
+            manifest = {
+                "schema_version": 1,
+                "source": {
+                    "repository": "example/project",
+                    "branch": "main",
+                    "revision": FAKE_COMMIT,
+                    "dirty": False,
+                    "dirty_included_by_owner": False,
+                },
+                "workflow": {
+                    "lock_path": ".gpt-workflow.lock",
+                    "repository": lock["repository"],
+                    "version": lock["version"],
+                    "commit": lock["commit"],
+                    "document": lock["document"],
+                },
+                "review": {
+                    "expected_workflow": "review-only",
+                    "task_objective": "",
+                },
+                "archive": {
+                    "root": "project",
+                    "generated_at": "2026-07-25T00:00:00Z",
+                    "source_modified": False,
+                },
+            }
+
+            def run_manifest(value: object, *extra: str) -> subprocess.CompletedProcess[str]:
+                manifest_path.write_text(json.dumps(value), encoding="utf-8")
+                return subprocess.run(
+                    [
+                        "python3",
+                        str(validator),
+                        str(manifest_path),
+                        "--project-root",
+                        str(project),
+                        "--staging",
+                        *extra,
+                    ],
+                    capture_output=True,
+                    text=True,
+                )
+
+            valid = run_manifest(manifest)
+            self.assertEqual(valid.returncode, 0, valid.stderr)
+
+            invalid_enum = json.loads(json.dumps(manifest))
+            invalid_enum["review"]["expected_workflow"] = "other"
+            self.assertNotEqual(run_manifest(invalid_enum).returncode, 0)
+
+            invalid_commit = json.loads(json.dumps(manifest))
+            invalid_commit["workflow"]["commit"] = "not-a-commit"
+            self.assertNotEqual(run_manifest(invalid_commit).returncode, 0)
+
+            mismatch = json.loads(json.dumps(manifest))
+            mismatch["workflow"]["commit"] = "b" * 40
+            self.assertNotEqual(run_manifest(mismatch).returncode, 0)
+
+            modified = json.loads(json.dumps(manifest))
+            modified["archive"]["source_modified"] = True
+            self.assertNotEqual(run_manifest(modified).returncode, 0)
+
+            manifest_path.write_text("{not-json\n", encoding="utf-8")
+            malformed = subprocess.run(
+                ["python3", str(validator), str(manifest_path)],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(malformed.returncode, 0)
 
     def test_setup_is_idempotent_and_preserves_agents_content(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

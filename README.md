@@ -14,7 +14,7 @@ For the complete reusable release procedure, read [`docs/RELEASE_PROCESS.md`](do
 The canonical guide is [`docs/PROJECT_ARCHIVE_REVIEW.md`](docs/PROJECT_ARCHIVE_REVIEW.md).
 Use the [review-and-implement prompt](prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md)
 for the default approval-gated workflow, the [review-only prompt](prompts/GPT_PROJECT_ARCHIVE_REVIEW_ONLY.md)
-for analysis-only work, and the [archive-preparation prompt](prompts/AGENT_PREPARE_PROJECT_ARCHIVE_FOR_REVIEW.md)
+for analysis-only work, and the [archive-preparation prompt](prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md)
 to prepare a pinned staging archive with official tooling.
 
 Preferred invocations use immutable tag or commit URLs rather than `main`:
@@ -31,6 +31,9 @@ should use prepared archives with an officially generated `.gpt-workflow.lock`.
 Already integrated archives use their existing lock. The owner objective controls
 whether review focuses on bugs, refactoring, performance, dependencies, security,
 tests, or a specific change.
+One universal preparation prompt creates the same complete archive for both
+downstream workflows and adds `.gpt-review/archive-manifest.json`; workflow
+selection never changes archive contents.
 
 ## Test-execution policy
 

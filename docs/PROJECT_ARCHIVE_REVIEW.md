@@ -62,6 +62,39 @@ A reviewer must not mutate a raw archive merely to manufacture a lock. A valid
 lock is read and validated; a missing lock is reported while the immutable
 prompt URL remains sufficient authority for that review.
 
+## One universal preparation flow
+
+`prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md` creates one complete prepared archive
+for either downstream GPT operation:
+
+```text
+AGENT_PREPARE_PROJECT_ARCHIVE.md
+  → one complete prepared archive
+     ├── GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md
+     └── GPT_PROJECT_ARCHIVE_REVIEW_ONLY.md
+```
+
+Preparation mode (`staging` or `integrate-source`) controls whether source
+integration is persisted. Expected downstream workflow (`review-and-implement`
+or `review-only`) controls what GPT does after upload; it never changes archive
+inclusion rules. Both modes receive the same implementation-ready project
+material and generated lock.
+
+Every prepared archive also contains `.gpt-review/archive-manifest.json`. It
+records source provenance, lock identity, dirty state, expected downstream
+workflow, task objective, archive root, UTC generation time, and source-modified
+status. `.gpt-workflow.lock` is workflow identity authority; the archive manifest
+is provenance/context metadata and must match the lock. The archive SHA-256 is
+kept only in an external sidecar and report, never in the manifest.
+
+Validate it without third-party dependencies:
+
+```bash
+python3 scripts/validate-project-archive-manifest.py \
+  <STAGED_PROJECT_ROOT>/.gpt-review/archive-manifest.json \
+  --project-root <STAGED_PROJECT_ROOT> --staging
+```
+
 ## Recommended invocations
 
 Raw archive:
