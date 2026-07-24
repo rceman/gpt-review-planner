@@ -14,3 +14,7 @@ exact files, code, regression tests, fixtures, application order, and verificati
 ## JSON evidence review contract
 
 Review the committed manifest and compact evidence JSON, implementation diff, requirement proofs, gate results, deviations, exact evidence-only diff, and external Git/CI metadata. Do not require a self-referential evidence commit field and do not rerun runtime gates.
+
+Treat implementation CI in committed evidence separately from final-head CI.
+Final evidence-head and PR-head runs are external GitHub/PR metadata and must
+not be required as self-referential committed evidence gates.

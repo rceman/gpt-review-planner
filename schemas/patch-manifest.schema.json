@@ -88,7 +88,7 @@
           "kind": {"enum": ["command", "github-actions", "scope", "evidence"]},
           "command": {"type": "string", "minLength": 1},
           "workflow": {"type": "string", "minLength": 1},
-          "head": {"enum": ["implementation", "evidence"]}
+          "head": {"const": "implementation"}
         }
       }
     },

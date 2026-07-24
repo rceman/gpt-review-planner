@@ -55,3 +55,8 @@ acceptance criteria without explicit approval.
 5. Run `bash scripts/verify-agent-result.sh prepare <repo> <implementation-sha>`.
 6. Commit exactly the two evidence files.
 7. Run `bash scripts/verify-agent-result.sh committed <repo> <implementation-sha> HEAD`.
+
+Committed gate results must be knowable before the evidence commit. Use
+implementation-head CI as committed evidence when applicable. Final
+evidence-head or PR-head CI is external metadata collected after the push; never
+amend `evidence.json` to insert that run or the evidence commit SHA.

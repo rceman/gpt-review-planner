@@ -34,3 +34,7 @@
 ## Evidence output
 
 This pack declares its final evidence path in `manifest.json`. The local agent commits a byte-identical manifest and compact `evidence.json` using the two-commit model described by the workflow repository.
+
+Only pre-evidence gates belong in committed JSON. Final evidence-head CI is
+reported externally after the evidence commit is pushed and is never written
+back into that commit.

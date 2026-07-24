@@ -53,11 +53,15 @@ Gate commands and expectations live only in `manifest.json`. `evidence.json` rec
 {"id":"unit","status":"pass","exit":0,"tests":47,"summary":"Ran 47 tests ... OK"}
 ```
 
-GitHub Actions gates use run/job IDs and a URL. The checker requires every manifest gate exactly once and rejects failed or skipped required gates.
+GitHub Actions gates use run/job IDs and a URL. Only implementation-commit CI
+may be a committed gate. CI for the evidence commit or later PR heads is
+post-commit metadata and is reported externally; it is not stored in
+`manifest.json` or `evidence.json`. The checker requires every valid manifest
+gate exactly once and rejects failed or skipped required gates.
 
 ## Deviations
 
-Deviations are embedded in `evidence.json`; there is no separate Markdown deviation report. The presence of an entry means it is documented:
+Deviations are embedded in `evidence.json`; there is no separate Markdown deviation report. The presence of an entry means it is documented. The owner-approved manifest-correction deviation may set `scope_changed` to `true`; all other accepted deviations must preserve declared scope and behavior:
 
 ```json
 {
@@ -71,7 +75,9 @@ Deviations are embedded in `evidence.json`; there is no separate Markdown deviat
 }
 ```
 
-Accepted evidence may not claim changed scope or changed behavior.
+Accepted evidence may not claim changed behavior. The owner-approved
+`manifest-correction` deviation is the only exception that may record
+`scope_changed: true`.
 
 ## Two-commit model
 
@@ -102,5 +108,9 @@ python scripts/verify-agent-evidence.py committed \
 ```
 
 The checker verifies Git history, implementation scope, byte-identical manifest preservation, requirement proofs, gate IDs/results, deviations, and the exact evidence-only diff. It does not rerun project tests.
+
+After the evidence commit is pushed, the local agent waits for final-head CI and
+reports its run/job/URL in external GitHub or PR metadata. It must never amend
+`evidence.json` to insert that CI run or the evidence commit SHA.
 
 Evidence created before this contract is not migrated or reconstructed. Historical files may be removed when the owner decides they are no longer useful; Git history remains the historical record.

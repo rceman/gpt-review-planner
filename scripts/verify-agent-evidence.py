@@ -148,6 +148,12 @@ def indexed_objects(manifest: dict[str, Any], key: str) -> dict[str, dict[str, A
         item_id = require_string(item, "id", f"manifest.{key}[{index}]")
         if item_id in result:
             raise EvidenceError(f"manifest.{key} contains duplicate id: {item_id}")
+        if key == "gates" and item.get("kind") == "github-actions":
+            if item.get("head") != "implementation":
+                raise EvidenceError(
+                    f"manifest.gates[{index}] github-actions gates must target head=implementation; "
+                    "evidence-head CI is external metadata"
+                )
         result[item_id] = item
     return result
 
@@ -333,7 +339,12 @@ def validate_deviations(evidence: dict[str, Any], requirement_ids: set[str]) -> 
         for flag in ("scope_changed", "behavior_changed"):
             if not isinstance(item.get(flag), bool):
                 raise EvidenceError(f"{label}.{flag} must be boolean")
-            if item[flag]:
+            if flag == "scope_changed" and item[flag]:
+                if item.get("id") != "D1" or item.get("kind") != "manifest-correction":
+                    raise EvidenceError(
+                        f"{label}.scope_changed may be true only for the owner-approved D1 manifest-correction"
+                    )
+            elif item[flag]:
                 raise EvidenceError(f"{label}.{flag} must be false for accepted evidence")
         affected = item.get("requirements", [])
         if not isinstance(affected, list) or any(not isinstance(value, str) for value in affected):

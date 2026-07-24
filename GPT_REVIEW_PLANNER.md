@@ -968,6 +968,12 @@ The local coding agent creates one implementation commit followed by one direct 
 
 Each passing requirement cites implementation-commit proofs using source/test/workflow/documentation line ranges with exact snippet SHA-256, JSON pointer/value proofs, or deletion proofs. Gate commands remain in the manifest; evidence records results by gate ID. Deviations are embedded as compact JSON entries rather than a separate Markdown report.
 
+Committed gate results are limited to facts knowable before the evidence commit:
+local gates, implementation scope, evidence preparation, and implementation CI.
+Evidence-head/final-head CI is external GitHub/PR metadata. The local agent
+waits for and reports that result after pushing evidence, but never amends
+evidence to insert its own CI run or commit SHA.
+
 `scripts/verify-agent-evidence.py` validates the implementation diff, proof hashes, requirement and gate completeness, direct commit ancestry, byte-identical manifest preservation, and exact two-file evidence diff without rerunning project tests.
 
 Repository versions are controlled by `VERSION`, `release-config.json`, and `scripts/release.py`. Concrete current versions are prohibited in README. The local agent prepares synchronized version files, executes quality gates, creates the release commit, waits for CI on that commit, and only then creates and explicitly pushes the immutable tag.

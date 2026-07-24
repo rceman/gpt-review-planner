@@ -119,6 +119,13 @@ def main() -> int:
 
     requirement_ids = indexed_ids(manifest.get("requirements"), "manifest.requirements", errors) if manifest else []
     gate_ids = indexed_ids(manifest.get("gates"), "manifest.gates", errors) if manifest else []
+    if manifest:
+        for index, gate in enumerate(manifest.get("gates", []), 1):
+            if isinstance(gate, dict) and gate.get("kind") == "github-actions" and gate.get("head") != "implementation":
+                errors.append(
+                    f"manifest.gates[{index}] github-actions gates must target head=implementation; "
+                    "evidence-head CI is external metadata"
+                )
 
     evidence_path = root / "evidence.json"
     if evidence_path.is_file():

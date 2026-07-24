@@ -104,3 +104,13 @@ manifest.json
 The saved manifest is byte-identical to the pack manifest. `evidence.json` does not repeat manifest commands, requirement text, acceptance criteria, expected scope, patch identity, or evidence commit SHA. It records compact requirement proof references, compact gate results, and deviations.
 
 Every manifest requirement must appear exactly once in evidence. Passing requirements require verifiable proof from the implementation commit. Every manifest gate must appear exactly once and pass. The pinned evidence checker verifies these claims and Git history without executing the project gates again.
+
+## Pre-evidence gates and external final-head CI
+
+Committed gates are limited to facts knowable before the evidence commit is
+created: local commands, implementation scope, evidence preparation, and
+implementation-commit CI. A gate whose `head` is `evidence` or whose result
+depends on the evidence commit itself is invalid. Final evidence-head or later
+PR-head CI is run after the evidence commit and reported only as external
+GitHub/PR metadata. The agent must not amend the evidence commit to insert a
+self-referential CI run or commit SHA.

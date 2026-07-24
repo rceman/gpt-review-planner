@@ -161,6 +161,25 @@ class AgentEvidenceTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("unknown top-level fields", result.stderr)
 
+    def test_rejects_evidence_head_ci_gate(self) -> None:
+        repo, pack, implementation, evidence, report = self.make_case()
+        manifest = json.loads((pack / "manifest.json").read_text(encoding="utf-8"))
+        manifest["gates"][1]["head"] = "evidence"
+        manifest_raw = json.dumps(manifest, indent=2) + "\n"
+        (pack / "manifest.json").write_text(manifest_raw, encoding="utf-8")
+        (evidence / "manifest.json").write_text(manifest_raw, encoding="utf-8")
+        (evidence / "evidence.json").write_text(json.dumps(report), encoding="utf-8")
+        git(repo, "add", (evidence / "manifest.json").relative_to(repo).as_posix())
+        git(repo, "add", (evidence / "evidence.json").relative_to(repo).as_posix())
+        result = self.verify_prepare(repo, pack, implementation, check=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("evidence-head CI is external metadata", result.stderr)
+
+    def test_accepts_implementation_head_ci_gate(self) -> None:
+        repo, pack, implementation, _, _ = self.make_case()
+        result = self.verify_prepare(repo, pack, implementation)
+        self.assertIn("PASS", result.stdout)
+
     def test_rejects_non_identical_manifest_copy(self) -> None:
         repo, pack, implementation, evidence, _ = self.make_case()
         (evidence / "manifest.json").write_text("{}\n", encoding="utf-8")
@@ -201,6 +220,23 @@ class AgentEvidenceTests(unittest.TestCase):
         result = self.verify_prepare(repo, pack, implementation, check=False)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("did not pass", result.stderr)
+
+    def test_accepts_owner_approved_manifest_correction_scope_deviation(self) -> None:
+        repo, pack, implementation, _, report = self.make_case()
+        report["deviations"] = [{
+            "id": "D1",
+            "kind": "manifest-correction",
+            "summary": "Added a stale test path to the approved manifest scope.",
+            "workaround": "Used the amended manifest for exact-scope validation.",
+            "scope_changed": True,
+            "behavior_changed": False,
+            "requirements": ["R2", "R3"],
+        }]
+        evidence = repo / ".gpt-review/evidence/v1.0.0/patch-20260724-103354-evidence-checker/evidence.json"
+        evidence.write_text(json.dumps(report), encoding="utf-8")
+        git(repo, "add", evidence.relative_to(repo).as_posix())
+        result = self.verify_prepare(repo, pack, implementation)
+        self.assertIn("PASS", result.stdout)
 
     def test_rejects_proof_citing_evidence_directory(self) -> None:
         repo, pack, implementation, evidence, report = self.make_case()

@@ -17,3 +17,4 @@
 
 - For executable patch packs, create a direct two-file JSON evidence commit after the implementation commit and validate it with the pinned `verify-agent-evidence.py`; never embed the evidence commit SHA inside its own evidence.
 - Use the repository release script for version changes, release commits, and tags. Do not manually synchronize version-bearing files.
+- Keep committed evidence limited to pre-evidence facts and implementation CI; report final evidence-head and PR-head CI externally after pushing evidence, without amending the evidence commit.
