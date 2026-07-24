@@ -7,6 +7,8 @@ Canonical workflow and tooling for a two-model software delivery process:
 
 Published versions are identified by immutable `vX.Y.Z` Git tags and GitHub Releases. The repository version is stored in [`VERSION`](VERSION) and must be changed only through [`scripts/release.py`](scripts/release.py).
 
+For the complete reusable release procedure, read [`docs/RELEASE_PROCESS.md`](docs/RELEASE_PROCESS.md) and use [`prompts/AGENT_RELEASE_VERSION.md`](prompts/AGENT_RELEASE_VERSION.md).
+
 ## Test-execution policy
 
 GPT may analyze repositories statically, write specifications, fixtures, production code, and tests, and prepare patch-pack artifacts. Runtime validation is not executed by GPT.

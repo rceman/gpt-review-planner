@@ -39,6 +39,40 @@ class RepositoryTest(unittest.TestCase):
         ):
             self.assertTrue((ROOT / relative).is_file(), relative)
 
+    def test_release_runbook_and_prompt_contract(self) -> None:
+        runbook_path = ROOT / "docs/RELEASE_PROCESS.md"
+        prompt_path = ROOT / "prompts/AGENT_RELEASE_VERSION.md"
+        agents_path = ROOT / "templates/project/AGENTS.managed-block.md"
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        runbook = runbook_path.read_text(encoding="utf-8")
+        prompt = prompt_path.read_text(encoding="utf-8")
+        agents = agents_path.read_text(encoding="utf-8")
+
+        self.assertTrue(runbook_path.is_file())
+        self.assertTrue(prompt_path.is_file())
+        self.assertIn("docs/RELEASE_PROCESS.md", prompt)
+        self.assertIn("docs/RELEASE_PROCESS.md", readme)
+        self.assertIn("`docs/RELEASE_PROCESS.md` completely", agents)
+        self.assertIn("prompts/AGENT_RELEASE_VERSION.md", readme)
+
+        cli_help = subprocess.run(
+            ["python3", str(ROOT / "scripts/release.py"), "--help"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+        for command in ("check", "prepare", "commit", "tag", "verify-tag"):
+            self.assertIn(command, cli_help)
+
+        self.assertIn("CI associated with the exact `<RELEASE_COMMIT>` SHA", runbook)
+        self.assertIn("Do not create a tag until release-commit CI succeeds", runbook)
+        self.assertIn("git push origin <TAG>", runbook)
+        self.assertIn("Do not use `git push --tags`", runbook)
+        self.assertIn("GitHub Release requires explicit owner authorization", runbook)
+        self.assertNotRegex(prompt, r"\bv\d+\.\d+\.\d+\b")
+        self.assertNotRegex(prompt, r"\b[0-9a-f]{40}\b")
+        self.assertNotRegex(prompt, r"\b\d{8,}\b")
+
     def test_setup_is_idempotent_and_preserves_agents_content(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             project = Path(temp_dir)
