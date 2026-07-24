@@ -9,6 +9,29 @@ Published versions are identified by immutable `vX.Y.Z` Git tags and GitHub Rele
 
 For the complete reusable release procedure, read [`docs/RELEASE_PROCESS.md`](docs/RELEASE_PROCESS.md) and use [`prompts/AGENT_RELEASE_VERSION.md`](prompts/AGENT_RELEASE_VERSION.md).
 
+## Review an attached project archive
+
+The canonical guide is [`docs/PROJECT_ARCHIVE_REVIEW.md`](docs/PROJECT_ARCHIVE_REVIEW.md).
+Use the [primary archive-review prompt](prompts/GPT_REVIEW_PROJECT_ARCHIVE.md)
+for the default review-to-patch workflow, the [review-only prompt](prompts/GPT_REVIEW_PROJECT_ARCHIVE_ONLY.md)
+for analysis-only work, and the [archive-preparation prompt](prompts/AGENT_PREPARE_PROJECT_ARCHIVE_FOR_REVIEW.md)
+to prepare a pinned staging archive with official tooling.
+
+Preferred invocations use immutable tag or commit URLs rather than `main`:
+
+```text
+Review the attached project archive using this immutable guide:
+<IMMUTABLE_ARCHIVE_REVIEW_PROMPT_URL>
+Task objective: <OWNER_TASK_OBJECTIVE_OR_FULL_REVIEW>
+Stop after the proposed exact patch scope and wait for my approval.
+```
+
+Raw archives may use an immutable prompt URL without a lock; recurring projects
+should use prepared archives with an officially generated `.gpt-workflow.lock`.
+Already integrated archives use their existing lock. The owner objective controls
+whether review focuses on bugs, refactoring, performance, dependencies, security,
+tests, or a specific change.
+
 ## Test-execution policy
 
 GPT may analyze repositories statically, write specifications, fixtures, production code, and tests, and prepare patch-pack artifacts. Runtime validation is not executed by GPT.

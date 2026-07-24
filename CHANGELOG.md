@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added reusable attached-project archive review and review-only prompts.
+- Added task-objective-aware review scope and staged archive preparation with generated workflow locks.
+- Added exact commit-pinned archive-review prompt links to managed project integration.
+
 ## 1.0.2 — 2026-07-24
 
 - Added timestamped patch identities with stable requirement and gate IDs.

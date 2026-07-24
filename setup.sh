@@ -4,6 +4,11 @@ set -euo pipefail
 CANONICAL_REPOSITORY="https://github.com/rceman/gpt-review-planner"
 DEFAULT_VERSION="v1.0.0"
 DOCUMENT_PATH="GPT_REVIEW_PLANNER.md"
+ARCHIVE_REVIEW_PROMPT_PATH="prompts/GPT_REVIEW_PROJECT_ARCHIVE.md"
+ARCHIVE_REVIEW_ONLY_PROMPT_PATH="prompts/GPT_REVIEW_PROJECT_ARCHIVE_ONLY.md"
+ARCHIVE_PREP_PROMPT_PATH="prompts/AGENT_PREPARE_PROJECT_ARCHIVE_FOR_REVIEW.md"
+ARCHIVE_GUIDE_PATH="docs/PROJECT_ARCHIVE_REVIEW.md"
+RELEASE_PROCESS_PATH="docs/RELEASE_PROCESS.md"
 BLOCK_BEGIN="<!-- BEGIN GPT-REVIEW-PLANNER -->"
 BLOCK_END="<!-- END GPT-REVIEW-PLANNER -->"
 
@@ -98,10 +103,22 @@ ${BLOCK_BEGIN}
 >
 > Pinned workflow: \`${version}\` at commit \`${commit}\`
 >
+> Attached code-project reviews default to:
+> [\`${ARCHIVE_REVIEW_PROMPT_PATH}\`](${browser_repository}/blob/${commit}/${ARCHIVE_REVIEW_PROMPT_PATH})
+> Review-only mode is used only when explicitly requested:
+> [\`${ARCHIVE_REVIEW_ONLY_PROMPT_PATH}\`](${browser_repository}/blob/${commit}/${ARCHIVE_REVIEW_ONLY_PROMPT_PATH})
+> Archive preparation uses the pinned official tooling and prompt:
+> [\`${ARCHIVE_PREP_PROMPT_PATH}\`](${browser_repository}/blob/${commit}/${ARCHIVE_PREP_PROMPT_PATH})
+> Archive guide: [\`${ARCHIVE_GUIDE_PATH}\`](${browser_repository}/blob/${commit}/${ARCHIVE_GUIDE_PATH})
+> Release process: [\`${RELEASE_PROCESS_PATH}\`](${browser_repository}/blob/${commit}/${RELEASE_PROCESS_PATH})
+>
 > Operating model:
 > - GPT owns architecture, behavior contracts, fixtures, tests, review, and the principal implementation.
 > - The local agent owns integration, dependency restoration, compilation, runtime tests, and minimal integration corrections.
 > - The local agent must not redesign approved behavior or weaken tests and acceptance criteria.
+> - Do not hand-author \`.gpt-workflow.lock\`; use the pinned preparation prompt and official setup/update tooling.
+> - GPT performs static review only.
+> - The local agent owns runtime integration and gates.
 ${BLOCK_END}
 EOF
 }
