@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.2 — 2026-07-24
+
 - Added timestamped patch identities with stable requirement and gate IDs.
 - Replaced Markdown agent-result/deviation evidence with compact committed `evidence.json`.
 - Added implementation-commit proof validation using paths, lines, snippet hashes, JSON pointers, and deletion checks.
