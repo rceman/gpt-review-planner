@@ -1,4 +1,4 @@
-# GPT Review Project Archive — Review Only
+# GPT Project Archive Review Only
 
 Review the attached archive without implementing it. The owner may supply
 `<OWNER_TASK_OBJECTIVE>`; without one, perform a complete static review.

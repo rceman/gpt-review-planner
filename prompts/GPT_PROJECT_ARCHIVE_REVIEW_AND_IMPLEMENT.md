@@ -1,4 +1,4 @@
-# GPT Review Project Archive
+# GPT Project Archive Review and Implement
 
 You are reviewing an attached code-project archive. The owner supplies this
 immutable prompt link and may supply `<OWNER_TASK_OBJECTIVE>`.

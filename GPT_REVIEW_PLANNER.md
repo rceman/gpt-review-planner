@@ -31,8 +31,8 @@ The local agent provides environment execution and evidence.
 ## Attached project archive workflow
 
 For attached code projects, use the [canonical archive-review guide](docs/PROJECT_ARCHIVE_REVIEW.md),
-the [primary GPT archive-review prompt](prompts/GPT_REVIEW_PROJECT_ARCHIVE.md),
-the [review-only prompt](prompts/GPT_REVIEW_PROJECT_ARCHIVE_ONLY.md), and the
+the [review-and-implement prompt](prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md),
+the [review-only prompt](prompts/GPT_PROJECT_ARCHIVE_REVIEW_ONLY.md), and the
 [local archive-preparation prompt](prompts/AGENT_PREPARE_PROJECT_ARCHIVE_FOR_REVIEW.md).
 Prepared archives are preferred for recurring projects and must use official
 tooling to generate `.gpt-workflow.lock`; raw archives may use an immutable prompt

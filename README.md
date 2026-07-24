@@ -12,8 +12,8 @@ For the complete reusable release procedure, read [`docs/RELEASE_PROCESS.md`](do
 ## Review an attached project archive
 
 The canonical guide is [`docs/PROJECT_ARCHIVE_REVIEW.md`](docs/PROJECT_ARCHIVE_REVIEW.md).
-Use the [primary archive-review prompt](prompts/GPT_REVIEW_PROJECT_ARCHIVE.md)
-for the default review-to-patch workflow, the [review-only prompt](prompts/GPT_REVIEW_PROJECT_ARCHIVE_ONLY.md)
+Use the [review-and-implement prompt](prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md)
+for the default approval-gated workflow, the [review-only prompt](prompts/GPT_PROJECT_ARCHIVE_REVIEW_ONLY.md)
 for analysis-only work, and the [archive-preparation prompt](prompts/AGENT_PREPARE_PROJECT_ARCHIVE_FOR_REVIEW.md)
 to prepare a pinned staging archive with official tooling.
 
