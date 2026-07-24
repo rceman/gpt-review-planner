@@ -2,17 +2,15 @@
 
 ## Scope and identity
 
-- Repository: current repository working tree
+- Repository: `rceman/gpt-review-planner`
 - Required base commit: `871f71836b1deb38477e665558665f896beabff0`
 - Branch: `fix/unicode-exact-status-v1.0.1-final`
 - Implementation commit: `150008cc632db9854f402ae9ad6a893202f761b0`
-- Remote branch: `origin/fix/unicode-exact-status-v1.0.1-final`
+- Evidence commit: `a9562a990ebf0cff13db59724d6896c3f5a3aee6`
 - `VERSION`: unchanged at `1.0.1`
-- Merge, tag `v1.0.1`, and release publication: not performed
+- Merge, tag, and release publication: not performed
 
 ## Exact implementation changed-file list
-
-The implementation commit contains exactly these five files:
 
 1. `benchmarks/chatgpt-sandbox-rust-1.97.1.json`
 2. `docs/CHATGPT_RUST_SANDBOX_BOOTSTRAP.md`
@@ -20,64 +18,71 @@ The implementation commit contains exactly these five files:
 4. `scripts/patch_pack_scope.py`
 5. `tests/test_repository.py`
 
-## GPT static/artifact checks
+## GPT_STATIC_CHECKS_PERFORMED
 
-- Pack structure and declared scope: passed with `scripts/verify-pack.py`.
-- Patch scope and staged file names: passed; exactly the five declared files.
-- `git diff --cached --check`: passed.
-- `VERSION` check: passed; value remained `1.0.1`.
-- Shell syntax checks: passed.
+GPT performed only non-runtime static/artifact review:
 
-## Agent runtime gates
+- reviewed the requested five-file implementation scope;
+- reviewed patch-pack and manifest structure;
+- reviewed the code changes statically;
+- verified that `VERSION` was outside the requested implementation scope;
+- prepared the required local-agent runtime gates.
 
-### GPT_STATIC_CHECKS_PERFORMED
+GPT did not execute shell syntax checks, compilation, tests, GitHub Actions, or other executable project gates.
 
-Written by GPT: archive/manifest/patch scope inspection and static review of the correction.
+## GPT_RUNTIME_CHECKS_NOT_PERFORMED
 
-### GPT_RUNTIME_CHECKS_NOT_PERFORMED
+Runtime validation was not executed by GPT. GPT did not run:
 
-Written by GPT: no executable project quality gate was claimed as GPT execution.
+- Python compilation;
+- shell syntax validation;
+- repository unit tests;
+- example oracle tests;
+- GitHub Actions;
+- project compilation, formatting, linting, benchmarks, or smoke tests.
 
-### AGENT_RUNTIME_GATES_REQUIRED
+## AGENT_RUNTIME_GATES_REQUIRED
 
-Written by GPT: Python compilation, repository unit tests, example oracle tests, and the repository's GitHub Actions `Validate` workflow.
+The local coding agent was required to execute Python compilation, shell syntax checks, repository tests, oracle tests, exact scope checks, version checks, CI, and branch-head verification.
 
-### AGENT_RUNTIME_RESULTS
+## AGENT_RUNTIME_RESULTS
 
-| Written by GPT | Executed by agent | Result | Evidence or log location |
-|---|---|---|---|
-| Python compile gate | `python3 -m compileall -q scripts tests examples` | Passed | Command exited 0 |
-| Repository unit tests | `python3 -m unittest discover -s tests -v` | Passed; 31 tests | Command output: `Ran 31 tests ... OK` |
-| Example oracle tests | `python3 -m unittest discover -s examples/rust-domain-feature/reference/python -v` | Passed; 2 tests | Command output: `Ran 2 tests ... OK` |
-| GitHub Actions `Validate` | Workflow run `30011112686`, job `validate` `89219159584` | Passed | [workflow run](https://github.com/rceman/gpt-review-planner/actions/runs/30011112686) |
+| Gate | Written by GPT | Executed by agent | Result | Evidence or log location |
+|---|---|---|---|---|
+| Python compile | Required command and criterion | `python3 -m compileall -q scripts tests examples` | Passed | Exit 0 |
+| Unit tests | Tests and command | `python3 -m unittest discover -s tests -v` | Passed; 31 tests | `Ran 31 tests ... OK` |
+| Oracle tests | Tests and command | `python3 -m unittest discover -s examples/rust-domain-feature/reference/python -v` | Passed; 2 tests | `Ran 2 tests ... OK` |
+| Shell syntax | Required gate | `bash -n setup.sh update.sh scripts/*.sh templates/executable-patch-pack/scripts/*.sh` | Passed | Exit 0 |
+| Patch-pack verifier | Checker and command | `python3 scripts/verify-pack.py` | Passed | Exit 0 |
+| Staged diff | Required gate | `git diff --cached --check` | Passed | Exit 0 |
+| Exact implementation scope | Five expected paths | Agent comparison | Passed | No extra paths |
+| Version invariant | `VERSION=1.0.1` | `test "$(cat VERSION)" = 1.0.1` | Passed | `VERSION=1.0.1` |
+| GitHub Actions Validate | Required CI | Run `30011112686` | Passed | https://github.com/rceman/gpt-review-planner/actions/runs/30011112686 |
+| Final-head CI | Required evidence check | Run `30012771971` | Passed | https://github.com/rceman/gpt-review-planner/actions/runs/30012771971 |
 
 Runtime validation was executed by the local coding agent; runtime validation was not executed by GPT.
 
 ## Complete command log
 
-Paths to the temporary extraction directory are intentionally normalized to the pack-relative path `patch/changes.patch`; no machine-specific filesystem path is required for reproducing or reviewing the evidence.
-
 1. `python3 scripts/verify-pack.py` — passed.
-2. `git apply --check patch/changes.patch` — rejected the supplied patch because its hunk line counts were malformed (`corrupt patch at line 17`).
+2. `git apply --check patch/changes.patch` — failed: `corrupt patch at line 17`.
 3. `git apply --check --recount --unidiff-zero patch/changes.patch` — passed.
 4. `git apply --index --recount --unidiff-zero patch/changes.patch` — passed.
 5. `python3 -m compileall -q scripts tests examples` — passed.
-6. `python3 -m unittest discover -s tests -v` — passed, 31 tests.
-7. `python3 -m unittest discover -s examples/rust-domain-feature/reference/python -v` — passed, 2 tests.
+6. `python3 -m unittest discover -s tests -v` — passed; 31 tests.
+7. `python3 -m unittest discover -s examples/rust-domain-feature/reference/python -v` — passed; 2 tests.
 8. `bash -n setup.sh update.sh scripts/*.sh templates/executable-patch-pack/scripts/*.sh` — passed.
 9. `git diff --cached --check` — passed.
 10. `test "$(cat VERSION)" = 1.0.1` — passed.
-11. Exact staged-scope verification against the manifest — passed; five expected paths and no others.
-12. `git commit -m "fix: harden exact scope parsing and provenance"` — created implementation commit `150008cc632db9854f402ae9ad6a893202f761b0`.
-13. `git push origin fix/unicode-exact-status-v1.0.1-final` — passed.
-14. `git status --short --branch`, `git rev-parse HEAD`, `git ls-remote --heads origin fix/unicode-exact-status-v1.0.1-final`, and the `VERSION` check — clean, SHA matched locally/remotely, `VERSION=1.0.1 unchanged`.
-15. GitHub PR #3 fetch — confirmed open, unmerged, base `main`, head SHA `150008cc632db9854f402ae9ad6a893202f761b0`.
-16. GitHub Actions workflow-run and job queries — `Validate` completed successfully.
+11. Exact staged-scope verification — passed.
+12. Implementation commit: `150008cc632db9854f402ae9ad6a893202f761b0`.
+13. Evidence commit: `a9562a990ebf0cff13db59724d6896c3f5a3aee6`.
+14. GitHub Actions runs `30011112686` and `30012771971` — passed.
 
 ## PR update status
 
-Pushing the branch updated PR #3 to the implementation commit. An attempted connector metadata update for PR #3 was rejected by GitHub with HTTP 403 `Resource not accessible by integration`; no PR metadata was changed by that failed request.
+PR #3 remains open and unmerged. An attempted connector metadata update failed with HTTP 403; branch updates succeeded.
 
 ## Deviations
 
-See `DEVIATIONS.md`. No repository-scope or behavior deviation was made. The supplied patch required `--recount --unidiff-zero` because its hunk counts were malformed; this was an exact-scope application workaround only.
+See `DEVIATIONS.md`. The supplied patch contained malformed hunk line counts and required `--recount --unidiff-zero`. This is a documented patch-application deviation.
