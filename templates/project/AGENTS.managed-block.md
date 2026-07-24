@@ -14,3 +14,6 @@
 > - The local agent must not redesign approved behavior or weaken tests and acceptance criteria.
 > - GPT reviews agent-reported runtime evidence without rerunning tests.
 <!-- END GPT-REVIEW-PLANNER -->
+
+- For executable patch packs, create a direct two-file JSON evidence commit after the implementation commit and validate it with the pinned `verify-agent-evidence.py`; never embed the evidence commit SHA inside its own evidence.
+- Use the repository release script for version changes, release commits, and tags. Do not manually synchronize version-bearing files.

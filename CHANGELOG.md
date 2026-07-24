@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Added timestamped patch identities with stable requirement and gate IDs.
+- Replaced Markdown agent-result/deviation evidence with compact committed `evidence.json`.
+- Added implementation-commit proof validation using paths, lines, snippet hashes, JSON pointers, and deletion checks.
+- Added dependency-free release automation for synchronized version files, release commits, and tags.
+- Removed concrete current-version literals from README and generalized release documentation.
+- Removed obsolete pre-contract evidence instead of reconstructing or migrating it.
+
+
 All notable changes to this workflow are documented here.
 
 ## 1.0.1 — 2026-07-23

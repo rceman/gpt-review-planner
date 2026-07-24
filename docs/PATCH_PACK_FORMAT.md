@@ -79,6 +79,28 @@ The final verifier preserves operation classes:
 Matching only the union of paths is insufficient. A manifest that declares a file
 as modified must fail when the repository actually deletes it.
 
-Every pack includes `DEVIATIONS.md` and `scripts/patch_pack_scope.py`. An undeclared
-path or mismatched operation type is a blocking deviation, not an implicit
-integration correction.
+Every canonical pack includes `manifest.json`, a pending `evidence.json` template,
+and `scripts/patch_pack_scope.py`. Deviations are structured JSON entries in the
+completed evidence file. An undeclared path or mismatched operation type is a
+blocking deviation, not an implicit integration correction.
+
+## Timestamp identity, requirements, and JSON evidence
+
+Schema version 2 adds `title`, `description`, `created_at`, `patch_timestamp`, `patch_slug`, `baseline_release`, `evidence_directory`, stable `requirements`, and required `gates`.
+
+The canonical patch ID is:
+
+```text
+patch-<UTC-YYYYMMDD-HHMMSS>-<one-to-three-word-slug>
+```
+
+After runtime validation, the agent commits exactly two evidence files:
+
+```text
+manifest.json
+ evidence.json
+```
+
+The saved manifest is byte-identical to the pack manifest. `evidence.json` does not repeat manifest commands, requirement text, acceptance criteria, expected scope, patch identity, or evidence commit SHA. It records compact requirement proof references, compact gate results, and deviations.
+
+Every manifest requirement must appear exactly once in evidence. Passing requirements require verifiable proof from the implementation commit. Every manifest gate must appear exactly once and pass. The pinned evidence checker verifies these claims and Git history without executing the project gates again.

@@ -37,5 +37,12 @@ Set `AGENT_RUNTIME_RESULTS` to `Pending local-agent execution.` in the authored
 pack. The local agent replaces it with exact commands, results, and evidence.
 
 The manifest, `changes.patch`, overlay, deletion list, and expected final repository
-diff must describe the same path scope. Include `DEVIATIONS.md` and the standalone
-`patch_pack_scope.py` verifier in every pack. Validate exact scope before archiving.
+diff must describe the same path scope. Include the pending `evidence.json` template,
+`patch_pack_scope.py`, and `verify-agent-evidence.py` in every canonical pack.
+Validate exact scope before archiving.
+
+## Required identity and evidence contract
+
+Create schema-v2 manifests with a UTC timestamp ID, concise title and description, last published target baseline tag, exact evidence directory, stable requirement IDs with acceptance criteria, and compact required gate definitions.
+
+Include a pending `evidence.json` template whose requirement and gate IDs exactly match the manifest. Include pinned copies of `patch_pack_scope.py` and `verify-agent-evidence.py`. Do not create Markdown agent-result or deviation templates. Do not infer the baseline tag from an unreleased version file.

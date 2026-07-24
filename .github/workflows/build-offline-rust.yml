@@ -9,6 +9,8 @@ on:
       - scripts/bootstrap-rustc.sh
       - scripts/build-offline-rust-bundle.sh
       - .github/workflows/build-offline-rust.yml
+      - release-config.json
+      - scripts/release.py
   workflow_dispatch:
     inputs:
       toolchain:
@@ -24,6 +26,14 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v6
+
+      - name: Verify repository version and release tag
+        shell: bash
+        run: |
+          python scripts/release.py check
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            python scripts/release.py verify-tag "$GITHUB_REF_NAME"
+          fi
 
       - name: Resolve toolchain
         id: config

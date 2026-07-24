@@ -19,7 +19,7 @@
 7. Run targeted gates, then full gates.
 8. Correct only verified integration defects.
 9. Keep the final changed-path set exactly equal to `manifest.json`.
-10. Record every deviation in `DEVIATIONS.md`.
+10. Record every deviation structurally in `evidence.json`.
 11. Run `scripts/verify-agent-result.sh`.
 12. Produce the required final report and archive.
 
@@ -30,3 +30,7 @@
 - Do not update dependencies unless required and documented.
 - Do not claim skipped tests passed.
 - Do not silently change files outside the manifest scope.
+
+## Evidence output
+
+This pack declares its final evidence path in `manifest.json`. The local agent commits a byte-identical manifest and compact `evidence.json` using the two-commit model described by the workflow repository.

@@ -31,10 +31,11 @@ class RepositoryTest(unittest.TestCase):
             "docs/CHATGPT_RUST_SANDBOX_BOOTSTRAP.md",
             "scripts/benchmark-offline-rust.py",
             "scripts/patch_pack_scope.py",
-            "templates/executable-patch-pack/DEVIATIONS.md",
+            "scripts/verify-agent-evidence.py",
             "benchmarks/chatgpt-sandbox-rust-1.97.1.json",
             "schemas/patch-manifest.schema.json",
             "templates/executable-patch-pack/manifest.json",
+            "templates/executable-patch-pack/evidence.json",
         ):
             self.assertTrue((ROOT / relative).is_file(), relative)
 
@@ -551,8 +552,8 @@ fi
             "files_deleted": deleted,
             "gpt_static_checks_performed": [],
             "gpt_runtime_checks_not_performed": [],
-            "agent_runtime_gates_required": [],
-            "agent_runtime_results": "Pending local-agent execution.",
+            "requirements": [],
+            "gates": [],
             "known_integration_risks": [],
             "forbidden_deviations": [],
             "required_quality_gates": [],
@@ -577,10 +578,6 @@ fi
             target = root / "overlay" / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text("new\n", encoding="utf-8")
-        (root / "DEVIATIONS.md").write_text(
-            "# Agent Deviations\n\nStatus: none\n\nNo deviations.\n",
-            encoding="utf-8",
-        )
         scope_script = ROOT / "scripts/patch_pack_scope.py"
         target_script = root / "scripts/patch_pack_scope.py"
         target_script.write_text(scope_script.read_text(encoding="utf-8"), encoding="utf-8")
@@ -887,7 +884,7 @@ fi
         self.assertIn("executed by GPT/ChatGPT", documentation)
         self.assertNotIn("historical agent evidence", documentation)
 
-    def test_new_patch_pack_includes_scope_verifier_and_deviation_report(self) -> None:
+    def test_new_patch_pack_includes_scope_verifier_and_json_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             subprocess.run(
                 [
@@ -901,8 +898,10 @@ fi
                 text=True,
             )
             pack = Path(temp_dir) / "TEST-PACK"
-            self.assertTrue((pack / "DEVIATIONS.md").is_file())
+            self.assertTrue((pack / "evidence.json").is_file())
             self.assertTrue((pack / "scripts/patch_pack_scope.py").is_file())
+            self.assertTrue((pack / "scripts/verify-agent-evidence.py").is_file())
+            self.assertFalse((pack / "DEVIATIONS.md").exists())
 
     def test_observed_benchmark_fixture_is_valid(self) -> None:
         data = json.loads(
@@ -1002,12 +1001,8 @@ fi
         for section in (
             "GPT_STATIC_CHECKS_PERFORMED",
             "GPT_RUNTIME_CHECKS_NOT_PERFORMED",
-            "AGENT_RUNTIME_GATES_REQUIRED",
-            "AGENT_RUNTIME_RESULTS",
-            "Pending local-agent execution.",
-            "Written by GPT",
-            "Executed by agent",
-            "Evidence or log location",
+            "manifest.json",
+            "evidence.json",
         ):
             self.assertIn(section, report)
 
@@ -1019,14 +1014,22 @@ fi
         for field in (
             "gpt_static_checks_performed",
             "gpt_runtime_checks_not_performed",
-            "agent_runtime_gates_required",
-            "agent_runtime_results",
+            "gates",
         ):
             self.assertIn(field, manifest)
-        self.assertEqual(
-            manifest["agent_runtime_results"],
-            "Pending local-agent execution.",
+        self.assertNotIn("agent_runtime_gates_required", manifest)
+        self.assertNotIn("agent_runtime_results", manifest)
+
+        evidence = json.loads(
+            (ROOT / "templates/executable-patch-pack/evidence.json").read_text(
+                encoding="utf-8"
+            )
         )
+        self.assertEqual(
+            set(evidence),
+            {"schema_version", "implementation_commit", "requirements", "gates", "deviations"},
+        )
+        self.assertEqual(evidence["implementation_commit"], "REPLACE_IMPLEMENTATION_COMMIT")
 
 
 if __name__ == "__main__":
