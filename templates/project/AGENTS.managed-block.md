@@ -25,7 +25,8 @@
 - Keep committed evidence limited to pre-evidence facts and implementation CI; report final evidence-head and PR-head CI externally after pushing evidence, without amending the evidence commit.
 
 Attached code-project reviews default to the pinned `prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md`; use `prompts/GPT_PROJECT_ARCHIVE_REVIEW_ONLY.md` only when review-only mode is explicitly requested. Archive preparation uses the pinned `prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md` and official setup/update tooling. Never hand-author `.gpt-workflow.lock`. Release/version/tag requests require the pinned `docs/RELEASE_PROCESS.md`.
-GPT performs static review only.
+GPT performs only static validation and does not execute runtime quality gates.
+GPT still authors the approved implementation, fixtures, and tests.
 The local agent owns runtime integration and gates.
 
 ## Release procedure

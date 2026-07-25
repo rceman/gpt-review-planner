@@ -163,6 +163,11 @@ class RepositoryTest(unittest.TestCase):
             for relative in ("GPT_REVIEW_PLANNER.md", *required, "docs/RELEASE_PROCESS.md"):
                 self.assertIn(f"/{FAKE_COMMIT}/{relative}", agents)
             self.assertNotIn("/main/", agents)
+            self.assertIn("GPT still authors the approved implementation", agents)
+            self.assertIn("Release-commit CI must pass before tagging", agents)
+            self.assertIn("Do not publish a GitHub Release without explicit authorization", agents)
+            self.assertIn("Never force-push", agents)
+            self.assertIn("git push --tags", agents)
             lock = json.loads((project / ".gpt-workflow.lock").read_text(encoding="utf-8"))
             self.assertEqual(lock["commit"], FAKE_COMMIT)
 
@@ -171,6 +176,38 @@ class RepositoryTest(unittest.TestCase):
             nested_agents = (project / "docs/AGENTS.md").read_text(encoding="utf-8")
             self.assertIn("../.gpt-workflow.lock", nested_agents)
             self.assertIn("Existing instructions.", agents)
+            integration = subprocess.run(
+                [
+                    "python3",
+                    str(ROOT / "scripts/validate-project-integration.py"),
+                    str(project),
+                    "--agents-file",
+                    "docs/AGENTS.md",
+                ],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(integration.returncode, 0, integration.stderr)
+            invalid_agents_path = subprocess.run(
+                [
+                    "python3",
+                    str(ROOT / "scripts/validate-project-integration.py"),
+                    str(project),
+                    "--agents-file",
+                    "../AGENTS.md",
+                ],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(invalid_agents_path.returncode, 0)
+
+            missing_version = subprocess.run(
+                ["bash", str(ROOT / "setup.sh"), "--project", str(project)],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(missing_version.returncode, 0)
+            self.assertIn("--version is required", missing_version.stderr)
 
     def test_archive_manifest_validator_contract(self) -> None:
         validator = ROOT / "scripts/validate-project-archive-manifest.py"
@@ -252,6 +289,14 @@ class RepositoryTest(unittest.TestCase):
             modified = json.loads(json.dumps(manifest))
             modified["archive"]["source_modified"] = True
             self.assertNotEqual(run_manifest(modified).returncode, 0)
+
+            absolute_root = json.loads(json.dumps(manifest))
+            absolute_root["archive"]["root"] = "/home/user/private/project"
+            self.assertNotEqual(run_manifest(absolute_root).returncode, 0)
+
+            traversal_root = json.loads(json.dumps(manifest))
+            traversal_root["archive"]["root"] = "staging/../project"
+            self.assertNotEqual(run_manifest(traversal_root).returncode, 0)
 
             manifest_path.write_text("{not-json\n", encoding="utf-8")
             malformed = subprocess.run(
@@ -348,6 +393,8 @@ class RepositoryTest(unittest.TestCase):
                     str(ROOT / "setup.sh"),
                     "--project",
                     str(project),
+                    "--version",
+                    "vX.Y.Z",
                     "--agents-file",
                     "docs/AGENTS.md",
                     "--commit",
@@ -375,6 +422,8 @@ class RepositoryTest(unittest.TestCase):
                     str(ROOT / "setup.sh"),
                     "--project",
                     str(project),
+                    "--version",
+                    "vX.Y.Z",
                     "--commit",
                     FAKE_COMMIT,
                 ],

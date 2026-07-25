@@ -10,6 +10,7 @@ Required inputs:
 - optional relative `AGENTS.md` path;
 - optional `<OWNER_TASK_OBJECTIVE>`;
 - mode: `staging` (default) or `integrate-source`.
+- checkout of the exact pinned workflow as `PLANNER_DIR`.
 
 Record these inputs before preparation:
 
@@ -34,6 +35,9 @@ Task objective:
 
 AGENTS path:
 <OPTIONAL_RELATIVE_AGENTS_PATH>
+
+Planner checkout:
+<PLANNER_DIR>
 ```
 
 `staging` is the default. Expected downstream workflow is metadata only and
@@ -62,17 +66,20 @@ Never infer `latest`, and never hand-write `.gpt-workflow.lock`.
    artifacts, IDE/OS metadata, credentials, private keys, `.env` secrets, and
    unrelated large binaries. Preserve intentionally versioned fixtures and
    required binary assets.
-6. Run the pinned official `setup.sh` against staging, passing the owner-selected
+6. Set `PLANNER_DIR` to a checkout of the exact owner-selected workflow
+   revision. Run only `$PLANNER_DIR/setup.sh` against staging, passing the
    explicit `--version` or exact `--commit`. Generate the lock and managed
    `AGENTS.md` through official tooling only.
-7. Run `scripts/validate-project-integration.py` against staging.
+7. Run `python3 "$PLANNER_DIR/scripts/validate-project-integration.py"`
+   against staging, passing `--agents-file` when a custom relative AGENTS path
+   was selected.
 8. Generate `.gpt-review/archive-manifest.json` from the source state, generated
    lock, selected downstream metadata, and UTC timestamp. Never hand-author the
    workflow lock or guess its identity.
 9. Run the dependency-free manifest validator:
 
    ```bash
-   python3 scripts/validate-project-archive-manifest.py \
+   python3 "$PLANNER_DIR/scripts/validate-project-archive-manifest.py" \
      <STAGED_PROJECT_ROOT>/.gpt-review/archive-manifest.json \
      --project-root <STAGED_PROJECT_ROOT> --staging
    ```

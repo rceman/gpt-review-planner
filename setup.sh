@@ -2,7 +2,6 @@
 set -euo pipefail
 
 CANONICAL_REPOSITORY="https://github.com/rceman/gpt-review-planner"
-DEFAULT_VERSION="v1.0.0"
 DOCUMENT_PATH="GPT_REVIEW_PLANNER.md"
 ARCHIVE_REVIEW_PROMPT_PATH="prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md"
 ARCHIVE_REVIEW_ONLY_PROMPT_PATH="prompts/GPT_PROJECT_ARCHIVE_REVIEW_ONLY.md"
@@ -19,7 +18,7 @@ Usage:
 
 Options:
   --project PATH       Target project repository. Required.
-  --version REF        Workflow tag or ref. Default: v1.0.0
+  --version REF        Workflow tag or ref. Required.
   --repository URL     Canonical repository URL.
   --commit SHA         Exact commit. Otherwise resolved with git ls-remote.
   --agents-file PATH   AGENTS.md path relative to project. Default: AGENTS.md
@@ -117,14 +116,17 @@ ${BLOCK_BEGIN}
 > - The local agent owns integration, dependency restoration, compilation, runtime tests, and minimal integration corrections.
 > - The local agent must not redesign approved behavior or weaken tests and acceptance criteria.
 > - Do not hand-author \`.gpt-workflow.lock\`; use the pinned preparation prompt and official setup/update tooling.
-> - GPT performs static review only.
+> - GPT performs only static validation and does not execute runtime quality gates. GPT still authors the approved implementation, fixtures, and tests.
 > - The local agent owns runtime integration and gates.
+> - Release-commit CI must pass before tagging; final tag CI is external metadata.
+> - Do not publish a GitHub Release without explicit authorization.
+> - Never force-push or use broad \`git push --tags\`.
 ${BLOCK_END}
 EOF
 }
 
 project=""
-version="$DEFAULT_VERSION"
+version=""
 repository="$CANONICAL_REPOSITORY"
 commit=""
 agents_file="AGENTS.md"
@@ -170,6 +172,8 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+[[ -n "$version" ]] || die "--version is required"
 
 [[ -n "$project" ]] || die "--project is required"
 [[ -d "$project" ]] || die "project directory does not exist: $project"

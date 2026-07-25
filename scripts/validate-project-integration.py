@@ -3,20 +3,34 @@ from __future__ import annotations
 
 import json
 import re
+import argparse
 import sys
 from pathlib import Path
+from pathlib import PurePosixPath
 
 BEGIN = "<!-- BEGIN GPT-REVIEW-PLANNER -->"
 END = "<!-- END GPT-REVIEW-PLANNER -->"
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
-        print("usage: validate-project-integration.py PROJECT", file=sys.stderr)
-        return 2
+    parser = argparse.ArgumentParser()
+    parser.add_argument("project")
+    parser.add_argument("--agents-file", default="AGENTS.md")
+    args = parser.parse_args()
 
-    project = Path(sys.argv[1]).resolve()
-    agents = project / "AGENTS.md"
+    raw_agents = args.agents_file
+    agents_relative = PurePosixPath(raw_agents)
+    if (
+        not raw_agents
+        or "\\" in raw_agents
+        or agents_relative.is_absolute()
+        or "." in agents_relative.parts
+        or ".." in agents_relative.parts
+    ):
+        parser.error("--agents-file must be a normalized project-relative path")
+
+    project = Path(args.project).resolve()
+    agents = project.joinpath(*agents_relative.parts)
     lock = project / ".gpt-workflow.lock"
     errors: list[str] = []
 

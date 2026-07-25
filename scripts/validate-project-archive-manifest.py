@@ -8,6 +8,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from pathlib import PurePosixPath
 from typing import Any
 
 COMMIT_RE = re.compile(r"^[0-9a-fA-F]{40}$")
@@ -52,6 +53,13 @@ def boolean_field(data: dict[str, Any], key: str, label: str) -> bool:
 def reject_absolute(value: str | None, label: str) -> None:
     if value is not None and ABSOLUTE_PATH_RE.match(value):
         raise ManifestError(f"{label} must not contain an absolute local path")
+
+
+def validate_archive_root(value: str) -> None:
+    reject_absolute(value, "archive.root")
+    path = PurePosixPath(value)
+    if "\\" in value or not value or "." in path.parts or ".." in path.parts:
+        raise ManifestError("archive.root must be a normalized relative archive root")
 
 
 def validate(manifest_path: Path, project_root: Path | None, staging: bool) -> None:
@@ -101,7 +109,8 @@ def validate(manifest_path: Path, project_root: Path | None, staging: bool) -> N
         raise ManifestError("review.expected_workflow must be review-and-implement or review-only")
     reject_absolute(task_objective, "review.task_objective")
 
-    string_field(archive, "root", "archive")
+    archive_root = string_field(archive, "root", "archive")
+    validate_archive_root(archive_root)
     generated_at = string_field(archive, "generated_at", "archive")
     source_modified = boolean_field(archive, "source_modified", "archive")
     if not UTC_RFC3339_RE.fullmatch(generated_at):

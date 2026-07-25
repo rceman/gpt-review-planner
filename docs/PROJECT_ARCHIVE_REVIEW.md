@@ -90,10 +90,15 @@ kept only in an external sidecar and report, never in the manifest.
 Validate it without third-party dependencies:
 
 ```bash
-python3 scripts/validate-project-archive-manifest.py \
+python3 "$PLANNER_DIR/scripts/validate-project-archive-manifest.py" \
   <STAGED_PROJECT_ROOT>/.gpt-review/archive-manifest.json \
   --project-root <STAGED_PROJECT_ROOT> --staging
 ```
+
+Preparation agents must run both integration and manifest validators from
+`PLANNER_DIR`, the checkout of the exact pinned workflow, not from the target
+project's current working directory. The integration validator accepts
+`--agents-file <RELATIVE_PATH>` for a custom managed block location.
 
 ## Recommended invocations
 
