@@ -31,6 +31,16 @@ selected by the owner or valid manifest metadata not overridden by current
 instructions. The archive manifest never overrides the selected prompt: even an expected
 `review-and-implement` value cannot bypass the approval boundary.
 
+When `engineering-profile.json` is present, validate it against the exact
+planner checkout from `.gpt-workflow.lock` using
+`validate-project-engineering-profile.py`. Load only the selected profile and
+relevant language/framework/database/checklist documents. Authority order is
+current owner instructions, approved project ADR/specification, valid profile
+and exceptions, pinned catalog, detected baselines, then default stack policy.
+Report missing, malformed, mismatched, unknown, or expired declarations without
+fabricating them. A valid legacy Python exception does not authorize Node or
+force a rewrite.
+
 Read the exact pinned revisions of `GPT_REVIEW_PLANNER.md`,
 `prompts/GPT_CREATE_PATCH_PACK.md`, `docs/PATCH_PACK_FORMAT.md`,
 `docs/AGENT_EVIDENCE.md`, and `docs/PROJECT_ARCHIVE_REVIEW.md`.

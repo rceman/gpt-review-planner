@@ -18,6 +18,15 @@
 > - The local agent owns integration, dependency restoration, formatting, compilation, linting, runtime tests, benchmarks, evidence, and minimal integration corrections.
 > - The local agent must not redesign approved behavior or weaken tests and acceptance criteria.
 > - GPT reviews agent-reported runtime evidence without rerunning tests.
+>
+> Engineering baseline: when `engineering-profile.json` is present, validate
+> it with the exact pinned planner checkout and follow the selected profile and
+> relevant documents. Owner instructions win; apply exceptions narrowly and
+> report policy conflicts instead of silently selecting another stack.
+> Prefer Rust/Axum for new backend components; use Go/Gin only when selected or
+> approved. Production Node.js backends and direct frontend database access are
+> forbidden. PostgreSQL schema authority remains Liquibase. Python rules apply
+> to tools/tests; a valid legacy Python exception does not demand rewrite.
 <!-- END GPT-REVIEW-PLANNER -->
 
 - For executable patch packs, create a direct two-file JSON evidence commit after the implementation commit and validate it with the pinned `verify-agent-evidence.py`; never embed the evidence commit SHA inside its own evidence.

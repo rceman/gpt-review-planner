@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "workflow_lock_path": ".gpt-workflow.lock",
+  "profile_id": "fullstack-rust-sveltekit",
+  "exceptions": []
+}

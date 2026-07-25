@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "catalog_id": "rceman-engineering-baseline",
+  "rules_file": "profiles/engineering/rules.json",
+  "profiles": [
+    {"profile_id":"fullstack-rust-sveltekit","kind":"project","document":"docs/engineering/profiles/FULLSTACK_RUST_SVELTEKIT.md","definition":"profiles/engineering/projects/fullstack-rust-sveltekit.json"},
+    {"profile_id":"fullstack-go-sveltekit","kind":"project","document":"docs/engineering/profiles/FULLSTACK_GO_SVELTEKIT.md","definition":"profiles/engineering/projects/fullstack-go-sveltekit.json"},
+    {"profile_id":"rust-service","kind":"project","document":"docs/engineering/profiles/RUST_SERVICE.md","definition":"profiles/engineering/projects/rust-service.json"},
+    {"profile_id":"go-service","kind":"project","document":"docs/engineering/profiles/GO_SERVICE.md","definition":"profiles/engineering/projects/go-service.json"},
+    {"profile_id":"sveltekit-frontend","kind":"project","document":"docs/engineering/profiles/SVELTEKIT_FRONTEND.md","definition":"profiles/engineering/projects/sveltekit-frontend.json"},
+    {"profile_id":"python-tool","kind":"project","document":"docs/engineering/profiles/PYTHON_TOOL.md","definition":"profiles/engineering/projects/python-tool.json"},
+    {"profile_id":"python-test-suite","kind":"project","document":"docs/engineering/profiles/PYTHON_TEST_SUITE.md","definition":"profiles/engineering/projects/python-test-suite.json"},
+    {"profile_id":"python-prototype","kind":"project","document":"docs/engineering/profiles/PYTHON_PROTOTYPE.md","definition":"profiles/engineering/projects/python-prototype.json"},
+    {"profile_id":"legacy-python-service","kind":"project","document":"docs/engineering/profiles/LEGACY_PYTHON_SERVICE.md","definition":"profiles/engineering/projects/legacy-python-service.json"}
+  ]
+}

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Added the opinionated engineering baseline for canonical stacks, languages,
+  frameworks, databases, profiles, and review checklists.
+- Added machine-readable rule/catalog registries, project exceptions, schemas,
+  and dependency-free validators.
+- Integrated engineering-profile validation into archive review, preparation,
+  and managed AGENTS instructions, with a template repository conformance
+  contract.
+
 ## 1.1.1 — 2026-07-25
 
 - Added compact immutable-link-plus-objective archive preparation.

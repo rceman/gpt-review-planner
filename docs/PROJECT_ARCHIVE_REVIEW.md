@@ -111,6 +111,12 @@ by downstream GPT. `.gpt-workflow.lock` is workflow identity authority; the arch
 is provenance/context metadata and must match the lock. The archive SHA-256 is
 kept only in an external sidecar and report, never in the manifest.
 
+When `engineering-profile.json` is present, preparation preserves it and
+validates it in staging against the exact planner checkout; absent declarations
+use `--allow-missing` and are reported, never invented. Downstream reviewers
+load the selected profile and relevant baseline documents. The declaration is
+not copied into source by the planner.
+
 Validate it without third-party dependencies:
 
 ```bash

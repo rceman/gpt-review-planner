@@ -9,6 +9,11 @@ Published versions are identified by immutable `vX.Y.Z` Git tags and GitHub Rele
 
 For the complete reusable release procedure, read [`docs/RELEASE_PROCESS.md`](docs/RELEASE_PROCESS.md) and use [`prompts/AGENT_RELEASE_VERSION.md`](prompts/AGENT_RELEASE_VERSION.md).
 
+The [engineering baseline](docs/engineering/README.md) defines the canonical
+stack, profiles, exceptions, and review checklists. Validate the registry with
+`python3 scripts/validate-engineering-catalog.py` and a project declaration with
+`scripts/validate-project-engineering-profile.py`.
+
 ## Review an attached project archive
 
 The canonical guide is [`docs/PROJECT_ARCHIVE_REVIEW.md`](docs/PROJECT_ARCHIVE_REVIEW.md).

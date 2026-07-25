@@ -98,6 +98,11 @@ stop on identity mismatch.
    `--version`, and `--commit`. Record the identity change. Never modify the
    source lock or source `AGENTS.md`. A malformed or unreadable source lock,
    repository-identity conflict, or unresolved immutable URL remains fatal.
+   Preserve `engineering-profile.json` when present. In staging, validate it
+   against the selected planner checkout with
+   `validate-project-engineering-profile.py`; use `--allow-missing` when absent.
+   Never invent or modify a source declaration, and report profile, declaration
+   status, and exception count.
 4. Create a temporary staging directory and copy reviewable project content
    without altering the source repository.
 5. Exclude `.git`, dependency directories, build outputs, caches, test/runtime
