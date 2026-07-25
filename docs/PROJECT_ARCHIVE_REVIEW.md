@@ -100,6 +100,12 @@ Preparation agents must run both integration and manifest validators from
 project's current working directory. The integration validator accepts
 `--agents-file <RELATIVE_PATH>` for a custom managed block location.
 
+When invoking official setup, `--version REF` is always required. REF is the
+owner-selected immutable tag or exact commit ref; `--commit SHA` is optional
+exact-resolution metadata and must correspond to REF when supplied. Preparation
+normally passes both explicitly and never infers `main`, `latest`, or the
+current repository version.
+
 ## Recommended invocations
 
 Raw archive:

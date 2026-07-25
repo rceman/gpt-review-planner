@@ -82,8 +82,10 @@ class RepositoryTest(unittest.TestCase):
         )
         for relative in required:
             self.assertTrue((ROOT / relative).is_file(), relative)
-        self.assertFalse((ROOT / "prompts/GPT_REVIEW_PROJECT_ARCHIVE.md").exists())
-        self.assertFalse((ROOT / "prompts/GPT_REVIEW_PROJECT_ARCHIVE_ONLY.md").exists())
+        superseded_review = "prompts/" + "GPT_REVIEW_" + "PROJECT_ARCHIVE.md"
+        superseded_review_only = "prompts/" + "GPT_REVIEW_" + "PROJECT_ARCHIVE_ONLY.md"
+        self.assertFalse((ROOT / superseded_review).exists())
+        self.assertFalse((ROOT / superseded_review_only).exists())
 
         guide = (ROOT / required[0]).read_text(encoding="utf-8")
         primary = (ROOT / required[1]).read_text(encoding="utf-8")
@@ -91,6 +93,7 @@ class RepositoryTest(unittest.TestCase):
         preparation = (ROOT / required[3]).read_text(encoding="utf-8")
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         workflow = (ROOT / "GPT_REVIEW_PLANNER.md").read_text(encoding="utf-8")
+        template = (ROOT / "templates/project/AGENTS.managed-block.md").read_text(encoding="utf-8")
 
         self.assertIn("Prepared pinned archive", guide)
         self.assertIn("Raw archive plus immutable prompt URL", guide)
@@ -133,6 +136,10 @@ class RepositoryTest(unittest.TestCase):
             "secrets",
         ):
             self.assertIn(phrase, preparation)
+        self.assertIn("`--version REF` is always required", preparation)
+        self.assertIn("`--commit SHA` is optional", preparation)
+        self.assertIn('bash "$PLANNER_DIR/setup.sh"', preparation)
+        self.assertNotIn("or exact `--commit`", preparation)
 
         for relative in required:
             self.assertIn(relative, readme)
@@ -141,6 +148,16 @@ class RepositoryTest(unittest.TestCase):
         self.assertIn("Raw archives", readme)
         self.assertIn("prepared archives", readme)
         self.assertIn("Already integrated", guide)
+        for concept in (
+            "owner selects the target version",
+            "release automation",
+            "manual",
+            "Release-commit CI must pass before tagging",
+            "git push --tags",
+            "force-push",
+            "GitHub Release",
+        ):
+            self.assertIn(concept.lower(), template.lower())
 
         with tempfile.TemporaryDirectory() as temp_dir:
             project = Path(temp_dir) / "project"
@@ -164,6 +181,9 @@ class RepositoryTest(unittest.TestCase):
                 self.assertIn(f"/{FAKE_COMMIT}/{relative}", agents)
             self.assertNotIn("/main/", agents)
             self.assertIn("GPT still authors the approved implementation", agents)
+            self.assertIn("The owner explicitly selects the target version", agents)
+            self.assertIn("Only repository release automation may modify synchronized version files", agents)
+            self.assertIn("manual version synchronization is forbidden", agents)
             self.assertIn("Release-commit CI must pass before tagging", agents)
             self.assertIn("Do not publish a GitHub Release without explicit authorization", agents)
             self.assertIn("Never force-push", agents)
@@ -201,13 +221,17 @@ class RepositoryTest(unittest.TestCase):
             )
             self.assertNotEqual(invalid_agents_path.returncode, 0)
 
+            missing_project = Path(temp_dir) / "missing-project"
+            missing_project.mkdir()
             missing_version = subprocess.run(
-                ["bash", str(ROOT / "setup.sh"), "--project", str(project)],
+                ["bash", str(ROOT / "setup.sh"), "--project", str(missing_project), "--commit", FAKE_COMMIT],
                 capture_output=True,
                 text=True,
             )
             self.assertNotEqual(missing_version.returncode, 0)
             self.assertIn("--version is required", missing_version.stderr)
+            self.assertFalse((missing_project / "AGENTS.md").exists())
+            self.assertFalse((missing_project / ".gpt-workflow.lock").exists())
 
     def test_archive_manifest_validator_contract(self) -> None:
         validator = ROOT / "scripts/validate-project-archive-manifest.py"
@@ -273,6 +297,41 @@ class RepositoryTest(unittest.TestCase):
 
             valid = run_manifest(manifest)
             self.assertEqual(valid.returncode, 0, valid.stderr)
+
+            for root in ("project", "project-review", "project_20260725", "project.v2", "project name"):
+                valid_root = json.loads(json.dumps(manifest))
+                valid_root["archive"]["root"] = root
+                result = run_manifest(valid_root)
+                self.assertEqual(result.returncode, 0, (root, result.stderr))
+
+            invalid_roots = (
+                "/home/user/project",
+                r"C:\\Users\\name\\project",
+                "C:/Users/name/project",
+                "C:project",
+                r"\\\\server\\share\\project",
+                "file:///tmp/project",
+                "FILE:///tmp/project",
+                ".",
+                "..",
+                "../project",
+                "project/../other",
+                "project/subdir",
+                "project//subdir",
+                r"project\\subdir",
+                " project",
+                "project ",
+                "project\x00name",
+                "project\nname",
+                "project\rname",
+                "project\tname",
+                "project\x1fname",
+            )
+            for root in invalid_roots:
+                invalid_root = json.loads(json.dumps(manifest))
+                invalid_root["archive"]["root"] = root
+                result = run_manifest(invalid_root)
+                self.assertNotEqual(result.returncode, 0, root)
 
             invalid_enum = json.loads(json.dumps(manifest))
             invalid_enum["review"]["expected_workflow"] = "other"

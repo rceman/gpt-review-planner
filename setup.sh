@@ -111,6 +111,9 @@ ${BLOCK_BEGIN}
 > Archive guide: [\`${ARCHIVE_GUIDE_PATH}\`](${browser_repository}/blob/${commit}/${ARCHIVE_GUIDE_PATH})
 > Release process: [\`${RELEASE_PROCESS_PATH}\`](${browser_repository}/blob/${commit}/${RELEASE_PROCESS_PATH})
 >
+> Any release, version bump, or version-tag request requires reading the exact commit-pinned release process.
+> The owner explicitly selects the target version.
+> Only repository release automation may modify synchronized version files; manual version synchronization is forbidden.
 > Operating model:
 > - GPT owns architecture, behavior contracts, fixtures, tests, review, and the principal implementation.
 > - The local agent owns integration, dependency restoration, compilation, runtime tests, and minimal integration corrections.

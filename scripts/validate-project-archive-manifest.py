@@ -8,7 +8,6 @@ import json
 import re
 import sys
 from pathlib import Path
-from pathlib import PurePosixPath
 from typing import Any
 
 COMMIT_RE = re.compile(r"^[0-9a-fA-F]{40}$")
@@ -56,9 +55,17 @@ def reject_absolute(value: str | None, label: str) -> None:
 
 
 def validate_archive_root(value: str) -> None:
-    reject_absolute(value, "archive.root")
-    path = PurePosixPath(value)
-    if "\\" in value or not value or "." in path.parts or ".." in path.parts:
+    if not isinstance(value, str) or not value:
+        raise ManifestError("archive.root must be a non-empty string")
+    if value != value.strip():
+        raise ManifestError("archive.root must not have leading or trailing whitespace")
+    if value.lower().startswith("file://"):
+        raise ManifestError("archive.root must not use a file URI")
+    if re.match(r"^[A-Za-z]:", value):
+        raise ManifestError("archive.root must not use a Windows drive prefix")
+    if any(ord(character) < 0x20 for character in value):
+        raise ManifestError("archive.root must not contain ASCII control characters")
+    if "/" in value or "\\" in value or value in {".", ".."}:
         raise ManifestError("archive.root must be a normalized relative archive root")
 
 

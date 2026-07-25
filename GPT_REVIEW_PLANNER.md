@@ -40,6 +40,9 @@ URL without a lock. Immutable tag or commit links are preferred over `main`.
 The universal preparation flow also generates `.gpt-review/archive-manifest.json`
 for provenance and task context. Downstream workflow metadata never changes the
 complete archive inclusion contract.
+Archive preparation always passes the owner-selected immutable `--version REF`;
+an optional exact `--commit SHA` must match it and never replaces the required
+version argument.
 
 The local agent must receive enough exact code, fixtures, tests, file paths, and acceptance criteria that its task becomes a constrained integration and verification problem rather than a new implementation project.
 

@@ -6,6 +6,7 @@
 - Added task-objective-aware review scope and staged archive preparation with generated workflow locks.
 - Added exact commit-pinned archive-review prompt links to managed project integration.
 - Unified preparation into one prompt for both GPT workflows and added provenance metadata without changing archive contents by downstream mode.
+- Hardened portable archive roots, exact setup version/commit invocation, and complete generated release-agent rules.
 
 ## 1.0.2 — 2026-07-24
 

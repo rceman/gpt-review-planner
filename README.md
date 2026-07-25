@@ -34,6 +34,8 @@ tests, or a specific change.
 One universal preparation prompt creates the same complete archive for both
 downstream workflows and adds `.gpt-review/archive-manifest.json`; workflow
 selection never changes archive contents.
+Archive setup always requires an owner-selected immutable `--version REF`;
+optional `--commit SHA` must match that REF and cannot replace it.
 
 ## Test-execution policy
 

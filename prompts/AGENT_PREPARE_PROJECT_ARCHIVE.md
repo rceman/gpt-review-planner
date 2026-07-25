@@ -67,8 +67,21 @@ Never infer `latest`, and never hand-write `.gpt-workflow.lock`.
    unrelated large binaries. Preserve intentionally versioned fixtures and
    required binary assets.
 6. Set `PLANNER_DIR` to a checkout of the exact owner-selected workflow
-   revision. Run only `$PLANNER_DIR/setup.sh` against staging, passing the
-   explicit `--version` or exact `--commit`. Generate the lock and managed
+   revision. `--version REF` is always required; REF is the owner-selected
+   immutable tag or exact commit ref. `--commit SHA` is optional exact-resolution
+   metadata/override and, when supplied, must match the selected REF. Normally
+   run both explicitly:
+
+   ```bash
+   bash "$PLANNER_DIR/setup.sh" \
+     --project "$STAGED_PROJECT_ROOT" \
+     --version "$PINNED_WORKFLOW_REF" \
+     --commit "$PINNED_WORKFLOW_COMMIT" \
+     --agents-file "$AGENTS_FILE"
+   ```
+
+   Do not imply that `--commit` replaces `--version`; do not infer `main`,
+   `latest`, or the current repository version. Generate the lock and managed
    `AGENTS.md` through official tooling only.
 7. Run `python3 "$PLANNER_DIR/scripts/validate-project-integration.py"`
    against staging, passing `--agents-file` when a custom relative AGENTS path
