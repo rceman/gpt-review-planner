@@ -29,4 +29,48 @@ Liquibase remains schema authority.
 [Ruff](https://docs.astral.sh/ruff/), [Pyright](https://microsoft.github.io/pyright/),
 and [subprocess](https://docs.python.org/3/library/subprocess.html).
 
-Anchors: `PY-SUBPROCESS-001` `PY-TYPING-001`.
+<a id="py-subprocess-001"></a>
+<a id="py-typing-001"></a>
+
+## Operational review matrix
+
+### Canonical use cases
+Bounded tools, tests, prototypes, and explicitly approved legacy services.
+### Forbidden/non-canonical uses
+New production Python backends require an approved legacy exception.
+### Version/compatibility policy
+Pin interpreter and lockfile; document supported versions and targets.
+### Project/package structure
+Separate CLI, domain, adapters, configuration, and tests.
+### Ownership/dependency direction
+Shell/HTTP/database adapters remain at boundaries with explicit interfaces.
+### Naming/formatting
+Use repository formatter, lint policy, and import ordering.
+### Typing/type-system policy
+Type stable boundaries and narrow `Any` immediately after validation.
+### Error handling
+Catch specific exceptions, preserve causes, and return stable errors.
+### Resource management
+Use context managers, bounded subprocesses, timeouts, and cleanup.
+### Concurrency/async/cancellation
+Use structured task ownership; do not hide event-loop blocking work.
+### Configuration/secrets
+Centralize validated settings and keep environment values out of logs.
+### Logging/observability
+Emit structured, redacted events with correlation and failure context.
+### Dependency policy
+Lock, audit, and justify runtime dependencies.
+### Database boundary
+Approved services use repository boundaries and Liquibase, not startup DDL.
+### Testing
+Prefer deterministic pytest/unittest tests and boundary coverage.
+### Security pitfalls
+Review subprocess arguments, deserialization, traversal, credentials, and temp files.
+### Performance/resource pitfalls
+Reject unbounded reads, output, retries, worker pools, and fixture growth.
+### Common findings
+Shell strings, broad catches, globals, and untyped public functions.
+### Exceptions
+Legacy exceptions include target, scope, owner, and expiry.
+### Review evidence
+Separate static findings from local-agent runtime evidence.

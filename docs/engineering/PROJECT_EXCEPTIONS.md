@@ -20,4 +20,4 @@ one. The exact pinned catalog remains authoritative.
 [RFC 3339](https://www.rfc-editor.org/rfc/rfc3339) and repository schemas define
 serialization constraints; owner approval is the authority for acceptability.
 
-Anchor: `EXCEPTION-001`.
+<a id="exception-001"></a>

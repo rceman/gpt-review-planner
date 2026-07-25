@@ -17,4 +17,4 @@ concurrency, overload, and timeout behavior where those affect the contract.
 [PostgreSQL EXPLAIN](https://www.postgresql.org/docs/current/using-explain.html),
 and [SvelteKit performance](https://svelte.dev/docs/kit/performance).
 
-Anchor: `PERF-BOUNDS-001`.
+<a id="perf-bounds-001"></a>

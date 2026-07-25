@@ -1,1 +1,16 @@
-{"schema_version":1,"profile_id":"rust-service","title":"Rust service","project_kind":"service","required_rule_ids":["STACK-BACKEND-001","DB-LIQUIBASE-001","RUST-ASYNC-001"],"recommended_rule_ids":["RUST-ERROR-001","CONTRACT-001","SEC-SECRETS-001","TEST-001"],"forbidden_rule_ids":["STACK-NODE-001"],"language_documents":["docs/engineering/languages/RUST.md"],"framework_documents":["docs/engineering/frameworks/RUST_AXUM.md","docs/engineering/frameworks/RUST_SQLX.md"],"database_documents":["docs/engineering/database/POSTGRESQL.md","docs/engineering/database/LIQUIBASE.md"],"review_checklists":["docs/engineering/review-checklists/RUST.md"],"template_contract":{"required_paths":["src","engineering-profile.json"],"forbidden_paths":["prisma"],"required_capabilities":["graceful-shutdown"],"forbidden_capabilities":["startup-ddl"]}}
+{
+  "schema_version": 1,
+  "profile_id": "rust-service",
+  "title": "Rust service",
+  "project_kind": "service",
+  "capabilities": ["backend-rust", "generated-contracts", "postgresql", "liquibase", "graceful-shutdown", "observability", "tests"],
+  "non_capabilities": ["frontend", "backend-go", "backend-python"],
+  "required_rule_ids": ["STACK-BACKEND-001", "DB-POSTGRES-001", "DB-LIQUIBASE-001", "API-TIMEOUT-001", "SEC-SECRETS-001", "TEST-001", "RUST-ASYNC-001", "AXUM-BOUNDARY-001", "SQLX-POOL-001"],
+  "recommended_rule_ids": ["RUST-ERROR-001", "CONTRACT-001", "OBS-001", "DEP-001", "STRUCTURE-001"],
+  "forbidden_rule_ids": ["STACK-NODE-001", "DB-MIGRATION-001"],
+  "language_documents": ["docs/engineering/languages/RUST.md"],
+  "framework_documents": ["docs/engineering/frameworks/RUST_AXUM.md", "docs/engineering/frameworks/RUST_SQLX.md"],
+  "database_documents": ["docs/engineering/database/POSTGRESQL.md", "docs/engineering/database/LIQUIBASE.md"],
+  "review_checklists": ["docs/engineering/review-checklists/RUST.md"],
+  "template_contract": {"required_paths": ["src", "engineering-profile.json"], "forbidden_paths": ["prisma"], "required_capabilities": ["backend-rust", "generated-contracts", "postgresql", "liquibase", "graceful-shutdown", "observability", "tests"], "forbidden_capabilities": ["frontend", "backend-go", "backend-python"]}
+}

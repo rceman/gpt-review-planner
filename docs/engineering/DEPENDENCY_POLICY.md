@@ -18,4 +18,4 @@ output, and measured impact; no universal benchmark claim is inferred.
 [Go modules](https://go.dev/ref/mod), and
 [Python packaging](https://packaging.python.org/en/latest/).
 
-Anchor: `DEP-001`.
+<a id="dep-001"></a>

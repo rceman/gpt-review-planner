@@ -98,7 +98,7 @@ class EngineeringBaselineTests(unittest.TestCase):
     def _project(self, root: Path, declaration: object | None = None) -> Path:
         project = root / f"project-{len(list(root.iterdir()))}"
         project.mkdir()
-        lock = {"schema_version": 1, "repository": "https://github.com/rceman/gpt-review-planner", "version": "v1.1.1", "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), "document": "GPT_REVIEW_PLANNER.md"}
+        lock = {"schema_version": 1, "repository": "https://github.com/rceman/gpt-review-planner", "version": "v1.1.1", "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), "document": "GPT_REVIEW_PLANNER.md", "generated_at": "2026-07-25T00:00:00Z"}
         (project / ".gpt-workflow.lock").write_text(json.dumps(lock))
         if declaration is not None:
             (project / "engineering-profile.json").write_text(json.dumps(declaration))
@@ -152,6 +152,49 @@ class EngineeringBaselineTests(unittest.TestCase):
         for phrase in ("engineering-profile.json", "Rust/Axum", "Go/Gin", "Liquibase", "legacy"):
             self.assertIn(phrase, agents)
             self.assertIn(phrase, installer)
+
+    def test_catalog_freshness_capability_and_archive_ordering_contracts(self) -> None:
+        validator = load_validator("catalog_validator_freshness", ROOT / "scripts/validate-engineering-catalog.py")
+        with tempfile.TemporaryDirectory() as temp:
+            copy = Path(temp) / "repo"
+            shutil.copytree(ROOT, copy, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+            metadata_path = copy / "profiles/engineering/source-metadata.json"
+            metadata = json.loads(metadata_path.read_text())
+            metadata["documents"][0]["last_reviewed"] = "2099-01-01"
+            metadata_path.write_text(json.dumps(metadata))
+            with self.assertRaises(validator.CatalogError):
+                validator.validate(copy, __import__("datetime").date(2026, 7, 25))
+            metadata["documents"][0]["last_reviewed"] = "2026-07-25"
+            metadata_path.write_text(json.dumps(metadata))
+            rules = json.loads((copy / "profiles/engineering/rules.json").read_text())
+            rules["rules"][0]["applies_to"] = ["capability:not-a-capability"]
+            (copy / "profiles/engineering/rules.json").write_text(json.dumps(rules))
+            with self.assertRaises(validator.CatalogError):
+                validator.validate(copy)
+
+    def test_declaration_path_and_lock_contract_matrix(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            valid = {"schema_version": 1, "workflow_lock_path": ".gpt-workflow.lock", "profile_id": "legacy-python-service", "exceptions": [{"id": "legacy-python-production-backend", "rule_id": "STACK-PYTHON-001", "reason": "Existing deployed service", "scope": "Current backend", "approved_by": "owner", "migration_target": "rust-axum", "migration_required": False, "expires_at": None}]}
+            for unsafe in ("/tmp/lock", "C:\\lock", "\\\\server\\lock", "file:///tmp/lock", "a\\b", "a//b", "../lock", "bad\x7fpath"):
+                candidate = json.loads(json.dumps(valid)); candidate["workflow_lock_path"] = unsafe
+                project = self._project(root, candidate)
+                self.assertNotEqual(self._run_profile(project).returncode, 0, unsafe)
+
+    def test_document_and_archive_contract_headings(self) -> None:
+        required = ("Canonical use cases", "Forbidden/non-canonical uses", "Version/compatibility policy", "Ownership/dependency direction", "Testing", "Exceptions", "Review evidence")
+        for path in (ROOT / "docs/engineering/languages").glob("*.md"):
+            text = path.read_text()
+            for heading in required:
+                self.assertIn(f"### {heading}", text, str(path))
+        for path in list((ROOT / "docs/engineering/frameworks").glob("*.md")) + list((ROOT / "docs/engineering/database").glob("*.md")):
+            self.assertIn("## Operational review matrix", path.read_text(), str(path))
+        prompt = (ROOT / "prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md").read_text()
+        staging = prompt.index("Create a temporary staging directory")
+        profile_validation = prompt.index("validate-project-engineering-profile.py")
+        integration = prompt.index("validate-project-integration.py")
+        self.assertGreater(profile_validation, staging)
+        self.assertGreater(profile_validation, integration)
 
 
 if __name__ == "__main__":

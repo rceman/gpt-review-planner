@@ -24,4 +24,24 @@ IDs is a documented project choice, not a universal rule.
 [EXPLAIN](https://www.postgresql.org/docs/current/using-explain.html), and
 [data types](https://www.postgresql.org/docs/current/datatype.html).
 
-Anchor: `DB-ROLE-001`.
+<a id="db-role-001"></a>
+<a id="postgres-pool-001"></a>
+
+## Operational review matrix
+
+### Scope and canonical use cases
+PostgreSQL is the canonical relational store for approved backend profiles.
+### Forbidden/non-canonical uses
+Application startup must not compete with Liquibase or grant ordinary roles DDL authority.
+### Version/compatibility policy
+Pin server/client compatibility and review extension, index, and pool changes.
+### Ownership/dependency direction
+Liquibase owns schema evolution; application repositories own runtime queries.
+### Resource, concurrency, and cancellation policy
+Budget connections across replicas, set statement timeouts, and cancel abandoned work.
+### Security and performance pitfalls
+Use least privilege, parameterized queries, bounded result sets, and reviewed indexes.
+### Testing and review evidence
+Record migration, query, backup/restore, and integration evidence from the local agent.
+### Exceptions
+DDL ownership exceptions require explicit scope and expiry.

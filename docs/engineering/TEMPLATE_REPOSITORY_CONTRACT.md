@@ -27,4 +27,4 @@ exception is narrow and owner-approved; it cannot weaken unrelated rules.
 [SvelteKit](https://svelte.dev/docs/kit), and
 [Liquibase](https://docs.liquibase.com/).
 
-Anchor: `TEMPLATE-001`.
+<a id="template-001"></a>

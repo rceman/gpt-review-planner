@@ -16,4 +16,4 @@ its loader under an exception but not its credentials or unsafe defaults.
 [SvelteKit environment modules](https://svelte.dev/docs/kit/$env-static-private),
 and [PostgreSQL client environment](https://www.postgresql.org/docs/current/libpq-envars.html).
 
-Anchor: `CONFIG-001`.
+<a id="config-001"></a>

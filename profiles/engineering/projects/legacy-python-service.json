@@ -1,1 +1,16 @@
-{"schema_version":1,"profile_id":"legacy-python-service","title":"Legacy Python service","project_kind":"legacy-service","required_rule_ids":["STACK-PYTHON-001","PY-TYPING-001","SEC-SECRETS-001","DB-LIQUIBASE-001"],"recommended_rule_ids":["PY-SUBPROCESS-001","TEST-001","CONFIG-001"],"forbidden_rule_ids":["STACK-NODE-001"],"language_documents":["docs/engineering/languages/PYTHON.md"],"framework_documents":[],"database_documents":["docs/engineering/database/POSTGRESQL.md","docs/engineering/database/LIQUIBASE.md"],"review_checklists":["docs/engineering/review-checklists/PYTHON.md"],"template_contract":{"required_paths":["engineering-profile.json"],"forbidden_paths":["node-backend"],"required_capabilities":["secure-config"],"forbidden_capabilities":["startup-ddl"]}}
+{
+  "schema_version": 1,
+  "profile_id": "legacy-python-service",
+  "title": "Legacy Python service",
+  "project_kind": "legacy-service",
+  "capabilities": ["backend-python", "postgresql", "liquibase", "graceful-shutdown", "observability", "tests", "safe-config"],
+  "non_capabilities": ["frontend", "backend-rust", "backend-go"],
+  "required_rule_ids": ["STACK-PYTHON-001", "PY-TYPING-001", "PY-SUBPROCESS-001", "CONFIG-001", "SEC-SECRETS-001", "DB-POSTGRES-001", "DB-LIQUIBASE-001", "TEST-001"],
+  "recommended_rule_ids": ["OBS-001", "DEP-001"],
+  "forbidden_rule_ids": ["STACK-NODE-001", "DB-MIGRATION-001"],
+  "language_documents": ["docs/engineering/languages/PYTHON.md"],
+  "framework_documents": [],
+  "database_documents": ["docs/engineering/database/POSTGRESQL.md", "docs/engineering/database/LIQUIBASE.md"],
+  "review_checklists": ["docs/engineering/review-checklists/PYTHON.md"],
+  "template_contract": {"required_paths": ["engineering-profile.json"], "forbidden_paths": ["node-backend"], "required_capabilities": ["backend-python", "postgresql", "liquibase", "graceful-shutdown", "observability", "tests", "safe-config"], "forbidden_capabilities": ["frontend", "backend-rust", "backend-go"]}
+}

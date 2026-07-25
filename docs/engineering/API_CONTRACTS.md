@@ -17,4 +17,4 @@ database boundary. Review generated-code provenance and CI regeneration checks.
 [JSON Schema](https://json-schema.org/specification), and
 [TypeScript](https://www.typescriptlang.org/docs/).
 
-Anchor: `API-TIMEOUT-001`.
+<a id="api-timeout-001"></a>

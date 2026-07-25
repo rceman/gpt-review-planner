@@ -18,4 +18,5 @@ configuration.
 [PostgreSQL roles](https://www.postgresql.org/docs/current/user-manag.html),
 and [Python subprocess](https://docs.python.org/3/library/subprocess.html).
 
-Anchors: `SEC-SECRETS-001` `SEC-INPUT-001`.
+<a id="sec-secrets-001"></a>
+<a id="sec-input-001"></a>

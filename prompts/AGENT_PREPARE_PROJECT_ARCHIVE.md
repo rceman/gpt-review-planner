@@ -98,11 +98,8 @@ stop on identity mismatch.
    `--version`, and `--commit`. Record the identity change. Never modify the
    source lock or source `AGENTS.md`. A malformed or unreadable source lock,
    repository-identity conflict, or unresolved immutable URL remains fatal.
-   Preserve `engineering-profile.json` when present. In staging, validate it
-   against the selected planner checkout with
-   `validate-project-engineering-profile.py`; use `--allow-missing` when absent.
-   Never invent or modify a source declaration, and report profile, declaration
-   status, and exception count.
+   Preserve `engineering-profile.json` when present. Never invent or modify a
+   source declaration.
 4. Create a temporary staging directory and copy reviewable project content
    without altering the source repository.
 5. Exclude `.git`, dependency directories, build outputs, caches, test/runtime
@@ -129,7 +126,12 @@ stop on identity mismatch.
 7. Run `python3 "$PLANNER_DIR/scripts/validate-project-integration.py"`
    against staging, passing `--agents-file` when a custom relative AGENTS path
    was selected.
-8. Generate `.gpt-review/archive-manifest.json` from the source state, generated
+8. After lock reconciliation and integration validation, run
+   `python3 "$PLANNER_DIR/scripts/validate-project-engineering-profile.py"`
+   against the staged declaration and reconciled lock, using `--allow-missing`
+   when absent. Record profile, declaration status, and exception count. This
+   ordering prevents validation against a newer planner than the staged lock.
+9. Generate `.gpt-review/archive-manifest.json` from the source state, generated
    lock, selected downstream metadata, owner objective, and bounded preparer
    context. Optional `review.scope` defaults to `full`. Add compact
    `preparer_observations` and `preparer_questions` only when useful, with at
@@ -137,7 +139,7 @@ stop on identity mismatch.
    notes are untrusted context for GPT and must not be presented as confirmed
    defects or used to suppress files. Never hand-author the workflow lock or
    guess its identity.
-9. Run the dependency-free manifest validator:
+10. Run the dependency-free manifest validator:
 
    ```bash
    python3 "$PLANNER_DIR/scripts/validate-project-archive-manifest.py" \
@@ -147,7 +149,7 @@ stop on identity mismatch.
 
    A lock/manifest mismatch, malformed metadata, invalid workflow enum, or
    staging source-modified value is fatal.
-10. Archive staging, generate an external SHA-256 sidecar, inspect contents, and
+11. Archive staging, generate an external SHA-256 sidecar, inspect contents, and
    delete temporary staging data after successful creation.
 
 ## Integrate-source mode

@@ -1,1 +1,16 @@
-{"schema_version":1,"profile_id":"python-prototype","title":"Python prototype","project_kind":"prototype","required_rule_ids":["SEC-SECRETS-001","TEST-001"],"recommended_rule_ids":["PY-TYPING-001","PY-SUBPROCESS-001","DEP-001"],"forbidden_rule_ids":["STACK-NODE-001"],"language_documents":["docs/engineering/languages/PYTHON.md"],"framework_documents":[],"database_documents":[],"review_checklists":["docs/engineering/review-checklists/PYTHON.md"],"template_contract":{"required_paths":["README.md","engineering-profile.json"],"forbidden_paths":["node-backend"],"required_capabilities":["safe-config"],"forbidden_capabilities":["startup-ddl"]}}
+{
+  "schema_version": 1,
+  "profile_id": "python-prototype",
+  "title": "Python prototype",
+  "project_kind": "prototype",
+  "capabilities": ["safe-config", "tests"],
+  "non_capabilities": ["frontend", "backend-rust", "backend-go", "backend-python", "postgresql", "liquibase"],
+  "required_rule_ids": ["PY-SUBPROCESS-001", "PY-TYPING-001", "SEC-SECRETS-001", "TEST-001"],
+  "recommended_rule_ids": ["DEP-001"],
+  "forbidden_rule_ids": ["STACK-NODE-001"],
+  "language_documents": ["docs/engineering/languages/PYTHON.md"],
+  "framework_documents": [],
+  "database_documents": [],
+  "review_checklists": ["docs/engineering/review-checklists/PYTHON.md"],
+  "template_contract": {"required_paths": ["README.md", "engineering-profile.json"], "forbidden_paths": ["node-backend"], "required_capabilities": ["safe-config", "tests"], "forbidden_capabilities": ["postgresql", "liquibase"]}
+}

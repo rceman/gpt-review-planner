@@ -1,1 +1,16 @@
-{"schema_version":1,"profile_id":"sveltekit-frontend","title":"SvelteKit frontend","project_kind":"frontend","required_rule_ids":["STACK-FRONTEND-001","TS-BOUNDARY-001","SVELTEKIT-SERVER-001"],"recommended_rule_ids":["CONTRACT-001","SEC-SECRETS-001","TEST-001"],"forbidden_rule_ids":["STACK-NODE-001"],"language_documents":["docs/engineering/languages/TYPESCRIPT.md"],"framework_documents":["docs/engineering/frameworks/SVELTEKIT.md"],"database_documents":[],"review_checklists":["docs/engineering/review-checklists/TYPESCRIPT.md","docs/engineering/review-checklists/SVELTEKIT.md"],"template_contract":{"required_paths":["src","static","engineering-profile.json"],"forbidden_paths":["prisma","database"],"required_capabilities":["accessibility-tests"],"forbidden_capabilities":["direct-database-access"]}}
+{
+  "schema_version": 1,
+  "profile_id": "sveltekit-frontend",
+  "title": "SvelteKit frontend",
+  "project_kind": "frontend",
+  "capabilities": ["frontend", "generated-contracts", "accessibility", "tests"],
+  "non_capabilities": ["backend-rust", "backend-go", "backend-python", "postgresql", "liquibase"],
+  "required_rule_ids": ["STACK-FRONTEND-001", "TS-BOUNDARY-001", "API-TIMEOUT-001", "SEC-SECRETS-001", "TEST-001"],
+  "recommended_rule_ids": ["CONTRACT-001", "OBS-001", "SVELTEKIT-SSR-001", "DEP-001"],
+  "forbidden_rule_ids": ["STACK-NODE-001", "SVELTEKIT-SERVER-001"],
+  "language_documents": ["docs/engineering/languages/TYPESCRIPT.md"],
+  "framework_documents": ["docs/engineering/frameworks/SVELTEKIT.md"],
+  "database_documents": [],
+  "review_checklists": ["docs/engineering/review-checklists/TYPESCRIPT.md", "docs/engineering/review-checklists/SVELTEKIT.md"],
+  "template_contract": {"required_paths": ["src", "static", "engineering-profile.json"], "forbidden_paths": ["prisma", "database"], "required_capabilities": ["frontend", "generated-contracts", "accessibility", "tests"], "forbidden_capabilities": ["backend-rust", "backend-go", "backend-python", "postgresql", "liquibase"]}
+}

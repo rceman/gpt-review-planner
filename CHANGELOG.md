@@ -9,6 +9,12 @@
 - Integrated engineering-profile validation into archive review, preparation,
   and managed AGENTS instructions, with a template repository conformance
   contract.
+- Expanded the engineering knowledge base with normative language, framework,
+  database, security, testing, and operational rules.
+- Added explicit rule anchors, primary-source freshness metadata, schemas,
+  capability-aware profiles, and dependency-free validators.
+- Clarified archive preparation ordering and the declaration/lock/capability
+  contract used by downstream agents.
 
 ## 1.1.1 — 2026-07-25
 

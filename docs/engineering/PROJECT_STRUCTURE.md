@@ -28,4 +28,4 @@ risk or violates an applicable declared rule.
 [Go modules](https://go.dev/ref/mod), and
 [Python packaging](https://packaging.python.org/en/latest/).
 
-Anchor: `STRUCTURE-001`.
+<a id="structure-001"></a>

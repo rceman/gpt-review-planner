@@ -37,6 +37,13 @@ See the official-source links in [the engineering load map](README.md), and
 the individual language/framework/database documents. Owner policy above is
 distinct from claims derived from those sources.
 
-Rule anchors: `STACK-FRONTEND-001` `STACK-BACKEND-001` `STACK-BACKEND-002`
-`STACK-NODE-001` `STACK-PYTHON-001` `DB-POSTGRES-001` `DB-LIQUIBASE-001`
-`DB-MIGRATION-001` `TS-BOUNDARY-001` `CONTRACT-001`.
+<a id="stack-frontend-001"></a>
+<a id="stack-backend-001"></a>
+<a id="stack-backend-002"></a>
+<a id="stack-node-001"></a>
+<a id="stack-python-001"></a>
+<a id="db-postgres-001"></a>
+<a id="db-liquibase-001"></a>
+<a id="db-migration-001"></a>
+<a id="ts-boundary-001"></a>
+<a id="contract-001"></a>

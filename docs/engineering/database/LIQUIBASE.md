@@ -26,4 +26,24 @@ db/{README.md,liquibase.properties.example,changelog/{db.changelog-root.yaml,rel
 [changesets](https://docs.liquibase.com/reference-guide/changelog-attributes/what-is-a-changeset),
 and [PostgreSQL DDL](https://www.postgresql.org/docs/current/ddl.html).
 
-Anchor: `LIQUIBASE-001`.
+<a id="liquibase-001"></a>
+<a id="liquibase-changeset-001"></a>
+
+## Operational review matrix
+
+### Scope and canonical use cases
+Liquibase is the one ordered authority for PostgreSQL schema evolution.
+### Forbidden/non-canonical uses
+Reject startup migrations, competing tools, mutable applied changesets, and ambiguous roots.
+### Version/compatibility policy
+Pin Liquibase and database compatibility; validate checksums and rollback policy.
+### Ownership/dependency direction
+Deployment automation applies changesets; services consume the resulting schema.
+### Resource, concurrency, and cancellation policy
+Use bounded locks/timeouts and make failed changesets observable and recoverable.
+### Security and performance pitfalls
+Review grants, destructive SQL, lock duration, indexes, and data movement.
+### Testing and review evidence
+Run validation and representative migration tests through the local agent.
+### Exceptions
+No exception may silently replace the canonical migration authority.

@@ -16,4 +16,4 @@ behavior. Do not add noisy logging or metrics without an operational question.
 [Go slog](https://go.dev/blog/slog), and
 [Rust tracing](https://docs.rs/tracing/).
 
-Anchor: `OBS-001`.
+<a id="obs-001"></a>
