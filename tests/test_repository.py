@@ -148,6 +148,20 @@ class RepositoryTest(unittest.TestCase):
         self.assertIn("Raw archives", readme)
         self.assertIn("prepared archives", readme)
         self.assertIn("Already integrated", guide)
+        for text in (guide, readme, workflow, preparation):
+            self.assertIn("full review", text.lower())
+            self.assertIn("AnyDesk", text)
+            self.assertIn("preparer", text.lower())
+        self.assertIn("Prepare review archive using:", preparation)
+        self.assertIn("review-and-implement", preparation)
+        self.assertIn("objective-only", preparation)
+        self.assertIn("untrusted", primary.lower())
+        self.assertIn("independently verify", primary.lower())
+        self.assertIn("`review.scope` means `full`", primary)
+        self.assertNotIn("Accept `<OWNER_TASK_OBJECTIVE>` as the scope", primary)
+        self.assertIn("missing scope means `full`", review_only)
+        self.assertIn("untrusted hints", review_only)
+        self.assertIn("Current owner instructions", review_only)
         for concept in (
             "owner selects the target version",
             "release automation",
@@ -297,6 +311,52 @@ class RepositoryTest(unittest.TestCase):
 
             valid = run_manifest(manifest)
             self.assertEqual(valid.returncode, 0, valid.stderr)
+
+            context_manifest = json.loads(json.dumps(manifest))
+            context_manifest["review"].update(
+                {
+                    "scope": "full",
+                    "preparer_observations": [
+                        "Check scripts/deploy.sh for stale AnyDesk service names."
+                    ],
+                    "preparer_questions": [
+                        "Should historical documentation retain AnyDesk references?"
+                    ],
+                }
+            )
+            self.assertEqual(run_manifest(context_manifest).returncode, 0)
+
+            unicode_context = json.loads(json.dumps(context_manifest))
+            unicode_context["review"]["preparer_observations"] = [
+                "Проверить scripts/部署.sh и относительный путь"
+            ]
+            self.assertEqual(run_manifest(unicode_context).returncode, 0)
+
+            invalid_contexts = []
+            for key, value in (
+                ("scope", "narrow"),
+                ("preparer_observations", "not-an-array"),
+                ("preparer_questions", "not-an-array"),
+            ):
+                invalid = json.loads(json.dumps(manifest))
+                invalid["review"][key] = value
+                invalid_contexts.append(invalid)
+            for key, value in (("preparer_observations", [1]), ("preparer_questions", [None])):
+                invalid = json.loads(json.dumps(manifest))
+                invalid["review"][key] = value
+                invalid_contexts.append(invalid)
+            for value in ("", "   ", "a\nline", "a\rline", "a\tline", "a\x01line", "a\x00line"):
+                invalid = json.loads(json.dumps(manifest))
+                invalid["review"]["preparer_observations"] = [value]
+                invalid_contexts.append(invalid)
+            too_many = json.loads(json.dumps(manifest))
+            too_many["review"]["preparer_observations"] = ["x"] * 33
+            invalid_contexts.append(too_many)
+            too_long = json.loads(json.dumps(manifest))
+            too_long["review"]["preparer_questions"] = ["x" * 2001]
+            invalid_contexts.append(too_long)
+            for invalid in invalid_contexts:
+                self.assertNotEqual(run_manifest(invalid).returncode, 0, invalid)
 
             for root in ("project", "project-review", "project_20260725", "project.v2", "project name"):
                 valid_root = json.loads(json.dumps(manifest))

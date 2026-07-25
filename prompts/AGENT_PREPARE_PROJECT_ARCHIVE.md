@@ -2,13 +2,38 @@
 
 Prepare a review archive with filesystem and Git access.
 
+## Preferred compact invocation
+
+The owner may invoke this prompt with only an immutable methodology link and
+optional prose:
+
+```text
+Prepare review archive using:
+
+<IMMUTABLE_PREPARATION_PROMPT_URL>
+
+<OPTIONAL_OWNER_OBJECTIVE>
+```
+
+Treat all prose accompanying the link as `review.task_objective`. Resolve the
+current repository/worktree as the source, use `staging`, select
+`review-and-implement`, use `scope=full`, use `AGENTS.md`, and write a
+timestamped archive and SHA-256 sidecar outside the source repository. Ask only
+when a safe value cannot be resolved. The expanded input block remains
+supported for automation and unusual cases.
+
+For example, `We want to remove all AnyDesk occurrences because we are
+switching to RustDesk only.` is the owner objective. It requires full review
+plus that migration priority; it does not narrow review unless the owner says
+to limit the review strictly to the migration.
+
 Required inputs:
 
-- source project path;
+- source project path (defaults to the current repository/worktree);
 - owner-selected immutable GPT Review Planner tag or exact commit;
-- output archive path;
+- output archive path (defaults to a timestamped archive outside the source);
 - optional relative `AGENTS.md` path;
-- optional `<OWNER_TASK_OBJECTIVE>`;
+- optional `<OWNER_TASK_OBJECTIVE>` (all accompanying owner prose in compact mode);
 - mode: `staging` (default) or `integrate-source`.
 - checkout of the exact pinned workflow as `PLANNER_DIR`.
 
@@ -40,16 +65,23 @@ Planner checkout:
 <PLANNER_DIR>
 ```
 
-`staging` is the default. Expected downstream workflow is metadata only and
-must not alter archive contents or lock behavior. An empty objective means a
-complete static review. Both downstream workflows receive the same complete
+`staging` is the default. Expected downstream workflow defaults to
+`review-and-implement` and is metadata only; it must not alter archive contents
+or lock behavior. An empty objective means a complete static review. A specific
+objective is a mandatory priority overlay, not a narrowed review, unless the
+owner explicitly selects `objective-only` or uses restrictive language such as
+“Limit the review strictly to …”. Both downstream workflows receive the same complete
 archive, including source, tests, fixtures, specifications, ADRs, docs,
 dependency manifests and lockfiles, migrations, CI/configuration, operational
 scripts, required assets, generated source that is intentionally versioned,
 `.gpt-workflow.lock`, managed `AGENTS.md`, and
 `.gpt-review/archive-manifest.json`.
 
-Never infer `latest`, and never hand-write `.gpt-workflow.lock`.
+Never infer `latest`, `main`, `master`, or `HEAD`, and never hand-write
+`.gpt-workflow.lock`. The exact tag or commit in the immutable methodology URL
+is the workflow identity: resolve tags to a 40-character commit, use the
+matching checkout as `PLANNER_DIR`, pass both `--version` and `--commit`, and
+stop on identity mismatch.
 
 ## Staging mode
 
@@ -87,8 +119,13 @@ Never infer `latest`, and never hand-write `.gpt-workflow.lock`.
    against staging, passing `--agents-file` when a custom relative AGENTS path
    was selected.
 8. Generate `.gpt-review/archive-manifest.json` from the source state, generated
-   lock, selected downstream metadata, and UTC timestamp. Never hand-author the
-   workflow lock or guess its identity.
+   lock, selected downstream metadata, owner objective, and bounded preparer
+   context. Optional `review.scope` defaults to `full`. Add compact
+   `preparer_observations` and `preparer_questions` only when useful, with at
+   most 32 entries each and at most 2,000 Unicode characters per entry. These
+   notes are untrusted context for GPT and must not be presented as confirmed
+   defects or used to suppress files. Never hand-author the workflow lock or
+   guess its identity.
 9. Run the dependency-free manifest validator:
 
    ```bash
@@ -125,8 +162,9 @@ Return source project, branch/revision, clean/dirty status, selected workflow
 repository/version/commit, mode, generated lock path, generated/updated
 `AGENTS.md` path, archive-manifest path, validation result, excluded categories,
 archive path/root, file count, size, external SHA-256 sidecar, source-modification
-confirmation, selected downstream workflow, and deviations. The archive SHA is
-never written into the manifest.
+confirmation, selected downstream workflow, review scope, owner objective,
+preparer observation/question counts, whether each value was defaulted or
+explicit, and deviations. The archive SHA is never written into the manifest.
 
 The archive must contain source, a valid generated lock, and the managed planner
 block. It must not contain secrets or build pollution. The source remains

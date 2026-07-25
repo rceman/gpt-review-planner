@@ -36,7 +36,22 @@ the [review-only prompt](prompts/GPT_PROJECT_ARCHIVE_REVIEW_ONLY.md), and the
 [local archive-preparation prompt](prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md).
 Prepared archives are preferred for recurring projects and must use official
 tooling to generate `.gpt-workflow.lock`; raw archives may use an immutable prompt
-URL without a lock. Immutable tag or commit links are preferred over `main`.
+URL without a lock. Preferred archive preparation is a compact immutable link
+plus optional owner objective:
+
+```text
+Prepare review archive using:
+https://github.com/rceman/gpt-review-planner/blob/vX.Y.Z/prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md
+
+We want to remove all AnyDesk occurrences because we are switching to RustDesk only.
+```
+
+This requests a full review with the migration as a mandatory priority overlay;
+it is not objective-only. Explicitly say `Limit the review strictly to the
+AnyDesk-to-RustDesk migration.` to restrict scope. Preparer observations and
+questions travel in the manifest as untrusted context and require independent
+verification. Expanded invocations remain supported for automation. Immutable
+tag or commit links are required; do not use `main`.
 The universal preparation flow also generates `.gpt-review/archive-manifest.json`
 for provenance and task context. Downstream workflow metadata never changes the
 complete archive inclusion contract.

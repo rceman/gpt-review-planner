@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added compact immutable-link-plus-objective archive preparation.
+- Made full review the default with owner objectives as mandatory overlays.
+- Added bounded preparer observations/questions to the archive manifest.
+- Added backward-compatible validator support for the optional review context.
+
 ## 1.1.0 — 2026-07-25
 
 - Added reusable attached-project archive review and review-only prompts.

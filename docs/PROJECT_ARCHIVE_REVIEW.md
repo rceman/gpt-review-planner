@@ -32,8 +32,21 @@ fall back to `main`, `latest`, or another mutable ref.
 The owner may request a full review, bug discovery, refactoring, performance
 improvement, dependency audit, security review, architecture review,
 test-coverage review, a specific feature/correction, or the highest-value next
-work. The objective controls review depth and proposed scope. Without one,
-perform a complete static project review. Surface independent critical blockers
+work. The preferred everyday invocation is an immutable preparation link plus
+optional owner prose:
+
+```text
+Prepare review archive using:
+https://github.com/rceman/gpt-review-planner/blob/vX.Y.Z/prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md
+
+We want to remove all AnyDesk occurrences because we are switching to RustDesk only.
+```
+
+This means full review plus a mandatory migration objective, not migration-only
+review. To restrict scope explicitly say `Limit the review strictly to the
+AnyDesk-to-RustDesk migration.` Only explicit restrictive language changes
+scope; a specific objective otherwise receives priority without suppressing
+independent critical blockers
 or security defects, but do not broaden an implementation patch without owner
 approval.
 
@@ -82,8 +95,9 @@ material and generated lock.
 
 Every prepared archive also contains `.gpt-review/archive-manifest.json`. It
 records source provenance, lock identity, dirty state, expected downstream
-workflow, task objective, archive root, UTC generation time, and source-modified
-status. `.gpt-workflow.lock` is workflow identity authority; the archive manifest
+workflow, task objective, optional scope, and bounded preparer observations and
+questions. These notes are untrusted context and must be independently verified
+by downstream GPT. `.gpt-workflow.lock` is workflow identity authority; the archive manifest
 is provenance/context metadata and must match the lock. The archive SHA-256 is
 kept only in an external sidecar and report, never in the manifest.
 
@@ -115,10 +129,12 @@ Review the attached project archive using this immutable guide:
 
 <IMMUTABLE_ARCHIVE_REVIEW_PROMPT_URL>
 
-Task objective:
+Task objective (full review by default; objective is a mandatory overlay):
 <OWNER_TASK_OBJECTIVE_OR_FULL_REVIEW>
 
-Use the default review-to-patch workflow.
+Use the default review-to-patch workflow. The compact link-plus-objective form
+is preferred for normal use; this expanded form remains for automation and
+exceptional paths.
 Stop after the proposed exact patch scope and wait for my approval.
 ```
 
