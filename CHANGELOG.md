@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.1.1 — 2026-07-25
+
 - Added compact immutable-link-plus-objective archive preparation.
 - Made full review the default with owner objectives as mandatory overlays.
 - Added bounded preparer observations/questions to the archive manifest.
