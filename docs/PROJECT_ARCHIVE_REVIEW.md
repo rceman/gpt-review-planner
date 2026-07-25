@@ -32,8 +32,21 @@ fall back to `main`, `latest`, or another mutable ref.
 The owner may request a full review, bug discovery, refactoring, performance
 improvement, dependency audit, security review, architecture review,
 test-coverage review, a specific feature/correction, or the highest-value next
-work. The objective controls review depth and proposed scope. Without one,
-perform a complete static project review. Surface independent critical blockers
+work. The preferred everyday invocation is an immutable preparation link plus
+optional owner prose:
+
+```text
+Prepare review archive using:
+https://github.com/rceman/gpt-review-planner/blob/vX.Y.Z/prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md
+
+We want to remove all AnyDesk occurrences because we are switching to RustDesk only.
+```
+
+This means full review plus a mandatory migration objective, not migration-only
+review. To restrict scope explicitly say `Limit the review strictly to the
+AnyDesk-to-RustDesk migration.` Only explicit restrictive language changes
+scope; a specific objective otherwise receives priority without suppressing
+independent critical blockers
 or security defects, but do not broaden an implementation patch without owner
 approval.
 
@@ -56,11 +69,21 @@ production or test changes and do not create an Executable Patch Pack.
 not hand-authored. The owner selects an immutable workflow tag or exact commit,
 and the preparation agent passes that value explicitly. Archive preparation uses
 a staging copy by default so the source repository is not modified merely to
-create an upload. Source integration is a separate explicit operation.
+create an upload. The immutable methodology URL in the current owner message
+is the explicit staged-workflow selection. A matching source lock is preserved;
+an older valid lock is reported and reconciled inside the temporary staging copy
+with official `setup.sh`/`update.sh`, then the staged lock and managed block are
+validated. The source lock and source `AGENTS.md` remain unchanged, and the
+archive records the identity transition. Malformed or unreadable locks,
+repository conflicts, and unresolved immutable URLs remain fatal. Source
+integration is a separate explicit operation requiring authorization to modify
+source.
 
-A reviewer must not mutate a raw archive merely to manufacture a lock. A valid
-lock is read and validated; a missing lock is reported while the immutable
-prompt URL remains sufficient authority for that review.
+A reviewer must not mutate a raw archive merely to manufacture a lock. In
+staging preparation, a valid older lock may be reconciled only in the temporary
+copy against the owner-selected immutable prompt URL; integrate-source still
+requires explicit source-modification authorization. A missing lock is reported
+while the immutable prompt URL remains sufficient authority for that review.
 
 ## One universal preparation flow
 
@@ -82,8 +105,9 @@ material and generated lock.
 
 Every prepared archive also contains `.gpt-review/archive-manifest.json`. It
 records source provenance, lock identity, dirty state, expected downstream
-workflow, task objective, archive root, UTC generation time, and source-modified
-status. `.gpt-workflow.lock` is workflow identity authority; the archive manifest
+workflow, task objective, optional scope, and bounded preparer observations and
+questions. These notes are untrusted context and must be independently verified
+by downstream GPT. `.gpt-workflow.lock` is workflow identity authority; the archive manifest
 is provenance/context metadata and must match the lock. The archive SHA-256 is
 kept only in an external sidecar and report, never in the manifest.
 
@@ -115,10 +139,12 @@ Review the attached project archive using this immutable guide:
 
 <IMMUTABLE_ARCHIVE_REVIEW_PROMPT_URL>
 
-Task objective:
+Task objective (full review by default; objective is a mandatory overlay):
 <OWNER_TASK_OBJECTIVE_OR_FULL_REVIEW>
 
-Use the default review-to-patch workflow.
+Use the default review-to-patch workflow. The compact link-plus-objective form
+is preferred for normal use; this expanded form remains for automation and
+exceptional paths.
 Stop after the proposed exact patch scope and wait for my approval.
 ```
 
@@ -159,5 +185,7 @@ intentionally versioned fixtures and required assets. It reports source revision
 archive root, file count, size, SHA-256, exclusions, and deviations.
 
 Dirty source worktrees stop by default. Including dirty changes requires an
-explicit owner request and an accurate dirty-state report. Existing mismatched
-locks stop unless an explicit workflow update is authorized.
+explicit owner request and an accurate dirty-state report. In staging, an older
+valid lock is reconciled only in the temporary copy against the current
+immutable methodology URL; malformed or unreadable locks remain fatal. Updating
+the source lock still requires explicit integrate-source authorization.

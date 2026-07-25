@@ -16,6 +16,9 @@ UTC_RFC3339_RE = re.compile(
 )
 ABSOLUTE_PATH_RE = re.compile(r"^(?:/|[A-Za-z]:[\\/]|file://)")
 EXPECTED_WORKFLOWS = {"review-and-implement", "review-only"}
+EXPECTED_SCOPES = {"full", "objective-only"}
+MAX_CONTEXT_ENTRIES = 32
+MAX_CONTEXT_ENTRY_CHARS = 2000
 
 
 class ManifestError(ValueError):
@@ -63,10 +66,45 @@ def validate_archive_root(value: str) -> None:
         raise ManifestError("archive.root must not use a file URI")
     if re.match(r"^[A-Za-z]:", value):
         raise ManifestError("archive.root must not use a Windows drive prefix")
-    if any(ord(character) < 0x20 for character in value):
+    if contains_ascii_control(value):
         raise ManifestError("archive.root must not contain ASCII control characters")
     if "/" in value or "\\" in value or value in {".", ".."}:
         raise ManifestError("archive.root must be a normalized relative archive root")
+
+
+def contains_ascii_control(value: str) -> bool:
+    return any(ord(character) < 0x20 or ord(character) == 0x7F for character in value)
+
+
+def optional_scope(review: dict[str, Any]) -> str:
+    value = review.get("scope", "full")
+    if not isinstance(value, str) or value not in EXPECTED_SCOPES:
+        raise ManifestError("review.scope must be full or objective-only")
+    return value
+
+
+def optional_context_entries(review: dict[str, Any], key: str) -> list[str]:
+    if key not in review:
+        return []
+    value = review[key]
+    if not isinstance(value, list):
+        raise ManifestError(f"review.{key} must be an array")
+    if len(value) > MAX_CONTEXT_ENTRIES:
+        raise ManifestError(f"review.{key} must contain at most {MAX_CONTEXT_ENTRIES} entries")
+    result: list[str] = []
+    for index, entry in enumerate(value):
+        if not isinstance(entry, str) or not entry.strip():
+            raise ManifestError(f"review.{key}[{index}] must be a non-empty string")
+        if len(entry) > MAX_CONTEXT_ENTRY_CHARS:
+            raise ManifestError(
+                f"review.{key}[{index}] must be at most {MAX_CONTEXT_ENTRY_CHARS} characters"
+            )
+        if contains_ascii_control(entry):
+            raise ManifestError(
+                f"review.{key}[{index}] must not contain ASCII control characters"
+            )
+        result.append(entry)
+    return result
 
 
 def validate(manifest_path: Path, project_root: Path | None, staging: bool) -> None:
@@ -115,6 +153,9 @@ def validate(manifest_path: Path, project_root: Path | None, staging: bool) -> N
     if expected_workflow not in EXPECTED_WORKFLOWS:
         raise ManifestError("review.expected_workflow must be review-and-implement or review-only")
     reject_absolute(task_objective, "review.task_objective")
+    optional_scope(review)
+    optional_context_entries(review, "preparer_observations")
+    optional_context_entries(review, "preparer_questions")
 
     archive_root = string_field(archive, "root", "archive")
     validate_archive_root(archive_root)

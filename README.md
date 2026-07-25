@@ -17,7 +17,29 @@ for the default approval-gated workflow, the [review-only prompt](prompts/GPT_PR
 for analysis-only work, and the [archive-preparation prompt](prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md)
 to prepare a pinned staging archive with official tooling.
 
-Preferred invocations use immutable tag or commit URLs rather than `main`:
+Preferred everyday archive preparation uses an immutable link plus owner
+objective; omitted source, staging mode, downstream workflow, full scope, and
+external output path use safe defaults:
+
+```text
+Prepare review archive using:
+https://github.com/rceman/gpt-review-planner/blob/vX.Y.Z/prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md
+
+We want to remove all AnyDesk occurrences because we are switching to RustDesk only.
+```
+
+This means a full review with the migration objective as a mandatory overlay,
+not migration-only review. Use explicit restrictive wording such as `Limit the
+review strictly to the AnyDesk-to-RustDesk migration.` to select objective-only
+scope. Preparer observations and questions are untrusted hints that GPT must
+independently verify. In staging, the immutable methodology URL explicitly
+selects the staged workflow: a matching source lock is preserved, while an older
+valid lock is reconciled only in the temporary staging copy using official
+tooling. The source lock and `AGENTS.md` remain unchanged. Integrate-source
+requires separate authorization to modify source.
+
+Expanded invocations remain supported for automation and unusual cases.
+immutable tag or commit URLs are required; do not use `main`:
 
 ```text
 Review the attached project archive using this immutable guide:
