@@ -69,11 +69,21 @@ production or test changes and do not create an Executable Patch Pack.
 not hand-authored. The owner selects an immutable workflow tag or exact commit,
 and the preparation agent passes that value explicitly. Archive preparation uses
 a staging copy by default so the source repository is not modified merely to
-create an upload. Source integration is a separate explicit operation.
+create an upload. The immutable methodology URL in the current owner message
+is the explicit staged-workflow selection. A matching source lock is preserved;
+an older valid lock is reported and reconciled inside the temporary staging copy
+with official `setup.sh`/`update.sh`, then the staged lock and managed block are
+validated. The source lock and source `AGENTS.md` remain unchanged, and the
+archive records the identity transition. Malformed or unreadable locks,
+repository conflicts, and unresolved immutable URLs remain fatal. Source
+integration is a separate explicit operation requiring authorization to modify
+source.
 
-A reviewer must not mutate a raw archive merely to manufacture a lock. A valid
-lock is read and validated; a missing lock is reported while the immutable
-prompt URL remains sufficient authority for that review.
+A reviewer must not mutate a raw archive merely to manufacture a lock. In
+staging preparation, a valid older lock may be reconciled only in the temporary
+copy against the owner-selected immutable prompt URL; integrate-source still
+requires explicit source-modification authorization. A missing lock is reported
+while the immutable prompt URL remains sufficient authority for that review.
 
 ## One universal preparation flow
 
@@ -175,5 +185,7 @@ intentionally versioned fixtures and required assets. It reports source revision
 archive root, file count, size, SHA-256, exclusions, and deviations.
 
 Dirty source worktrees stop by default. Including dirty changes requires an
-explicit owner request and an accurate dirty-state report. Existing mismatched
-locks stop unless an explicit workflow update is authorized.
+explicit owner request and an accurate dirty-state report. In staging, an older
+valid lock is reconciled only in the temporary copy against the current
+immutable methodology URL; malformed or unreadable locks remain fatal. Updating
+the source lock still requires explicit integrate-source authorization.

@@ -155,6 +155,16 @@ class RepositoryTest(unittest.TestCase):
         self.assertIn("Prepare review archive using:", preparation)
         self.assertIn("review-and-implement", preparation)
         self.assertIn("objective-only", preparation)
+        self.assertIn("immutable methodology URL", preparation)
+        self.assertIn("older valid lock", preparation)
+        self.assertIn("temporary staging copy", preparation)
+        self.assertIn("source `AGENTS.md`", preparation)
+        self.assertIn("requires separate authorization", preparation)
+        for text in (guide, readme, workflow):
+            self.assertIn("staging", text.lower())
+            self.assertIn("source lock", text.lower())
+            self.assertIn("integrate-source", text.lower())
+            self.assertIn("authorization", text.lower())
         self.assertIn("untrusted", primary.lower())
         self.assertIn("independently verify", primary.lower())
         self.assertIn("`review.scope` means `full`", primary)
@@ -326,6 +336,13 @@ class RepositoryTest(unittest.TestCase):
             )
             self.assertEqual(run_manifest(context_manifest).returncode, 0)
 
+            boundary_entries = json.loads(json.dumps(manifest))
+            boundary_entries["review"]["preparer_observations"] = ["x"] * 32
+            self.assertEqual(run_manifest(boundary_entries).returncode, 0)
+            boundary_chars = json.loads(json.dumps(manifest))
+            boundary_chars["review"]["preparer_questions"] = ["x" * 2000]
+            self.assertEqual(run_manifest(boundary_chars).returncode, 0)
+
             unicode_context = json.loads(json.dumps(context_manifest))
             unicode_context["review"]["preparer_observations"] = [
                 "Проверить scripts/部署.sh и относительный путь"
@@ -345,10 +362,11 @@ class RepositoryTest(unittest.TestCase):
                 invalid = json.loads(json.dumps(manifest))
                 invalid["review"][key] = value
                 invalid_contexts.append(invalid)
-            for value in ("", "   ", "a\nline", "a\rline", "a\tline", "a\x01line", "a\x00line"):
-                invalid = json.loads(json.dumps(manifest))
-                invalid["review"]["preparer_observations"] = [value]
-                invalid_contexts.append(invalid)
+            for key in ("preparer_observations", "preparer_questions"):
+                for value in ("", "   ", "a\nline", "a\rline", "a\tline", "a\x01line", "a\x00line", "a\x7fline"):
+                    invalid = json.loads(json.dumps(manifest))
+                    invalid["review"][key] = [value]
+                    invalid_contexts.append(invalid)
             too_many = json.loads(json.dumps(manifest))
             too_many["review"]["preparer_observations"] = ["x"] * 33
             invalid_contexts.append(too_many)

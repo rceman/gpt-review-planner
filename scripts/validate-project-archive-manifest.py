@@ -66,10 +66,14 @@ def validate_archive_root(value: str) -> None:
         raise ManifestError("archive.root must not use a file URI")
     if re.match(r"^[A-Za-z]:", value):
         raise ManifestError("archive.root must not use a Windows drive prefix")
-    if any(ord(character) < 0x20 for character in value):
+    if contains_ascii_control(value):
         raise ManifestError("archive.root must not contain ASCII control characters")
     if "/" in value or "\\" in value or value in {".", ".."}:
         raise ManifestError("archive.root must be a normalized relative archive root")
+
+
+def contains_ascii_control(value: str) -> bool:
+    return any(ord(character) < 0x20 or ord(character) == 0x7F for character in value)
 
 
 def optional_scope(review: dict[str, Any]) -> str:
@@ -95,7 +99,7 @@ def optional_context_entries(review: dict[str, Any], key: str) -> list[str]:
             raise ManifestError(
                 f"review.{key}[{index}] must be at most {MAX_CONTEXT_ENTRY_CHARS} characters"
             )
-        if any(ord(character) < 0x20 for character in entry):
+        if contains_ascii_control(entry):
             raise ManifestError(
                 f"review.{key}[{index}] must not contain ASCII control characters"
             )

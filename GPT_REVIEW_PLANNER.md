@@ -50,7 +50,11 @@ This requests a full review with the migration as a mandatory priority overlay;
 it is not objective-only. Explicitly say `Limit the review strictly to the
 AnyDesk-to-RustDesk migration.` to restrict scope. Preparer observations and
 questions travel in the manifest as untrusted context and require independent
-verification. Expanded invocations remain supported for automation. Immutable
+verification. In staging, the immutable methodology URL is the explicit staged
+workflow selection: matching source locks are preserved, older valid locks are
+reconciled only in the temporary staging copy with official tooling, and source
+lock/`AGENTS.md` files remain unchanged. Integrate-source requires separate
+authorization to modify source. Expanded invocations remain supported for automation. Immutable
 tag or commit links are required; do not use `main`.
 The universal preparation flow also generates `.gpt-review/archive-manifest.json`
 for provenance and task context. Downstream workflow metadata never changes the

@@ -89,9 +89,15 @@ stop on identity mismatch.
    on unresolved conflicts, a missing root, or unreadable required content.
 2. Stop by default on a dirty worktree. Include dirty changes only after an
    explicit owner request and report the dirty state accurately.
-3. If an existing lock is present, validate it. Preserve a matching lock; stop
-   on a mismatch unless an explicit workflow update is authorized. Use
-   `update.sh` only for that authorized update.
+3. If an existing source lock is present, validate and report it. The immutable
+   methodology URL in the current owner message is the explicit workflow
+   selection for this staged archive. Preserve a lock matching that identity.
+   If an older valid lock differs, copy the project to staging first and use
+   official `setup.sh`/`update.sh` inside the temporary staging copy to
+   reconcile the staged lock and managed block to the selected `PLANNER_DIR`,
+   `--version`, and `--commit`. Record the identity change. Never modify the
+   source lock or source `AGENTS.md`. A malformed or unreadable source lock,
+   repository-identity conflict, or unresolved immutable URL remains fatal.
 4. Create a temporary staging directory and copy reviewable project content
    without altering the source repository.
 5. Exclude `.git`, dependency directories, build outputs, caches, test/runtime
@@ -141,10 +147,13 @@ stop on identity mismatch.
 
 ## Integrate-source mode
 
-Use only when explicitly requested. Run official `setup.sh` or `update.sh`
-directly against the source, review exact lock and managed `AGENTS.md` changes,
-validate integration, and do not commit unless separately requested. Do not mix
-workflow integration with unrelated project changes.
+Use only when explicitly requested; modifying source requires separate authorization.
+An existing lock may be changed in source only under that authorization. Run
+official `setup.sh` or `update.sh` directly against the source, review exact lock
+and managed `AGENTS.md` changes, validate integration, and do not commit unless
+separately requested. Compact invocation defaults to staging and never implies
+source modification. Do not mix workflow integration with unrelated project
+changes.
 
 ## Universal exclusion contract
 

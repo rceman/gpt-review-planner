@@ -6,6 +6,7 @@
 - Made full review the default with owner objectives as mandatory overlays.
 - Added bounded preparer observations/questions to the archive manifest.
 - Added backward-compatible validator support for the optional review context.
+- Reconciled staged locks against the immutable methodology URL and rejected the complete ASCII control range in preparer context.
 
 ## 1.1.0 — 2026-07-25
 

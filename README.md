@@ -32,7 +32,11 @@ This means a full review with the migration objective as a mandatory overlay,
 not migration-only review. Use explicit restrictive wording such as `Limit the
 review strictly to the AnyDesk-to-RustDesk migration.` to select objective-only
 scope. Preparer observations and questions are untrusted hints that GPT must
-independently verify.
+independently verify. In staging, the immutable methodology URL explicitly
+selects the staged workflow: a matching source lock is preserved, while an older
+valid lock is reconciled only in the temporary staging copy using official
+tooling. The source lock and `AGENTS.md` remain unchanged. Integrate-source
+requires separate authorization to modify source.
 
 Expanded invocations remain supported for automation and unusual cases.
 immutable tag or commit URLs are required; do not use `main`:
