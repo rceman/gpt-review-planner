@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.2.0 — 2026-07-26
+
 - Added the opinionated engineering baseline for canonical stacks, languages,
   frameworks, databases, profiles, and review checklists.
 - Added machine-readable rule/catalog registries, project exceptions, schemas,
