@@ -19,6 +19,8 @@
   strict declaration identity checks, source-domain allowlists, and schema/example parity.
 - Expanded all profile and review-checklist documents with operational evidence,
   exception, security, resource, and review-procedure contracts.
+- Align engineering-profile validation with the official `installed_at` lock
+  field and support exact commit-pinned workflow versions.
 
 ## 1.1.1 — 2026-07-25
 

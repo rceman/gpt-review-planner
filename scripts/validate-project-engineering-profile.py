@@ -14,7 +14,8 @@ from typing import Any
 
 ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 RFC3339 = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$")
-COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
+COMMIT_RE = re.compile(r"^[0-9a-f]{40}$", re.IGNORECASE)
+WORKFLOW_VERSION_RE = re.compile(r"^(?:v\d+\.\d+\.\d+|[0-9a-f]{40})$", re.IGNORECASE)
 EXCEPTION_KEYS = {"id", "rule_id", "reason", "scope", "approved_by", "migration_target", "migration_required", "expires_at"}
 
 
@@ -103,16 +104,16 @@ def validate(declaration_path: Path, project_root: Path, planner_root: Path, all
     if not isinstance(exceptions, list):
         raise ProfileError("exceptions must be an array")
     lock = load(lock_file)
-    required_lock = {"schema_version", "repository", "version", "commit", "document", "generated_at"}
+    required_lock = {"schema_version", "repository", "version", "commit", "document", "installed_at"}
     if not isinstance(lock, dict) or set(lock) != required_lock or lock.get("schema_version") != 1:
         raise ProfileError("workflow lock schema or fields invalid")
     for key in ("repository", "version", "document"):
         strict_text(lock[key], f"lock.{key}")
-    parse_utc(lock["generated_at"], "lock.generated_at")
+    parse_utc(lock["installed_at"], "lock.installed_at")
     if lock["repository"].rstrip("/") not in {"https://github.com/rceman/gpt-review-planner", "git@github.com:rceman/gpt-review-planner.git"}:
         raise ProfileError("lock.repository identity is invalid")
-    if not re.fullmatch(r"v?\d+\.\d+\.\d+", lock["version"]):
-        raise ProfileError("lock.version must be a semantic version")
+    if not WORKFLOW_VERSION_RE.fullmatch(lock["version"]):
+        raise ProfileError("lock.version must be a version tag or exact 40-character commit")
     if not COMMIT_RE.fullmatch(lock["commit"]):
         raise ProfileError("lock.commit must be a 40-character lowercase commit")
     planner_document = safe_relative_path(lock["document"], "lock.document", planner_root)

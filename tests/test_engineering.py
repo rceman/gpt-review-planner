@@ -98,7 +98,7 @@ class EngineeringBaselineTests(unittest.TestCase):
     def _project(self, root: Path, declaration: object | None = None) -> Path:
         project = root / f"project-{len(list(root.iterdir()))}"
         project.mkdir()
-        lock = {"schema_version": 1, "repository": "https://github.com/rceman/gpt-review-planner", "version": "v1.1.1", "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), "document": "GPT_REVIEW_PLANNER.md", "generated_at": "2026-07-25T00:00:00Z"}
+        lock = {"schema_version": 1, "repository": "https://github.com/rceman/gpt-review-planner", "version": "v1.1.1", "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), "document": "GPT_REVIEW_PLANNER.md", "installed_at": "2026-07-25T00:00:00Z"}
         (project / ".gpt-workflow.lock").write_text(json.dumps(lock))
         if declaration is not None:
             (project / "engineering-profile.json").write_text(json.dumps(declaration))
@@ -237,7 +237,7 @@ class EngineeringBaselineTests(unittest.TestCase):
             outside.write_text(json.dumps(valid))
             outside_result = subprocess.run(["python3", str(ROOT / "scripts/validate-project-engineering-profile.py"), str(outside), "--project-root", str(project), "--planner-root", str(ROOT)], capture_output=True, text=True)
             self.assertNotEqual(outside_result.returncode, 0)
-            for key, value in (("repository", "https://example.com/planner"), ("version", "latest"), ("document", "missing.md"), ("generated_at", "2026-07-25T00:00:00+03:00")):
+            for key, value in (("repository", "https://example.com/planner"), ("version", "latest"), ("document", "missing.md"), ("installed_at", "2026-07-25T00:00:00+03:00")):
                 candidate = self._project(root, valid)
                 lock = json.loads((candidate / ".gpt-workflow.lock").read_text()); lock[key] = value
                 (candidate / ".gpt-workflow.lock").write_text(json.dumps(lock))
@@ -247,6 +247,24 @@ class EngineeringBaselineTests(unittest.TestCase):
             bad_types = json.loads(json.dumps(valid)); bad_types["exceptions"][0]["migration_required"] = "no"
             self.assertNotEqual(self._run_profile(self._project(root, bad_types)).returncode, 0)
             self.assertNotEqual(self._run_profile(project, "--now", "2026-07-25T00:00:00+03:00").returncode, 0)
+
+    def test_official_setup_lock_and_exact_commit_version(self) -> None:
+        commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+        declaration = {"schema_version": 1, "workflow_lock_path": ".gpt-workflow.lock", "profile_id": "python-tool", "exceptions": []}
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for name, version in (("tagged", "v1.1.1"), ("exact", commit)):
+                project = root / name
+                project.mkdir()
+                subprocess.run(["bash", str(ROOT / "setup.sh"), "--project", str(project), "--version", version, "--commit", commit], check=True, capture_output=True, text=True)
+                lock = json.loads((project / ".gpt-workflow.lock").read_text())
+                self.assertIn("installed_at", lock)
+                self.assertNotIn("generated_at", lock)
+                (project / "engineering-profile.json").write_text(json.dumps(declaration))
+                integration = subprocess.run(["python3", str(ROOT / "scripts/validate-project-integration.py"), str(project)], capture_output=True, text=True)
+                self.assertEqual(integration.returncode, 0, integration.stderr)
+                result = self._run_profile(project)
+                self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_document_and_archive_contract_headings(self) -> None:
         required = ("Canonical use cases", "Forbidden/non-canonical uses", "Version/compatibility policy", "Ownership/dependency direction", "Testing", "Exceptions", "Review evidence")
