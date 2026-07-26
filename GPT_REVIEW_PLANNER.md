@@ -16,6 +16,11 @@ This workflow combines two models with deliberately different responsibilities:
 - **The local coding agent** is the repository operator, integration engineer, compiler operator, test runner, and implementation finisher.
 - **The project owner** controls product intent, scope, and final approval.
 
+The [engineering baseline](docs/engineering/README.md) is the normative load
+map for stack, language, framework, database, profile, exception, and review
+policy. Its registry and target declarations are checked by dependency-free
+engineering validators.
+
 The objective is to minimize both:
 
 1. time spent by GPT installing dependencies, compiling full workspaces, launching browsers, databases, containers, or long-running test suites;

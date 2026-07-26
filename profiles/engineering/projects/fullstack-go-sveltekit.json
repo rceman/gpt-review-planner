@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "profile_id": "fullstack-go-sveltekit",
+  "title": "Full-stack Go and SvelteKit",
+  "project_kind": "fullstack",
+  "capabilities": ["frontend", "backend-go", "generated-contracts", "postgresql", "liquibase", "health-readiness", "graceful-shutdown", "observability", "tests"],
+  "non_capabilities": ["backend-rust", "backend-python"],
+  "required_rule_ids": ["STACK-FRONTEND-001", "STACK-BACKEND-002", "DB-POSTGRES-001", "DB-LIQUIBASE-001", "DB-ROLE-001", "LIQUIBASE-001", "LIQUIBASE-CHANGESET-001", "TS-BOUNDARY-001", "API-TIMEOUT-001", "SEC-SECRETS-001", "SEC-INPUT-001", "PERF-BOUNDS-001", "CONFIG-001", "TEST-001", "TEMPLATE-001", "EXCEPTION-001", "GO-CONTEXT-001", "GIN-MIDDLEWARE-001", "PGX-POOL-001", "SQLC-GENERATED-001", "POSTGRES-POOL-001"],
+  "recommended_rule_ids": ["CONTRACT-001", "OBS-001", "DEP-001", "STRUCTURE-001", "SVELTEKIT-SSR-001", "GO-ERROR-001"],
+  "forbidden_rule_ids": ["STACK-NODE-001", "DB-MIGRATION-001", "SVELTEKIT-SERVER-001"],
+  "language_documents": ["docs/engineering/languages/GO.md", "docs/engineering/languages/TYPESCRIPT.md"],
+  "framework_documents": ["docs/engineering/frameworks/GO_GIN.md", "docs/engineering/frameworks/GO_PGX_SQLC.md", "docs/engineering/frameworks/SVELTEKIT.md"],
+  "database_documents": ["docs/engineering/database/POSTGRESQL.md", "docs/engineering/database/LIQUIBASE.md"],
+  "review_checklists": ["docs/engineering/review-checklists/FULLSTACK.md"],
+  "template_contract": {"required_paths": ["apps/web", "services/api", "engineering-profile.json"], "forbidden_paths": ["prisma"], "required_capabilities": ["frontend", "backend-go", "generated-contracts", "postgresql", "liquibase", "health-readiness", "graceful-shutdown", "observability", "tests"], "forbidden_capabilities": ["backend-rust", "backend-python"]}
+}

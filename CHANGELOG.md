@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+- Added the opinionated engineering baseline for canonical stacks, languages,
+  frameworks, databases, profiles, and review checklists.
+- Added machine-readable rule/catalog registries, project exceptions, schemas,
+  and dependency-free validators.
+- Integrated engineering-profile validation into archive review, preparation,
+  and managed AGENTS instructions, with a template repository conformance
+  contract.
+- Expanded the engineering knowledge base with normative language, framework,
+  database, security, testing, and operational rules.
+- Added explicit rule anchors, primary-source freshness metadata, schemas,
+  capability-aware profiles, and dependency-free validators.
+- Clarified archive preparation ordering and the declaration/lock/capability
+  contract used by downstream agents.
+- Closed engineering-baseline review gaps with derived applicability coverage,
+  strict declaration identity checks, source-domain allowlists, and schema/example parity.
+- Expanded all profile and review-checklist documents with operational evidence,
+  exception, security, resource, and review-procedure contracts.
+- Align engineering-profile validation with the official `installed_at` lock
+  field and support exact commit-pinned workflow versions.
+
 ## 1.1.1 — 2026-07-25
 
 - Added compact immutable-link-plus-objective archive preparation.

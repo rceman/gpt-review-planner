@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "profile_id": "python-tool",
+  "title": "Python tool",
+  "project_kind": "tool",
+  "capabilities": ["safe-config", "deterministic-tests", "tests"],
+  "non_capabilities": ["frontend", "backend-rust", "backend-go", "backend-python", "postgresql", "liquibase"],
+  "required_rule_ids": ["PY-SUBPROCESS-001", "PY-TYPING-001", "API-TIMEOUT-001", "CONFIG-001", "SEC-SECRETS-001", "SEC-INPUT-001", "PERF-BOUNDS-001", "TEST-001", "TEMPLATE-001", "EXCEPTION-001"],
+  "recommended_rule_ids": ["DEP-001"],
+  "forbidden_rule_ids": ["STACK-NODE-001"],
+  "language_documents": ["docs/engineering/languages/PYTHON.md"],
+  "framework_documents": [],
+  "database_documents": [],
+  "review_checklists": ["docs/engineering/review-checklists/PYTHON.md"],
+  "template_contract": {"required_paths": ["pyproject.toml", "tests", "engineering-profile.json"], "forbidden_paths": ["node-backend"], "required_capabilities": ["safe-config", "deterministic-tests", "tests"], "forbidden_capabilities": ["postgresql", "liquibase"]}
+}

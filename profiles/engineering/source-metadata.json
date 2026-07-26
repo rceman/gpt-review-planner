@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "documents": [
+    {"document":"docs/engineering/languages/RUST.md","last_reviewed":"2026-07-25","source_domains":["doc.rust-lang.org","rust-lang.github.io","tokio.rs","docs.rs"]},
+    {"document":"docs/engineering/languages/GO.md","last_reviewed":"2026-07-25","source_domains":["go.dev","gin-gonic.com","pkg.go.dev","docs.sqlc.dev"]},
+    {"document":"docs/engineering/languages/PYTHON.md","last_reviewed":"2026-07-25","source_domains":["docs.python.org","peps.python.org","packaging.python.org","docs.pytest.org","docs.astral.sh","microsoft.github.io"]},
+    {"document":"docs/engineering/languages/TYPESCRIPT.md","last_reviewed":"2026-07-25","source_domains":["typescriptlang.org","svelte.dev"]},
+    {"document":"docs/engineering/frameworks/RUST_AXUM.md","last_reviewed":"2026-07-25","source_domains":["docs.rs","tokio.rs"]},
+    {"document":"docs/engineering/frameworks/RUST_SQLX.md","last_reviewed":"2026-07-25","source_domains":["docs.rs","postgresql.org"]},
+    {"document":"docs/engineering/frameworks/GO_GIN.md","last_reviewed":"2026-07-25","source_domains":["gin-gonic.com","go.dev","pkg.go.dev"]},
+    {"document":"docs/engineering/frameworks/GO_PGX_SQLC.md","last_reviewed":"2026-07-25","source_domains":["pkg.go.dev","docs.sqlc.dev","postgresql.org"]},
+    {"document":"docs/engineering/frameworks/SVELTEKIT.md","last_reviewed":"2026-07-25","source_domains":["svelte.dev"]},
+    {"document":"docs/engineering/database/POSTGRESQL.md","last_reviewed":"2026-07-25","source_domains":["postgresql.org"]},
+    {"document":"docs/engineering/database/LIQUIBASE.md","last_reviewed":"2026-07-25","source_domains":["docs.liquibase.com","liquibase.com","postgresql.org"]},
+    {"document":"docs/engineering/DEPENDENCY_POLICY.md","last_reviewed":"2026-07-25","source_domains":["doc.rust-lang.org","go.dev","packaging.python.org"]},
+    {"document":"docs/engineering/PERFORMANCE_BASELINE.md","last_reviewed":"2026-07-25","source_domains":["tokio.rs","postgresql.org","svelte.dev"]},
+    {"document":"docs/engineering/SECURITY_BASELINE.md","last_reviewed":"2026-07-25","source_domains":["owasp.org","postgresql.org","docs.python.org"]},
+    {"document":"docs/engineering/CONFIGURATION_AND_SECRETS.md","last_reviewed":"2026-07-25","source_domains":["svelte.dev","postgresql.org"]},
+    {"document":"docs/engineering/OBSERVABILITY.md","last_reviewed":"2026-07-25","source_domains":["opentelemetry.io","go.dev","docs.rs"]},
+    {"document":"docs/engineering/API_CONTRACTS.md","last_reviewed":"2026-07-25","source_domains":["spec.openapis.org","json-schema.org","typescriptlang.org"]},
+    {"document":"docs/engineering/TESTING_BASELINE.md","last_reviewed":"2026-07-25","source_domains":["docs.pytest.org","go.dev","doc.rust-lang.org","docs.liquibase.com"]}
+  ]
+}

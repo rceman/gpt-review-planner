@@ -111,6 +111,15 @@ ${BLOCK_BEGIN}
 > Archive guide: [\`${ARCHIVE_GUIDE_PATH}\`](${browser_repository}/blob/${commit}/${ARCHIVE_GUIDE_PATH})
 > Release process: [\`${RELEASE_PROCESS_PATH}\`](${browser_repository}/blob/${commit}/${RELEASE_PROCESS_PATH})
 >
+> If `engineering-profile.json` is present, validate it with the exact pinned
+> planner checkout and follow the selected profile and relevant documents.
+> Owner instructions win; apply exceptions narrowly and report policy conflicts
+> instead of silently selecting another stack. Prefer Rust/Axum for new backend
+> components; use Go/Gin only when selected or approved. Production Node.js
+> backends and direct frontend database access are forbidden. PostgreSQL schema
+> authority remains Liquibase. Python rules apply to tools/tests; a valid legacy
+> Python exception does not demand rewrite.
+>
 > Any release, version bump, or version-tag request requires reading the exact commit-pinned release process.
 > The owner explicitly selects the target version.
 > Only repository release automation may modify synchronized version files; manual version synchronization is forbidden.
