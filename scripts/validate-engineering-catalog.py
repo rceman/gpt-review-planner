@@ -17,6 +17,7 @@ SELECTOR_RE = re.compile(r"^(all-projects|profile:[a-z0-9]+(?:-[a-z0-9]+)*|capab
 LEVELS = {"must", "must_not", "should", "should_not", "may"}
 CATEGORIES = {"stack", "language", "framework", "database", "api", "security", "performance", "configuration", "observability", "testing", "dependency", "template", "exception", "structure"}
 CAPABILITIES = {"frontend", "backend-rust", "backend-go", "backend-python", "postgresql", "liquibase", "generated-contracts", "health-readiness", "graceful-shutdown", "observability", "tests", "accessibility", "deterministic-tests", "isolated-fixtures", "safe-config", "secure-config"}
+OFFICIAL_SOURCE_DOMAINS = {"doc.rust-lang.org", "rust-lang.github.io", "tokio.rs", "docs.rs", "go.dev", "gin-gonic.com", "pkg.go.dev", "docs.sqlc.dev", "docs.python.org", "peps.python.org", "packaging.python.org", "docs.pytest.org", "docs.astral.sh", "microsoft.github.io", "typescriptlang.org", "svelte.dev", "postgresql.org", "docs.liquibase.com", "liquibase.com", "owasp.org", "opentelemetry.io", "spec.openapis.org", "json-schema.org"}
 
 
 class CatalogError(ValueError):
@@ -63,6 +64,16 @@ def validate_schema_files(root: Path) -> None:
     declaration = load(root / "schemas/project-engineering-declaration.schema.json")
     if not isinstance(declaration, dict) or not str(declaration.get("$schema", "")).startswith("https://json-schema.org/"):
         raise CatalogError("declaration schema identity invalid")
+    declaration_fields = {"schema_version", "workflow_lock_path", "profile_id", "exceptions"}
+    if set(declaration.get("required", [])) != declaration_fields or set(declaration.get("properties", {})) != declaration_fields or declaration.get("additionalProperties") is not False:
+        raise CatalogError("declaration schema field parity invalid")
+    exception_schema = declaration["properties"]["exceptions"]["items"]
+    exception_fields = {"id", "rule_id", "reason", "scope", "approved_by", "migration_target", "migration_required", "expires_at"}
+    if set(exception_schema.get("required", [])) != exception_fields or set(exception_schema.get("properties", {})) != exception_fields or exception_schema.get("additionalProperties") is not False:
+        raise CatalogError("exception schema field parity invalid")
+    example = load(root / "templates/project/engineering-profile.example.json")
+    if set(example) != declaration_fields or example.get("schema_version") != 1 or not isinstance(example.get("workflow_lock_path"), str) or not isinstance(example.get("profile_id"), str) or not isinstance(example.get("exceptions"), list):
+        raise CatalogError("engineering profile example does not match declaration contract")
 
 
 def validate_sources(root: Path, today: date) -> None:
@@ -84,11 +95,13 @@ def validate_sources(root: Path, today: date) -> None:
         if reviewed > today:
             raise CatalogError(f"future last_reviewed for {document}")
         domains = string_array(entry["source_domains"], f"{document}.source_domains", allow_empty=False)
+        if len(domains) != len(set(domains)) or any(not re.fullmatch(r"[a-z0-9]+(?:[.-][a-z0-9]+)*", domain) or domain not in OFFICIAL_SOURCE_DOMAINS for domain in domains):
+            raise CatalogError(f"invalid or non-approved source domain: {document}")
         text = (root / document).read_text(encoding="utf-8")
         if "## Primary sources" not in text:
             raise CatalogError(f"missing Primary sources section: {document}")
-        if not any(domain in text for domain in domains):
-            raise CatalogError(f"source domains do not match Primary sources: {document}")
+        if any(domain not in text for domain in domains):
+            raise CatalogError(f"source domains are not all represented in Primary sources: {document}")
     expected = set()
     for folder in ("languages", "frameworks", "database"):
         expected |= {str(p.relative_to(root)) for p in (root / "docs/engineering" / folder).glob("*.md")}
@@ -112,6 +125,7 @@ def validate(root: Path, today: date | None = None) -> tuple[int, int]:
     if not isinstance(rules, list):
         raise CatalogError("rules must be an array")
     by_id: dict[str, dict[str, Any]] = {}
+    anchors: set[str] = set()
     for rule in rules:
         required_keys = {"id","level","title","category","document","anchor","applies_to","exception_allowed","replacement","deprecated"}
         if not isinstance(rule, dict) or set(rule) != required_keys:
@@ -125,6 +139,9 @@ def validate(root: Path, today: date | None = None) -> tuple[int, int]:
         anchor = rule["anchor"]
         if not isinstance(anchor, str) or not ANCHOR_RE.fullmatch(anchor):
             raise CatalogError(f"anchor must be lowercase kebab-case for {rid}")
+        if anchor in anchors:
+            raise CatalogError(f"duplicate explicit anchor: {anchor}")
+        anchors.add(anchor)
         applies = string_array(rule["applies_to"], f"{rid}.applies_to", allow_empty=False)
         for selector in applies:
             if not SELECTOR_RE.fullmatch(selector):
@@ -152,7 +169,7 @@ def validate(root: Path, today: date | None = None) -> tuple[int, int]:
     profiles = catalog.get("profiles")
     if not isinstance(profiles, list) or not profiles:
         raise CatalogError("profiles must be a non-empty array")
-    profile_ids: set[str] = set(); definitions: set[str] = set(); capabilities: set[str] = set()
+    profile_ids: set[str] = set(); definitions: set[str] = set(); capabilities: set[str] = set(); profile_data: dict[str, dict[str, Any]] = {}
     for entry in profiles:
         if not isinstance(entry, dict) or set(entry) != {"profile_id","kind","document","definition"}:
             raise CatalogError("catalog profile has missing or unknown fields")
@@ -169,6 +186,7 @@ def validate(root: Path, today: date | None = None) -> tuple[int, int]:
         required_profile_keys = {"schema_version","profile_id","title","project_kind","capabilities","non_capabilities","required_rule_ids","recommended_rule_ids","forbidden_rule_ids","language_documents","framework_documents","database_documents","review_checklists","template_contract"}
         if set(data) != required_profile_keys or data.get("schema_version") != 1 or data.get("profile_id") != pid:
             raise CatalogError(f"profile schema or identity mismatch: {pid}")
+        profile_data[pid] = data
         caps = set(string_array(data["capabilities"], f"{pid}.capabilities", allow_empty=False)); noncaps = set(string_array(data["non_capabilities"], f"{pid}.non_capabilities"))
         if caps & noncaps or not caps <= CAPABILITIES or not noncaps <= CAPABILITIES:
             raise CatalogError(f"invalid or conflicting capabilities: {pid}")
@@ -205,6 +223,15 @@ def validate(root: Path, today: date | None = None) -> tuple[int, int]:
                 raise CatalogError(f"unknown profile selector: {selector}")
             if selector.startswith("capability:") and selector.split(":", 1)[1] not in CAPABILITIES:
                 raise CatalogError(f"unknown capability selector: {selector}")
+    for pid, data in profile_data.items():
+        selectors = {"all-projects", f"profile:{pid}"} | {f"capability:{cap}" for cap in data["capabilities"]}
+        applicable = [rule for rule in by_id.values() if selectors.intersection(rule["applies_to"])]
+        required = set(data["required_rule_ids"])
+        forbidden = set(data["forbidden_rule_ids"])
+        missing_must = {rule["id"] for rule in applicable if rule["level"] == "must"} - required
+        missing_must_not = {rule["id"] for rule in applicable if rule["level"] == "must_not"} - forbidden
+        if missing_must or missing_must_not:
+            raise CatalogError(f"incomplete applicable rule coverage for {pid}: must={sorted(missing_must)} must_not={sorted(missing_must_not)}")
     orphan = {str(p.relative_to(root)) for p in (root / "profiles/engineering/projects").glob("*.json")} - definitions
     if orphan:
         raise CatalogError(f"orphan profile definitions: {sorted(orphan)}")

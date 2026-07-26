@@ -5,7 +5,7 @@
   "project_kind": "legacy-service",
   "capabilities": ["backend-python", "postgresql", "liquibase", "graceful-shutdown", "observability", "tests", "safe-config"],
   "non_capabilities": ["frontend", "backend-rust", "backend-go"],
-  "required_rule_ids": ["STACK-PYTHON-001", "PY-TYPING-001", "PY-SUBPROCESS-001", "CONFIG-001", "SEC-SECRETS-001", "DB-POSTGRES-001", "DB-LIQUIBASE-001", "TEST-001"],
+  "required_rule_ids": ["STACK-PYTHON-001", "PY-TYPING-001", "PY-SUBPROCESS-001", "DB-POSTGRES-001", "DB-LIQUIBASE-001", "DB-ROLE-001", "LIQUIBASE-001", "LIQUIBASE-CHANGESET-001", "API-TIMEOUT-001", "CONFIG-001", "SEC-SECRETS-001", "SEC-INPUT-001", "PERF-BOUNDS-001", "TEST-001", "TEMPLATE-001", "EXCEPTION-001", "POSTGRES-POOL-001"],
   "recommended_rule_ids": ["OBS-001", "DEP-001"],
   "forbidden_rule_ids": ["STACK-NODE-001", "DB-MIGRATION-001"],
   "language_documents": ["docs/engineering/languages/PYTHON.md"],

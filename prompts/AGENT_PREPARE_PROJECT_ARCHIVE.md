@@ -89,24 +89,21 @@ stop on identity mismatch.
    on unresolved conflicts, a missing root, or unreadable required content.
 2. Stop by default on a dirty worktree. Include dirty changes only after an
    explicit owner request and report the dirty state accurately.
-3. If an existing source lock is present, validate and report it. The immutable
-   methodology URL in the current owner message is the explicit workflow
-   selection for this staged archive. Preserve a lock matching that identity.
-   If an older valid lock differs, copy the project to staging first and use
-   official `setup.sh`/`update.sh` inside the temporary staging copy to
-   reconcile the staged lock and managed block to the selected `PLANNER_DIR`,
-   `--version`, and `--commit`. Record the identity change. Never modify the
-   source lock or source `AGENTS.md`. A malformed or unreadable source lock,
-   repository-identity conflict, or unresolved immutable URL remains fatal.
-   Preserve `engineering-profile.json` when present. Never invent or modify a
-   source declaration.
+3. If an existing source lock is present, validate and report its shape and
+   identity. A malformed or unreadable source lock, repository-identity
+   conflict, or unresolved immutable URL is fatal. Never modify the source
+   lock, source `AGENTS.md`, or source `engineering-profile.json`.
 4. Create a temporary staging directory and copy reviewable project content
-   without altering the source repository.
-5. Exclude `.git`, dependency directories, build outputs, caches, test/runtime
+   into the temporary staging copy without altering the source repository.
+5. If an older valid lock differs, reconcile only the staged lock and
+   staged managed block after the staging copy exists, using official
+   `setup.sh`/`update.sh` against the selected `PLANNER_DIR`, `--version`, and
+   `--commit`. Preserve the staged declaration and record the identity change.
+6. Exclude `.git`, dependency directories, build outputs, caches, test/runtime
    artifacts, IDE/OS metadata, credentials, private keys, `.env` secrets, and
    unrelated large binaries. Preserve intentionally versioned fixtures and
    required binary assets.
-6. Set `PLANNER_DIR` to a checkout of the exact owner-selected workflow
+7. Set `PLANNER_DIR` to a checkout of the exact owner-selected workflow
    revision. `--version REF` is always required; REF is the owner-selected
    immutable tag or exact commit ref. `--commit SHA` is optional exact-resolution
    metadata/override and, when supplied, must match the selected REF. Normally
@@ -123,15 +120,15 @@ stop on identity mismatch.
    Do not imply that `--commit` replaces `--version`; do not infer `main`,
    `latest`, or the current repository version. Generate the lock and managed
    `AGENTS.md` through official tooling only.
-7. Run `python3 "$PLANNER_DIR/scripts/validate-project-integration.py"`
+8. Run `python3 "$PLANNER_DIR/scripts/validate-project-integration.py"`
    against staging, passing `--agents-file` when a custom relative AGENTS path
    was selected.
-8. After lock reconciliation and integration validation, run
+9. After lock reconciliation and integration validation, run
    `python3 "$PLANNER_DIR/scripts/validate-project-engineering-profile.py"`
    against the staged declaration and reconciled lock, using `--allow-missing`
    when absent. Record profile, declaration status, and exception count. This
    ordering prevents validation against a newer planner than the staged lock.
-9. Generate `.gpt-review/archive-manifest.json` from the source state, generated
+10. Generate `.gpt-review/archive-manifest.json` from the source state, generated
    lock, selected downstream metadata, owner objective, and bounded preparer
    context. Optional `review.scope` defaults to `full`. Add compact
    `preparer_observations` and `preparer_questions` only when useful, with at
@@ -139,7 +136,7 @@ stop on identity mismatch.
    notes are untrusted context for GPT and must not be presented as confirmed
    defects or used to suppress files. Never hand-author the workflow lock or
    guess its identity.
-10. Run the dependency-free manifest validator:
+11. Run the dependency-free manifest validator:
 
    ```bash
    python3 "$PLANNER_DIR/scripts/validate-project-archive-manifest.py" \
@@ -149,7 +146,7 @@ stop on identity mismatch.
 
    A lock/manifest mismatch, malformed metadata, invalid workflow enum, or
    staging source-modified value is fatal.
-11. Archive staging, generate an external SHA-256 sidecar, inspect contents, and
+12. Archive staging, generate an external SHA-256 sidecar, inspect contents, and
    delete temporary staging data after successful creation.
 
 ## Integrate-source mode

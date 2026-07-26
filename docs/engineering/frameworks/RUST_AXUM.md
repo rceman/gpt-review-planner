@@ -10,7 +10,8 @@ production bootstrap and keep contracts/generated clients synchronized.
 
 ## Primary sources
 
-[Axum](https://docs.rs/axum/), [Tower](https://docs.rs/tower/), and
+[Axum](https://docs.rs/axum/), [Tower](https://docs.rs/tower/),
+[Tokio](https://tokio.rs/), and
 [Tower HTTP](https://docs.rs/tower-http/).
 
 <a id="axum-boundary-001"></a>

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import re
 import subprocess
@@ -63,10 +64,27 @@ def parse_utc(value: Any, label: str) -> datetime:
     return parsed
 
 
+def validate_planner_catalog(planner_root: Path) -> tuple[int, int]:
+    validator_path = planner_root / "scripts/validate-engineering-catalog.py"
+    spec = importlib.util.spec_from_file_location("engineering_catalog_validator", validator_path)
+    if spec is None or spec.loader is None:
+        raise ProfileError("planner catalog validator is unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    try:
+        return module.validate(planner_root)
+    except Exception as exc:
+        raise ProfileError(f"planner catalog is invalid: {exc}") from exc
+
+
 def validate(declaration_path: Path, project_root: Path, planner_root: Path, allow_missing: bool, now: datetime) -> str:
     declaration_path = declaration_path.resolve()
     project_root = project_root.resolve()
     planner_root = planner_root.resolve()
+    try:
+        declaration_path.relative_to(project_root)
+    except ValueError as exc:
+        raise ProfileError("declaration path must resolve inside project root") from exc
     if not declaration_path.exists():
         if allow_missing:
             print("PASS: engineering profile missing (allowed)")
@@ -88,17 +106,25 @@ def validate(declaration_path: Path, project_root: Path, planner_root: Path, all
     required_lock = {"schema_version", "repository", "version", "commit", "document", "generated_at"}
     if not isinstance(lock, dict) or set(lock) != required_lock or lock.get("schema_version") != 1:
         raise ProfileError("workflow lock schema or fields invalid")
-    for key in ("repository", "version", "document", "generated_at"):
+    for key in ("repository", "version", "document"):
         strict_text(lock[key], f"lock.{key}")
+    parse_utc(lock["generated_at"], "lock.generated_at")
+    if lock["repository"].rstrip("/") not in {"https://github.com/rceman/gpt-review-planner", "git@github.com:rceman/gpt-review-planner.git"}:
+        raise ProfileError("lock.repository identity is invalid")
+    if not re.fullmatch(r"v?\d+\.\d+\.\d+", lock["version"]):
+        raise ProfileError("lock.version must be a semantic version")
     if not COMMIT_RE.fullmatch(lock["commit"]):
         raise ProfileError("lock.commit must be a 40-character lowercase commit")
-    safe_relative_path(lock["document"], "lock.document", planner_root)
+    planner_document = safe_relative_path(lock["document"], "lock.document", planner_root)
+    if not planner_document.is_file():
+        raise ProfileError("lock.document does not exist in planner checkout")
     try:
         planner_commit = subprocess.run(["git", "-C", str(planner_root), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
     except (OSError, subprocess.CalledProcessError) as exc:
         raise ProfileError(f"unable to resolve planner checkout: {exc}") from exc
     if not COMMIT_RE.fullmatch(planner_commit) or lock["commit"] != planner_commit:
         raise ProfileError("workflow lock commit does not match planner checkout")
+    validate_planner_catalog(planner_root)
     catalog = load(planner_root / "profiles/engineering/catalog.json")
     rules = load(planner_root / "profiles/engineering/rules.json")
     rule_map = {r["id"]: r for r in rules["rules"]}
@@ -132,7 +158,7 @@ def validate(declaration_path: Path, project_root: Path, planner_root: Path, all
     ids = [item["id"] for item in exceptions]
     if len(ids) != len(set(ids)):
         raise ProfileError("exception IDs must be unique")
-    print(f"PASS: profile={profile_id} capabilities={','.join(sorted(capabilities))} exceptions={len(exceptions)} rule_ids={','.join(ids) or '-'} planner_commit={planner_commit}")
+    print(f"PASS: profile={profile_id} capabilities={','.join(sorted(capabilities))} exceptions={len(exceptions)} exception_ids={','.join(ids) or '-'} exception_rule_ids={','.join(item['rule_id'] for item in exceptions) or '-'} planner_commit={planner_commit}")
     return profile["profile_id"]
 
 

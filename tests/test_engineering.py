@@ -172,6 +172,50 @@ class EngineeringBaselineTests(unittest.TestCase):
             with self.assertRaises(validator.CatalogError):
                 validator.validate(copy)
 
+            rules = json.loads((copy / "profiles/engineering/rules.json").read_text())
+            rules["rules"][0]["applies_to"] = ["capability:frontend"]
+            profile_path = copy / "profiles/engineering/projects/sveltekit-frontend.json"
+            profile = json.loads(profile_path.read_text())
+            profile["required_rule_ids"].remove("STACK-FRONTEND-001")
+            profile_path.write_text(json.dumps(profile))
+            (copy / "profiles/engineering/rules.json").write_text(json.dumps(rules))
+            with self.assertRaises(validator.CatalogError):
+                validator.validate(copy)
+            profile["required_rule_ids"].append("STACK-FRONTEND-001")
+            profile["forbidden_rule_ids"].remove("STACK-NODE-001")
+            profile_path.write_text(json.dumps(profile))
+            with self.assertRaises(validator.CatalogError):
+                validator.validate(copy)
+
+            profile["forbidden_rule_ids"].append("STACK-NODE-001")
+            profile["template_contract"]["forbidden_paths"] = ["../escape"]
+            profile_path.write_text(json.dumps(profile))
+            with self.assertRaises(validator.CatalogError):
+                validator.validate(copy)
+            profile["template_contract"]["forbidden_paths"] = ["node-backend"]
+            profile_path.write_text(json.dumps(profile))
+            orphan = copy / "profiles/engineering/projects/orphan.json"
+            orphan.write_text(json.dumps(profile))
+            with self.assertRaises(validator.CatalogError):
+                validator.validate(copy)
+
+            metadata_path = copy / "profiles/engineering/source-metadata.json"
+            metadata = json.loads(metadata_path.read_text())
+            metadata["documents"][0]["source_domains"] = ["example.com"]
+            metadata_path.write_text(json.dumps(metadata))
+            orphan.unlink()
+            with self.assertRaises(validator.CatalogError):
+                validator.validate(copy)
+
+            example_path = copy / "templates/project/engineering-profile.example.json"
+            example = json.loads(example_path.read_text())
+            example["unexpected"] = True
+            example_path.write_text(json.dumps(example))
+            metadata["documents"][0]["source_domains"] = ["doc.rust-lang.org", "rust-lang.github.io", "tokio.rs", "docs.rs"]
+            metadata_path.write_text(json.dumps(metadata))
+            with self.assertRaises(validator.CatalogError):
+                validator.validate(copy)
+
     def test_declaration_path_and_lock_contract_matrix(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -180,6 +224,29 @@ class EngineeringBaselineTests(unittest.TestCase):
                 candidate = json.loads(json.dumps(valid)); candidate["workflow_lock_path"] = unsafe
                 project = self._project(root, candidate)
                 self.assertNotEqual(self._run_profile(project).returncode, 0, unsafe)
+
+    def test_declaration_identity_exception_and_output_contracts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            valid = {"schema_version": 1, "workflow_lock_path": ".gpt-workflow.lock", "profile_id": "legacy-python-service", "exceptions": [{"id": "legacy-python-production-backend", "rule_id": "STACK-PYTHON-001", "reason": "Existing deployed service ✓", "scope": "Current backend", "approved_by": "owner", "migration_target": "rust-axum", "migration_required": False, "expires_at": None}]}
+            project = self._project(root, valid)
+            result = self._run_profile(project)
+            self.assertIn("exception_ids=", result.stdout)
+            self.assertIn("exception_rule_ids=", result.stdout)
+            outside = root / "outside.json"
+            outside.write_text(json.dumps(valid))
+            outside_result = subprocess.run(["python3", str(ROOT / "scripts/validate-project-engineering-profile.py"), str(outside), "--project-root", str(project), "--planner-root", str(ROOT)], capture_output=True, text=True)
+            self.assertNotEqual(outside_result.returncode, 0)
+            for key, value in (("repository", "https://example.com/planner"), ("version", "latest"), ("document", "missing.md"), ("generated_at", "2026-07-25T00:00:00+03:00")):
+                candidate = self._project(root, valid)
+                lock = json.loads((candidate / ".gpt-workflow.lock").read_text()); lock[key] = value
+                (candidate / ".gpt-workflow.lock").write_text(json.dumps(lock))
+                self.assertNotEqual(self._run_profile(candidate).returncode, 0, key)
+            non_applicable = json.loads(json.dumps(valid)); non_applicable["exceptions"][0]["rule_id"] = "STACK-FRONTEND-001"
+            self.assertNotEqual(self._run_profile(self._project(root, non_applicable)).returncode, 0)
+            bad_types = json.loads(json.dumps(valid)); bad_types["exceptions"][0]["migration_required"] = "no"
+            self.assertNotEqual(self._run_profile(self._project(root, bad_types)).returncode, 0)
+            self.assertNotEqual(self._run_profile(project, "--now", "2026-07-25T00:00:00+03:00").returncode, 0)
 
     def test_document_and_archive_contract_headings(self) -> None:
         required = ("Canonical use cases", "Forbidden/non-canonical uses", "Version/compatibility policy", "Ownership/dependency direction", "Testing", "Exceptions", "Review evidence")
@@ -190,11 +257,29 @@ class EngineeringBaselineTests(unittest.TestCase):
         for path in list((ROOT / "docs/engineering/frameworks").glob("*.md")) + list((ROOT / "docs/engineering/database").glob("*.md")):
             self.assertIn("## Operational review matrix", path.read_text(), str(path))
         prompt = (ROOT / "prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md").read_text()
-        staging = prompt.index("Create a temporary staging directory")
-        profile_validation = prompt.index("validate-project-engineering-profile.py")
-        integration = prompt.index("validate-project-integration.py")
-        self.assertGreater(profile_validation, staging)
-        self.assertGreater(profile_validation, integration)
+        ordered_steps = [
+            "1. Inspect source root", "3. If an existing source lock", "4. Create a temporary staging directory",
+            "5. If an older valid lock differs", "8. Run `python3 \"$PLANNER_DIR/scripts/validate-project-integration.py\"`",
+            "9. After lock reconciliation", "10. Generate `.gpt-review/archive-manifest.json`",
+            "11. Run the dependency-free manifest validator", "12. Archive staging",
+        ]
+        positions = [prompt.index(step) for step in ordered_steps]
+        self.assertEqual(positions, sorted(positions))
+        self.assertGreater(prompt.index("validate-project-engineering-profile.py"), prompt.index("validate-project-integration.py"))
+
+        profile_headings = ("Capabilities and rules", "Loaded documents and structure", "Template requirements", "Security, resources, testing, and operations", "Non-goals and exceptions", "Review procedure and artifacts")
+        for path in (ROOT / "docs/engineering/profiles").glob("*.md"):
+            text = path.read_text()
+            for heading in profile_headings:
+                self.assertIn(f"### {heading}", text, str(path))
+        checklist_headings = ("Identity and structure", "Dependencies and correctness", "Errors, concurrency, and operations", "Security, database, and migrations", "Performance and configuration", "Tests, evidence, and classification", "Exceptions")
+        for path in (ROOT / "docs/engineering/review-checklists").glob("*.md"):
+            text = path.read_text()
+            for heading in checklist_headings:
+                self.assertIn(f"### {heading}", text, str(path))
+        python_policy = (ROOT / "docs/engineering/languages/PYTHON.md").read_text()
+        self.assertNotRegex(python_policy, r"\b(?:Django|Flask|FastAPI)\b")
+        self.assertIn("automatic Rust rewrite", (ROOT / "docs/engineering/profiles/LEGACY_PYTHON_SERVICE.md").read_text())
 
 
 if __name__ == "__main__":

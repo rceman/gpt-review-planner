@@ -15,6 +15,10 @@
   capability-aware profiles, and dependency-free validators.
 - Clarified archive preparation ordering and the declaration/lock/capability
   contract used by downstream agents.
+- Closed engineering-baseline review gaps with derived applicability coverage,
+  strict declaration identity checks, source-domain allowlists, and schema/example parity.
+- Expanded all profile and review-checklist documents with operational evidence,
+  exception, security, resource, and review-procedure contracts.
 
 ## 1.1.1 — 2026-07-25
 
