@@ -36,6 +36,19 @@ AGENT_RUNTIME_RESULTS
 Set `AGENT_RUNTIME_RESULTS` to `Pending local-agent execution.` in the authored
 pack. The local agent replaces it with exact commands, results, and evidence.
 
+Load the pinned bounded review closure protocol. Every manifest requirement MUST
+map to an owner-approved acceptance criterion or an explicitly approved
+supporting implementation requirement. Preserve the approved scope lock and
+finding IDs in the patch specification and agent prompt. Do not add unapproved
+hardening merely because it is possible; unapproved hardening remains outside
+the current patch.
+
+After agent execution, GPT performs a delta review of approved findings,
+changed surfaces, acceptance criteria, required gates, and regressions. It does
+not restart an unconstrained full review. Non-blocking discoveries are recorded
+as follow-up backlog; when closure conditions pass, declare `MERGE_READY` and
+stop.
+
 The manifest, `changes.patch`, overlay, deletion list, and expected final repository
 diff must describe the same path scope. Include the pending `evidence.json` template,
 `patch_pack_scope.py`, and `verify-agent-evidence.py` in every canonical pack.

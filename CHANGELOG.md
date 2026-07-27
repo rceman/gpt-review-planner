@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added a bounded review and closure protocol with acceptance-contract scope
+  locking, evidence-based blocker thresholds, delta reviews, and explicit stop
+  conditions.
+- Added a machine-readable closure contract, dependency-free validator, prompt
+  integration, and regression tests preventing recursive blocker expansion.
+
 ## 1.2.0 — 2026-07-26
 
 - Added the opinionated engineering baseline for canonical stacks, languages,

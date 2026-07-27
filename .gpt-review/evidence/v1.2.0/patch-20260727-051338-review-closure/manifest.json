@@ -1,0 +1,168 @@
+{
+  "schema_version": 2,
+  "patch_id": "patch-20260727-051338-review-closure",
+  "title": "Bounded Review Closure",
+  "description": "Adds scope-locked acceptance contracts, delta verification, blocker thresholds, and deterministic review closure.",
+  "created_at": "2026-07-27T05:13:38Z",
+  "patch_timestamp": "20260727-051338",
+  "patch_slug": "review-closure",
+  "baseline_release": "v1.2.0",
+  "evidence_directory": ".gpt-review/evidence/v1.2.0/patch-20260727-051338-review-closure",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v1.2.0",
+    "commit": "85d5efe9cf4af91df80c53aca283f5e3e4b4210b",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "branch": "feature/bounded-review-closure-protocol",
+    "base_revision": "85d5efe9cf4af91df80c53aca283f5e3e4b4210b"
+  },
+  "files_created": [
+    "docs/REVIEW_CLOSURE_PROTOCOL.md",
+    "profiles/review-closure.json",
+    "schemas/review-closure.schema.json",
+    "scripts/validate-review-closure.py",
+    "tests/test_review_closure.py"
+  ],
+  "files_modified": [
+    "CHANGELOG.md",
+    "GPT_REVIEW_PLANNER.md",
+    "README.md",
+    "docs/PROJECT_ARCHIVE_REVIEW.md",
+    "prompts/GPT_CREATE_PATCH_PACK.md",
+    "prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md",
+    "prompts/GPT_PROJECT_ARCHIVE_REVIEW_ONLY.md"
+  ],
+  "files_deleted": [],
+  "requirements": [
+    {
+      "id": "RC-001",
+      "text": "Approved scopes define stable acceptance criteria and a scope lock.",
+      "acceptance_criteria": [
+        "Workflow and prompts require AC IDs, finding IDs, exact file scope, exclusions, and gates before implementation."
+      ]
+    },
+    {
+      "id": "RC-002",
+      "text": "Only evidenced high-impact conditions enter merge blockers.",
+      "acceptance_criteria": [
+        "Protocol and machine contract enumerate the exact blocker bases and non-blocking classes."
+      ]
+    },
+    {
+      "id": "RC-003",
+      "text": "Post-implementation review defaults to delta mode.",
+      "acceptance_criteria": [
+        "Prompts prohibit unconstrained full re-review after implementation or correction except documented reopen conditions."
+      ]
+    },
+    {
+      "id": "RC-004",
+      "text": "Finding lifecycle and correction rounds are bounded.",
+      "acceptance_criteria": [
+        "Closed findings need new evidence to reopen and only one normal correction round is allowed."
+      ]
+    },
+    {
+      "id": "RC-005",
+      "text": "Review output separates blockers, backlog, and observations and stops at MERGE_READY.",
+      "acceptance_criteria": [
+        "All three queues and all closure verdicts are normative and the stop rule is machine validated."
+      ]
+    },
+    {
+      "id": "RC-006",
+      "text": "The closure contract is machine-readable and dependency-free validated.",
+      "acceptance_criteria": [
+        "JSON contract, JSON Schema, validator, and mutation tests agree."
+      ]
+    },
+    {
+      "id": "RC-007",
+      "text": "Archive and patch-pack prompts preserve the approved contract without scope creep.",
+      "acceptance_criteria": [
+        "Review, review-only, archive guide, root workflow, and patch-pack prompt load and apply the protocol."
+      ]
+    },
+    {
+      "id": "RC-008",
+      "text": "Regression tests prevent weakening closure semantics.",
+      "acceptance_criteria": [
+        "Tests reject full post-implementation review, unlimited rounds, missing blocker bases, stronger-contract blockers, and disabled stop behavior."
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "GATE-001",
+      "kind": "scope",
+      "command": "python3 scripts/patch_pack_scope.py validate-pack <PACK>"
+    },
+    {
+      "id": "GATE-002",
+      "kind": "command",
+      "command": "bash -n setup.sh update.sh scripts/*.sh templates/executable-patch-pack/scripts/*.sh"
+    },
+    {
+      "id": "GATE-003",
+      "kind": "command",
+      "command": "python3 -m compileall -q scripts tests examples"
+    },
+    {
+      "id": "GATE-004",
+      "kind": "command",
+      "command": "python3 scripts/validate-review-closure.py"
+    },
+    {
+      "id": "GATE-005",
+      "kind": "command",
+      "command": "python3 -m unittest discover -s tests -v"
+    },
+    {
+      "id": "GATE-006",
+      "kind": "command",
+      "command": "python3 -m unittest discover -s examples/rust-domain-feature/reference/python -v"
+    },
+    {
+      "id": "GATE-007",
+      "kind": "command",
+      "command": "python3 -m pytest -q"
+    },
+    {
+      "id": "GATE-008",
+      "kind": "command",
+      "command": "python3 scripts/release.py check"
+    },
+    {
+      "id": "GATE-009",
+      "kind": "command",
+      "command": "git diff --check 85d5efe9cf4af91df80c53aca283f5e3e4b4210b --"
+    },
+    {
+      "id": "GATE-010",
+      "kind": "github-actions",
+      "head": "implementation",
+      "workflow": "Validate"
+    }
+  ],
+  "gpt_static_checks_performed": [
+    "Reviewed v1.2.0 workflow, archive prompts, patch-pack contract, and release baseline.",
+    "Authored complete documentation, machine contract, schema, validator, tests, and prompt integration.",
+    "Parsed generated JSON and Python ASTs and validated patch path scope without executing repository tests."
+  ],
+  "gpt_runtime_checks_not_performed": [
+    "unit, integration, oracle, pytest, compile, lint, build, and GitHub Actions gates"
+  ],
+  "known_integration_risks": [
+    "Prompt wording tests intentionally enforce closure semantics and may expose contradictory historical wording elsewhere.",
+    "The feature adds governance only; it must not change the existing full-review default before scope approval."
+  ],
+  "forbidden_deviations": [
+    "Do not convert follow-up classes into merge blockers.",
+    "Do not restore unconstrained full review after correction.",
+    "Do not weaken the owner approval boundary or existing full initial review.",
+    "Do not change VERSION, create a release, merge, or modify external repositories."
+  ]
+}

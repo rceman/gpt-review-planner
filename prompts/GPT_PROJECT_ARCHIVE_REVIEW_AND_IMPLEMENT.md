@@ -43,7 +43,9 @@ force a rewrite.
 
 Read the exact pinned revisions of `GPT_REVIEW_PLANNER.md`,
 `prompts/GPT_CREATE_PATCH_PACK.md`, `docs/PATCH_PACK_FORMAT.md`,
-`docs/AGENT_EVIDENCE.md`, and `docs/PROJECT_ARCHIVE_REVIEW.md`.
+`docs/AGENT_EVIDENCE.md`, `docs/PROJECT_ARCHIVE_REVIEW.md`,
+`docs/REVIEW_CLOSURE_PROTOCOL.md`, `profiles/review-closure.json`, and
+`scripts/validate-review-closure.py`. Validate the closure contract.
 
 Record the resolved identity in `WORKFLOW_IDENTITY`, including source, version,
 commit, document, lock status, and resolution basis.
@@ -73,6 +75,41 @@ Classify every finding as confirmed defect, probable risk, architectural concern
 missing coverage, optional improvement, owner decision required, or insufficient
 evidence. Distinguish severity from confidence and assumptions from facts.
 
+## Bounded review and closure
+
+For the initial review use `review_mode=full`. The proposed patch scope MUST
+define an acceptance contract with stable `AC-*` IDs, each criterion's
+`severity_if_failed`, verification method, and authority source. It MUST also
+define a stable scope lock containing objective, finding IDs, exact file
+operations, exclusions, and runtime gates. Owner approval creates that scope
+lock.
+
+Triage findings inside `PRIORITIZED_FINDINGS` into exactly:
+
+```text
+MERGE_BLOCKERS
+FOLLOW_UP_BACKLOG
+OBSERVATIONS
+```
+
+A merge blocker requires an evidenced basis from the pinned closure contract.
+Hardening, completeness, maintainability, optional test expansion, future
+architecture, style preferences, and a newly proposed stronger contract remain
+follow-up work unless the owner explicitly adds them to the acceptance contract.
+
+When reviewing an implementation result or correction use `review_mode=delta`.
+Verify only approved finding closure, changed surfaces, approved acceptance
+criteria, required gates, and demonstrable regressions. Do not perform another
+unconstrained full review. A full reopen requires an explicit owner request, a
+material architecture change, or new concrete critical/high-severity evidence,
+and the reopen basis must be reported.
+
+Permit one normal correction round. A later round requires a still-failing
+approved criterion, a demonstrable regression, or a new critical/high blocker.
+When every approved criterion and required gate passes, scope matches, and no
+blocker remains, declare `MERGE_READY`. Stop after declaring `MERGE_READY`;
+record other ideas only in `FOLLOW_UP_BACKLOG`.
+
 Return exactly these top-level sections:
 
 1. `WORKFLOW_IDENTITY`
@@ -88,20 +125,23 @@ Each finding includes a stable ID, severity (critical/high/medium/low/
 informational), confidence (confirmed/high/medium/low), category, affected
 paths/components, exact evidence, technical and applicable product/operational
 impact, recommended correction, required regression coverage, and whether it is
-inside proposed scope.
+inside proposed scope. A blocker also includes `blocking_basis` and affected
+acceptance-criterion IDs. Record finding lifecycle state and reopen evidence.
 
 `PRIORITIZED_FINDINGS` contains the full review findings. `PROPOSED_PATCH_SCOPE`
 includes objective, finding IDs, exact file operations,
 behavior contract, fixtures, production implementation, tests, documentation,
 migration/compatibility rules, local-agent runtime gates, exclusions, and
-acceptance criteria.
+acceptance criteria. It also records the scope-lock identifier and correction
+round budget.
 
 ## Mandatory approval boundary
 
 Stop after Phase 1. Do not create production changes, tests, or the final patch
 pack until the owner explicitly approves the proposed scope. Silence, generic
 acknowledgment, or partial feedback is not approval. If scope changes, restate
-the revised scope and wait again.
+the revised scope and wait again. Approval locks the acceptance contract; a
+reviewer MUST NOT later turn an unapproved stronger contract into a blocker.
 
 ## Phase 2 — after explicit approval
 
@@ -111,7 +151,9 @@ Executable Patch Pack using `GPT_REVIEW_PLANNER.md`. Use exact file scope,
 schema-v2 manifest, stable requirements and acceptance criteria, pending
 `evidence.json`, pinned scope/evidence tools, local-agent prompt, static results,
 and archive SHA-256. Leave no ordinary TODOs, pseudocode, placeholders, or
-missing routine tests for the local agent.
+missing routine tests for the local agent. After agent execution, review the
+result in delta mode and issue `CORRECTION_REQUIRED`, `OWNER_DECISION_REQUIRED`,
+or `MERGE_READY` according to the pinned closure protocol.
 
 ## GPT execution boundary
 
