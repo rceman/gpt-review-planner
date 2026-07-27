@@ -133,6 +133,10 @@ python scripts/validate-project-integration.py /path/to/project
 
 ## Create a patch pack
 
+See the [patch-pack handoff contract](docs/PATCH_PACK_HANDOFF.md) and the
+[reusable creation prompt](prompts/GPT_CREATE_PATCH_PACK.md) for required
+archive names, checks, and final handoff syntax.
+
 ```bash
 bash scripts/new-patch-pack.sh \
   --baseline-release vX.Y.Z \
