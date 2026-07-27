@@ -16,6 +16,12 @@ It must contain:
 
 The local agent integrates and proves the patch. It does not reinterpret the feature.
 
+Delivery is governed by [`PATCH_PACK_HANDOFF.md`](PATCH_PACK_HANDOFF.md). Schema-v2
+packs derive `<patch_id>.tar.gz` and its `.sha256` sidecar, and every actionable
+response ends with the exact `## AGENT_HANDOFF` block. The delivery validator
+must pass before handoff; bundled scope and evidence tools must be byte-identical
+to the pinned planner tools and must both start successfully with `--help`.
+
 ## Test-execution policy
 
 GPT authors the implementation, tests, fixtures, patch payload, manifest, and

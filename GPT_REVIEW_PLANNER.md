@@ -1021,6 +1021,17 @@ The local agent supplies environment execution and proof.
 
 The two models must complement rather than duplicate each other.
 
+## Patch-pack response handoff
+
+Actionable workflow responses use the bounded contract in
+[`docs/PATCH_PACK_HANDOFF.md`](docs/PATCH_PACK_HANDOFF.md). Patch-pack mode
+prints plain-text `PATCH_PACK_NAME` and `SHA256_FILE_NAME` fields derived from
+`manifest.patch_id`, then ends with the exact top-level `## AGENT_HANDOFF`
+sentence. Prompt-only and no-action modes must say so and must not claim an
+archive or runtime result. Before delivery, run
+`scripts/validate-patch-pack-delivery.py`; bundled scope and evidence tools
+must be byte-identical to the pinned planner tools and pass `--help`.
+
 ## Committed JSON evidence and release automation
 
 Every new patch pack receives an immutable UTC identity:

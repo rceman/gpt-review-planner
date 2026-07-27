@@ -59,3 +59,13 @@ Validate exact scope before archiving.
 Create schema-v2 manifests with a UTC timestamp ID, concise title and description, last published target baseline tag, exact evidence directory, stable requirement IDs with acceptance criteria, and compact required gate definitions.
 
 Include a pending `evidence.json` template whose requirement and gate IDs exactly match the manifest. Include pinned copies of `patch_pack_scope.py` and `verify-agent-evidence.py`. Do not create Markdown agent-result or deviation templates. Do not infer the baseline tag from an unreleased version file.
+
+Before delivery, derive the archive basename exactly as `<manifest.patch_id>.tar.gz`
+and the sidecar as `<archive>.sha256`. Include exact byte-identical copies of
+`scripts/patch_pack_scope.py` and `scripts/verify-agent-evidence.py` from the
+pinned planner checkout; wrappers and shims are not permitted. Run both bundled
+tools with `--help`, construct a representative fixture, and run
+`scripts/validate-patch-pack-delivery.py`. The final actionable response must
+print the two plain-text filename fields and end with the exact top-level
+`## AGENT_HANDOFF` sentence defined by the handoff contract. Prompt-only and
+no-action responses must not claim an archive or runtime result.
