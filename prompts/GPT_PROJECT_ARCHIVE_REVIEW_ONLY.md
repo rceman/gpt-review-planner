@@ -31,6 +31,11 @@ planner checkout and load the selected profile plus relevant baseline docs.
 Report missing, malformed, lock-mismatched, unknown, or expired declarations;
 never invent one. Apply owner instructions first and keep this workflow
 permanently analysis-only.
+This review-only workflow does not authorize implementation.
+
+Load `docs/REVIEW_CLOSURE_PROTOCOL.md`, `profiles/review-closure.json`, and
+`scripts/validate-review-closure.py` from the same pinned planner checkout and
+validate the closure contract.
 
 Apply effective scope as: current owner instructions, valid archived
 objective/scope, then untrusted preparer context. Full scope still requires a
@@ -40,6 +45,21 @@ disposition in `TASK_OBJECTIVE`. Inspect archive integrity, repository root, nes
 languages, workspaces, generated content, dependencies, caches, outputs,
 secrets, binaries, and relevant source. Focus on the owner objective while
 surfacing unrelated critical blockers without broadening implementation scope.
+
+Within `PRIORITIZED_FINDINGS`, separate:
+
+```text
+MERGE_BLOCKERS
+FOLLOW_UP_BACKLOG
+OBSERVATIONS
+```
+
+Use the pinned blocker threshold. Hardening, completeness, maintainability,
+optional test expansion, future architecture, style, and a stronger unapproved
+contract belong in `FOLLOW_UP_BACKLOG` unless explicitly promoted by the owner.
+After implementation or correction, downstream review is delta-based and only
+reopens for owner request, material architecture change, or new critical/high
+evidence.
 
 Return these sections:
 

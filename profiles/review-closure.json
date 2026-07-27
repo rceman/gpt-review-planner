@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "protocol_id": "bounded-review-closure",
+  "initial_review_mode": "full",
+  "post_implementation_review_mode": "delta",
+  "max_normal_correction_rounds": 1,
+  "blocker_bases": [
+    "acceptance_criterion_failure",
+    "demonstrable_regression",
+    "critical_or_high_preexisting_defect",
+    "security_vulnerability",
+    "data_loss_or_corruption",
+    "broken_public_contract",
+    "required_gate_failure",
+    "materially_unusable_feature"
+  ],
+  "non_blocking_classes": [
+    "hardening",
+    "documentation_completeness",
+    "maintainability",
+    "optional_test_expansion",
+    "future_architecture",
+    "style_preference",
+    "stronger_unapproved_contract"
+  ],
+  "reopen_bases": [
+    "owner_request",
+    "material_architecture_change",
+    "new_critical_or_high_evidence"
+  ],
+  "finding_states": [
+    "open",
+    "in_progress",
+    "verified_closed",
+    "deferred",
+    "superseded"
+  ],
+  "required_output_queues": [
+    "MERGE_BLOCKERS",
+    "FOLLOW_UP_BACKLOG",
+    "OBSERVATIONS"
+  ],
+  "closure_verdicts": [
+    "CORRECTION_REQUIRED",
+    "OWNER_DECISION_REQUIRED",
+    "MERGE_READY"
+  ],
+  "stop_rule": {
+    "all_acceptance_criteria_pass": true,
+    "required_gates_pass": true,
+    "open_merge_blockers": 0,
+    "verdict": "MERGE_READY",
+    "stop_after_verdict": true
+  }
+}

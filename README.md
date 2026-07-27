@@ -14,6 +14,11 @@ stack, profiles, exceptions, and review checklists. Validate the registry with
 `python3 scripts/validate-engineering-catalog.py` and a project declaration with
 `scripts/validate-project-engineering-profile.py`.
 
+The [bounded review closure protocol](docs/REVIEW_CLOSURE_PROTOCOL.md) prevents
+recursive blocker expansion after an approved scope. Validate its machine
+contract with `python3 scripts/validate-review-closure.py`; implementation-result
+reviews use delta mode and stop when the `MERGE_READY` conditions are satisfied.
+
 ## Review an attached project archive
 
 The canonical guide is [`docs/PROJECT_ARCHIVE_REVIEW.md`](docs/PROJECT_ARCHIVE_REVIEW.md).

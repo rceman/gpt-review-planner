@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rceman/gpt-review-planner/schemas/review-closure.schema.json",
+  "title": "Bounded review closure contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "protocol_id",
+    "initial_review_mode",
+    "post_implementation_review_mode",
+    "max_normal_correction_rounds",
+    "blocker_bases",
+    "non_blocking_classes",
+    "reopen_bases",
+    "finding_states",
+    "required_output_queues",
+    "closure_verdicts",
+    "stop_rule"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "protocol_id": {
+      "const": "bounded-review-closure"
+    },
+    "initial_review_mode": {
+      "const": "full"
+    },
+    "post_implementation_review_mode": {
+      "const": "delta"
+    },
+    "max_normal_correction_rounds": {
+      "type": "integer",
+      "const": 1
+    },
+    "blocker_bases": {
+      "$ref": "#/$defs/uniqueNames"
+    },
+    "non_blocking_classes": {
+      "$ref": "#/$defs/uniqueNames"
+    },
+    "reopen_bases": {
+      "$ref": "#/$defs/uniqueNames"
+    },
+    "finding_states": {
+      "$ref": "#/$defs/uniqueNames"
+    },
+    "required_output_queues": {
+      "$ref": "#/$defs/uniqueNames"
+    },
+    "closure_verdicts": {
+      "$ref": "#/$defs/uniqueNames"
+    },
+    "stop_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "all_acceptance_criteria_pass",
+        "required_gates_pass",
+        "open_merge_blockers",
+        "verdict",
+        "stop_after_verdict"
+      ],
+      "properties": {
+        "all_acceptance_criteria_pass": {
+          "const": true
+        },
+        "required_gates_pass": {
+          "const": true
+        },
+        "open_merge_blockers": {
+          "const": 0
+        },
+        "verdict": {
+          "const": "MERGE_READY"
+        },
+        "stop_after_verdict": {
+          "const": true
+        }
+      }
+    }
+  },
+  "$defs": {
+    "uniqueNames": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+      }
+    }
+  }
+}

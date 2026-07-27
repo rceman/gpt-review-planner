@@ -86,6 +86,37 @@ For any task, apply sources in this order:
 
 Conflicts between higher-priority sources must be reported. They must not be silently resolved by weakening requirements.
 
+### 2.1 Bounded review and closure
+
+Load [`docs/REVIEW_CLOSURE_PROTOCOL.md`](docs/REVIEW_CLOSURE_PROTOCOL.md) and
+`profiles/review-closure.json` for review-to-implementation tasks. Validate the
+machine contract with `scripts/validate-review-closure.py`.
+
+The first review is full within the effective owner-selected scope. The exact
+proposed patch scope MUST contain stable acceptance-criterion IDs, covered
+finding IDs, file operations, exclusions, and required gates. Explicit owner
+approval creates the scope lock.
+
+After implementation or a correction, the normal review mode is `delta`: verify
+approved findings, changed surfaces, acceptance criteria, required evidence, and
+demonstrable regressions. Do not restart an unconstrained full review. A full
+reopen requires an explicit owner request, a material architecture change, or
+new concrete evidence of a critical/high-severity defect.
+
+A new finding blocks merge only when it has an evidenced blocking basis: failed
+approved acceptance criterion, demonstrable regression, critical/high defect,
+security vulnerability, data loss/corruption, broken public contract, failed
+required gate, or materially unusable approved behavior. Hardening,
+completeness, maintainability, optional test expansion, future architecture,
+style, and a newly proposed stronger contract are follow-up work unless the
+owner explicitly promotes them into scope.
+
+Implementation-result reviews separate `MERGE_BLOCKERS`, `FOLLOW_UP_BACKLOG`,
+and `OBSERVATIONS`. One normal correction round is allowed. When approved
+criteria and gates pass, declared and actual scope agree, and no evidenced
+blocker remains, declare `MERGE_READY` and stop the current review. Do not keep
+searching for optional improvements after closure.
+
 ---
 
 ## 3. Responsibility model
