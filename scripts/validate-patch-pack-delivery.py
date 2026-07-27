@@ -23,11 +23,15 @@ def require_file(path: Path, label: str) -> Path:
 
 
 def validate_response(path: Path, archive: str, sidecar: str) -> None:
-    text = path.read_text(encoding="utf-8")
-    if not re.search(r"(?m)^PATCH_PACK_NAME\s*$", text) or archive not in text:
-        raise DeliveryError("response must declare PATCH_PACK_NAME with the exact archive basename")
-    if not re.search(r"(?m)^SHA256_FILE_NAME\s*$", text) or sidecar not in text:
-        raise DeliveryError("response must declare SHA256_FILE_NAME with the exact sidecar basename")
+    text = path.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
+    lines = text.split("\n")
+    for marker, expected in (("PATCH_PACK_NAME", archive), ("SHA256_FILE_NAME", sidecar)):
+        positions = [index for index, line in enumerate(lines) if line == marker]
+        if len(positions) != 1:
+            raise DeliveryError(f"response must contain exactly one {marker} marker")
+        position = positions[0]
+        if position + 1 >= len(lines) or lines[position + 1] != expected:
+            raise DeliveryError(f"{marker} must be immediately followed by {expected}")
     expected = f"## AGENT_HANDOFF\n\nApply patch pack `{archive}` from the Downloads folder."
     handoff = re.search(r"(?ms)^## AGENT_HANDOFF\s*$.*\Z", text)
     if not handoff or handoff.group(0).rstrip() != expected:

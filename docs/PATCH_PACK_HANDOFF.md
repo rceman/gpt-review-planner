@@ -6,12 +6,11 @@ follow it.
 
 ## Response modes
 
-- Patch-pack mode prints plain-text `PATCH_PACK_NAME`, the exact archive
-  basename, `SHA256_FILE_NAME`, and the exact sidecar basename.
-- Prompt-only mode identifies the prompt and immutable workflow pin, and does
-  not claim that an archive was created.
-- No-action mode states the reason and does not invent an archive, checksum, or
-  execution result.
+- Patch-pack mode prints exactly one `PATCH_PACK_NAME` marker followed
+  immediately by the exact archive basename, then exactly one
+  `SHA256_FILE_NAME` marker followed immediately by the exact sidecar basename.
+- Prompt-only mode ends with a complete copy-ready local-agent prompt.
+- No-action mode ends with the exact no-action sentence below.
 
 For schema-v2 packs, `manifest.patch_id` is the sole naming source:
 `<patch_id>.tar.gz` and `<patch_id>.tar.gz.sha256`. The final patch-pack
@@ -22,6 +21,31 @@ handoff is exactly:
 
 Apply patch pack `<patch_id>.tar.gz` from the Downloads folder.
 ```
+
+Prompt-only mode must end exactly with this structure, with no prose or section
+after `AGENT_HANDOFF`:
+
+```text
+## AGENT_HANDOFF
+
+<complete copy-ready local-agent prompt>
+```
+
+The prompt must include the repository, local repository when known, branch,
+exact base or expected HEAD, exact required actions, runtime gates, constraints,
+and the required final report.
+
+No-action mode must end exactly with this text, with no prose or section after
+`AGENT_HANDOFF`:
+
+```text
+## AGENT_HANDOFF
+
+No agent action is required. Preserve the reported state and wait for the next owner instruction.
+```
+
+For every mode, `## AGENT_HANDOFF` is the final top-level section and no
+non-whitespace content may follow it.
 
 ## Canonical pack checks
 
