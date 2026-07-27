@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "a0a1da93ff06bff2b478ffb91d6c461650a987b9",
+  "requirements": [
+    {"id":"RC-001","status":"pass","proofs":[{"kind":"source","path":"docs/REVIEW_CLOSURE_PROTOCOL.md","lines":[29,47],"sha256":"03b23db210963cbcfc61ff1b7d129cb892c47934f0e7adbd56fcf68d128dd9fd"}]},
+    {"id":"RC-002","status":"pass","proofs":[{"kind":"source","path":"docs/REVIEW_CLOSURE_PROTOCOL.md","lines":[50,82],"sha256":"71f6633f6cc95380cd30a14895191c6d694d9885298443a47b5bd486ebf789bd"}]},
+    {"id":"RC-003","status":"pass","proofs":[{"kind":"source","path":"docs/REVIEW_CLOSURE_PROTOCOL.md","lines":[87,119],"sha256":"58b0b1e25be71b277956d6a0c037485298859f96540f396317d6fee9614642f4"}]},
+    {"id":"RC-004","status":"pass","proofs":[{"kind":"source","path":"docs/REVIEW_CLOSURE_PROTOCOL.md","lines":[125,132],"sha256":"5296e49bacecc036aff7a9b5342473540d3681a5673bd5b371f4c62dff39a8c4"}]},
+    {"id":"RC-005","status":"pass","proofs":[{"kind":"source","path":"docs/REVIEW_CLOSURE_PROTOCOL.md","lines":[135,165],"sha256":"47e0d55c6a7c641c64a47acc1dec4a1e3ff43443dafd3c0f4333ee5b1b858d6b"}]},
+    {"id":"RC-006","status":"pass","proofs":[{"kind":"source","path":"scripts/validate-review-closure.py","lines":[80,120],"sha256":"31ffda33250854f0aeacd7e7b94262df29eaa2531a8db163ceccacd9ed20cb17"}]},
+    {"id":"RC-007","status":"pass","proofs":[{"kind":"source","path":"prompts/GPT_CREATE_PATCH_PACK.md","lines":[39,50],"sha256":"189d61c7c07d9c29642d2b9fdabd38da9dbe931c48816b6c030dbbebc7bd93c9"}]},
+    {"id":"RC-008","status":"pass","proofs":[{"kind":"source","path":"tests/test_review_closure.py","lines":[63,70],"sha256":"7e125702870601847fea181d95fcbe7d9485296758e960346034d82abe26fc4b"}]}
+  ],
+  "gates": [
+    {"id":"GATE-001","status":"pass","exit":0,"summary":"Patch-pack scope validation and implementation scope verification passed."},
+    {"id":"GATE-002","status":"pass","exit":0,"summary":"Shell syntax validation passed for all required scripts."},
+    {"id":"GATE-003","status":"pass","exit":0,"summary":"Python compileall completed successfully."},
+    {"id":"GATE-004","status":"pass","exit":0,"summary":"Bounded review closure validator passed: 8 blockers, 7 non-blocking classes, 3 reopen bases, 5 states, 3 queues, 3 verdicts."},
+    {"id":"GATE-005","status":"pass","exit":0,"tests":67,"summary":"Repository unittest discovery passed: 67 tests."},
+    {"id":"GATE-006","status":"pass","exit":0,"tests":2,"summary":"Oracle unittest discovery passed: 2 tests."},
+    {"id":"GATE-007","status":"pass","exit":0,"tests":69,"summary":"Supplemental pytest suite passed: 69 tests."},
+    {"id":"GATE-008","status":"pass","exit":0,"summary":"Release consistency check passed with VERSION 1.2.0."},
+    {"id":"GATE-009","status":"pass","exit":0,"summary":"git diff --check passed against base 85d5efe9cf4af91df80c53aca283f5e3e4b4210b."},
+    {"id":"GATE-010","status":"pass","run":30267303117,"job":89980961516,"url":"https://github.com/rceman/gpt-review-planner/actions/runs/30267303117","summary":"Validate completed successfully for exact implementation SHA a0a1da93ff06bff2b478ffb91d6c461650a987b9."}
+  ],
+  "deviations": []
+}
