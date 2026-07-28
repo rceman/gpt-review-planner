@@ -591,12 +591,12 @@ def command_committed(pack: Path, repo: Path, implementation: str, evidence_comm
         raise EvidenceError(f"repository HEAD is {head}, expected evidence commit {evidence_commit}")
     if git(repo, "status", "--porcelain").stdout.strip():
         raise EvidenceError("working tree must be clean for committed evidence verification")
+    manifest, raw, directory = validate_common(pack, repo, implementation)
     parent = git(repo, "rev-parse", f"{evidence_commit}^1").stdout.decode().strip()
     if parent != implementation:
         raise EvidenceError(
             f"evidence commit must directly follow implementation commit: parent={parent}, implementation={implementation}"
         )
-    manifest, raw, directory = validate_common(pack, repo, implementation)
     expected_paths = evidence_paths(directory)
     assert_scope("committed evidence", (expected_paths, set(), set()), diff_scope(repo, implementation, evidence_commit))
     evidence = read_committed_evidence(repo, evidence_commit, directory, raw)

@@ -1,0 +1,49 @@
+{
+  "schema_version": 2,
+  "patch_id": "patch-20260728-120000-gateway-compatible",
+  "title": "Gateway compatible fixture",
+  "description": "Demonstrates canonical handoff and validator interoperability.",
+  "created_at": "2026-07-28T12:00:00Z",
+  "patch_timestamp": "20260728-120000",
+  "patch_slug": "gateway-compatible",
+  "baseline_release": "v1.2.0",
+  "evidence_directory": ".gpt-review/evidence/v1.2.0/patch-20260728-120000-gateway-compatible",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v1.2.0",
+    "commit": "723a8f2a10b9413dadedaf225ad9921eca6b0d4b",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "example/gateway-compatible",
+    "branch": "main",
+    "base_revision": "1111111111111111111111111111111111111111"
+  },
+  "files_created": ["demo.txt"],
+  "files_modified": [],
+  "files_deleted": [],
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "summary": "Create deterministic fixture output",
+      "acceptance": ["AC-001: demo.txt is supplied by the declared overlay."]
+    }
+  ],
+  "gates": [
+    {
+      "id": "semantic-text",
+      "name": "Semantic text validation",
+      "kind": "command",
+      "command": "python3 scripts/validate-patch-pack.py examples/gateway-compatible-patch-pack"
+    },
+    {
+      "id": "exact-scope",
+      "name": "Exact patch scope",
+      "kind": "scope"
+    }
+  ],
+  "gpt_static_checks_performed": ["Authored a complete static reference fixture."],
+  "gpt_runtime_checks_not_performed": ["Runtime project gates were not executed by GPT."],
+  "known_integration_risks": [],
+  "forbidden_deviations": ["Do not add gateway transport fields to the planner manifest."]
+}

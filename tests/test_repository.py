@@ -1298,14 +1298,30 @@ fi
                 [
                     "bash",
                     str(ROOT / "scripts/new-patch-pack.sh"),
-                    "TEST-PACK",
+                    "--baseline-release",
+                    "v1.2.0",
+                    "--slug",
+                    "test-pack",
+                    "--title",
+                    "Test Pack",
+                    "--description",
+                    "Test patch pack.",
+                    "--target-repository",
+                    "example/test",
+                    "--target-branch",
+                    "main",
+                    "--base-revision",
+                    "723a8f2a10b9413dadedaf225ad9921eca6b0d4b",
+                    "--output",
                     temp_dir,
                 ],
                 check=True,
                 capture_output=True,
                 text=True,
             )
-            pack = Path(temp_dir) / "TEST-PACK"
+            packs = list(Path(temp_dir).glob("patch-*-test-pack"))
+            self.assertEqual(len(packs), 1)
+            pack = packs[0]
             self.assertTrue((pack / "evidence.json").is_file())
             self.assertTrue((pack / "scripts/patch_pack_scope.py").is_file())
             self.assertTrue((pack / "scripts/verify-agent-evidence.py").is_file())

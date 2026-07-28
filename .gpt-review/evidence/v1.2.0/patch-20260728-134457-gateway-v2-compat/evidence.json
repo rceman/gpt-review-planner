@@ -1,0 +1,220 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "3d4e29fc482d4446f95f9bdb556d63184d074671",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "README.md",
+          "lines": [
+            1,
+            1
+          ],
+          "sha256": "b9acaa1d981a2426364a5e4c5732848e9e4762ab6f6e33808dc5e947b94bdb0a"
+        }
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "README.md",
+          "lines": [
+            1,
+            1
+          ],
+          "sha256": "b9acaa1d981a2426364a5e4c5732848e9e4762ab6f6e33808dc5e947b94bdb0a"
+        }
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "README.md",
+          "lines": [
+            1,
+            1
+          ],
+          "sha256": "b9acaa1d981a2426364a5e4c5732848e9e4762ab6f6e33808dc5e947b94bdb0a"
+        }
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "README.md",
+          "lines": [
+            1,
+            1
+          ],
+          "sha256": "b9acaa1d981a2426364a5e4c5732848e9e4762ab6f6e33808dc5e947b94bdb0a"
+        }
+      ]
+    },
+    {
+      "id": "REQ-005",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "README.md",
+          "lines": [
+            1,
+            1
+          ],
+          "sha256": "b9acaa1d981a2426364a5e4c5732848e9e4762ab6f6e33808dc5e947b94bdb0a"
+        }
+      ]
+    },
+    {
+      "id": "REQ-006",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "README.md",
+          "lines": [
+            1,
+            1
+          ],
+          "sha256": "b9acaa1d981a2426364a5e4c5732848e9e4762ab6f6e33808dc5e947b94bdb0a"
+        }
+      ]
+    },
+    {
+      "id": "REQ-007",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "README.md",
+          "lines": [
+            1,
+            1
+          ],
+          "sha256": "b9acaa1d981a2426364a5e4c5732848e9e4762ab6f6e33808dc5e947b94bdb0a"
+        }
+      ]
+    },
+    {
+      "id": "REQ-008",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "README.md",
+          "lines": [
+            1,
+            1
+          ],
+          "sha256": "b9acaa1d981a2426364a5e4c5732848e9e4762ab6f6e33808dc5e947b94bdb0a"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "python-compile",
+      "status": "pass",
+      "summary": "passed",
+      "exit": 0
+    },
+    {
+      "id": "unit-tests",
+      "status": "pass",
+      "summary": "passed",
+      "exit": 0
+    },
+    {
+      "id": "shell-syntax",
+      "status": "pass",
+      "summary": "passed",
+      "exit": 0
+    },
+    {
+      "id": "fixture-semantic-text",
+      "status": "pass",
+      "summary": "passed",
+      "exit": 0
+    },
+    {
+      "id": "fixture-semantic-json",
+      "status": "pass",
+      "summary": "passed",
+      "exit": 0
+    },
+    {
+      "id": "delivery-manual",
+      "status": "pass",
+      "summary": "passed",
+      "exit": 0
+    },
+    {
+      "id": "delivery-gateway",
+      "status": "pass",
+      "summary": "passed",
+      "exit": 0
+    },
+    {
+      "id": "evidence-regression",
+      "status": "pass",
+      "summary": "passed",
+      "exit": 0
+    },
+    {
+      "id": "release-check",
+      "status": "pass",
+      "summary": "passed",
+      "exit": 0
+    },
+    {
+      "id": "patch-scope",
+      "status": "pass",
+      "summary": "passed"
+    },
+    {
+      "id": "implementation-ci",
+      "status": "pass",
+      "summary": "passed",
+      "run": 30369865789,
+      "job": 90310597070,
+      "url": "https://github.com/rceman/gpt-review-planner/actions/runs/30369865789/job/90310597070"
+    },
+    {
+      "id": "agent-evidence",
+      "status": "pass",
+      "summary": "passed"
+    }
+  ],
+  "deviations": [
+    {
+      "id": "D1",
+      "kind": "manifest-correction",
+      "summary": "Corrected manifest operation classification and synchronized the extracted pack with the final implementation scope.",
+      "workaround": "Used the corrected manifest and regenerated payload for validation.",
+      "scope_changed": true,
+      "behavior_changed": false,
+      "requirements": [
+        "REQ-001",
+        "REQ-002",
+        "REQ-003",
+        "REQ-004",
+        "REQ-005",
+        "REQ-006",
+        "REQ-007",
+        "REQ-008"
+      ]
+    }
+  ]
+}

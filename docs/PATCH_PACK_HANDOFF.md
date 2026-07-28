@@ -6,9 +6,12 @@ follow it.
 
 ## Response modes
 
-- Patch-pack mode prints exactly one `PATCH_PACK_NAME` marker followed
+- `manual-download` prints exactly one `PATCH_PACK_NAME` marker followed
   immediately by the exact archive basename, then exactly one
   `SHA256_FILE_NAME` marker followed immediately by the exact sidecar basename.
+- `gateway-task-bundle` uses the transport-neutral sentence `Execute the
+  materialized patch pack using AGENT_HANDOFF.md.`; the planner does not define
+  bus paths or bundle transport.
 - Prompt-only mode ends with a complete copy-ready local-agent prompt.
 - No-action mode ends with the exact no-action sentence below.
 
@@ -37,8 +40,11 @@ and the required final report.
 
 ## Agent communication language
 
+Every generated `AGENT_PROMPT.md` MUST be written in English.
+
 All local-agent-facing communication MUST be written in English regardless of
-the language used by the owner when communicating with GPT. Every generated `AGENT_PROMPT.md` MUST be written in English, and every local-agent question,
+the language used by the owner when communicating with GPT. Every generated
+`AGENT_HANDOFF.md` MUST be written in English, and every local-agent question,
 progress update, blocker, deviation, gate report, CI report, and final report
 must also be written in English.
 
@@ -71,10 +77,13 @@ non-whitespace content may follow it.
 ## Canonical pack checks
 
 Every delivered pack must pass `scripts/validate-patch-pack-delivery.py`.
+Every pack must first pass `scripts/validate-patch-pack.py` in text and JSON
+modes. `AGENT_HANDOFF.md` is mandatory and its manifest identity must match.
 It must contain byte-identical copies of `scripts/patch_pack_scope.py` and
-`scripts/verify-agent-evidence.py` from the exact pinned planner checkout.
-Wrappers, proxies, and shims are forbidden. The validator runs both bundled
-tools with `--help`, catching top-level startup errors before delivery. A
+`scripts/verify-agent-evidence.py`, plus the canonical
+`scripts/verify-agent-result.sh`, from the exact pinned planner checkout.
+Wrappers, proxies, and shims are forbidden. The validator runs all bundled tools
+with `--help`, catching top-level startup errors before delivery. A
 representative fixture and final response must be validated before handoff.
 
 GPT performs static and artifact validation only; executable quality gates are

@@ -14,7 +14,10 @@ python scripts/release.py check
 git diff --check
 ```
 
-4. Review the version-only diff. Do not edit version-bearing files manually.
+4. Review the version diff. Do not edit version-bearing files manually. A
+   feature patch may carry an owner-approved minor-version change only when the
+   approved scope explicitly includes the new public contract; merge, exact-SHA
+   CI, and evidence still precede tagging.
 5. Run every repository quality gate required by the patch and project.
 6. Create the release commit:
 

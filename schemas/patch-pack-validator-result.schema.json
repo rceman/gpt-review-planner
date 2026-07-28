@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rceman/gpt-review-planner/schemas/patch-pack-validator-result.schema.json",
+  "title": "Patch Pack Semantic Validator Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "valid", "validator", "validator_version", "workflow_commit", "patch_id", "errors", "warnings"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "valid": {"type": "boolean"},
+    "validator": {"const": "gpt-review-planner"},
+    "validator_version": {"type": "string", "minLength": 1},
+    "workflow_commit": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
+    "patch_id": {"type": ["string", "null"], "pattern": "^patch-[0-9]{8}-[0-9]{6}-[a-z0-9]+(?:-[a-z0-9]+){0,2}$"},
+    "errors": {"type": "array", "items": {"$ref": "#/$defs/finding"}},
+    "warnings": {"type": "array", "items": {"$ref": "#/$defs/finding"}}
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "path", "message"],
+      "properties": {
+        "code": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+        "path": {"type": ["string", "null"]},
+        "message": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}
