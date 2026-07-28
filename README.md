@@ -141,8 +141,17 @@ python scripts/validate-project-integration.py /path/to/project
 ## Create a patch pack
 
 See the [patch-pack handoff contract](docs/PATCH_PACK_HANDOFF.md) and the
-[reusable creation prompt](prompts/GPT_CREATE_PATCH_PACK.md) for required
-archive names, checks, and final handoff syntax.
+[reusable creation prompt](prompts/GPT_CREATE_PATCH_PACK.md) for canonical
+`AGENT_HANDOFF.md`, archive names, semantic JSON validation, delivery modes,
+and final handoff syntax. `AGENT_PROMPT.md` is not a second instruction source;
+when retained for one-release compatibility it must be byte-identical to the
+canonical handoff.
+
+Gateway protocol-v2 interoperability is defined by
+[`docs/GATEWAY_INTEROPERABILITY.md`](docs/GATEWAY_INTEROPERABILITY.md). JSON is
+the canonical machine format, Markdown is the canonical human/agent instruction
+format, and YAML is not accepted as a wire artifact; see
+[`docs/STRUCTURED_FORMAT_POLICY.md`](docs/STRUCTURED_FORMAT_POLICY.md).
 
 ```bash
 bash scripts/new-patch-pack.sh \
@@ -171,6 +180,13 @@ The resulting evidence directory contains exactly:
 ```
 
 See [`docs/PATCH_PACK_FORMAT.md`](docs/PATCH_PACK_FORMAT.md) and [`docs/AGENT_EVIDENCE.md`](docs/AGENT_EVIDENCE.md).
+
+Validate a ready pack for humans or gateway builders:
+
+```bash
+python3 scripts/validate-patch-pack.py /path/to/pack
+python3 scripts/validate-patch-pack.py --format json /path/to/pack
+```
 
 ## Release workflow
 

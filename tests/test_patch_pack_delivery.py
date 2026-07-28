@@ -16,17 +16,12 @@ class PatchPackDeliveryTests(unittest.TestCase):
         temp = tempfile.TemporaryDirectory()
         root = Path(temp.name) / "pack"
         planner = Path(temp.name) / "planner"
-        (root / "scripts").mkdir(parents=True)
+        shutil.copytree(ROOT / "examples/gateway-compatible-patch-pack", root)
         (planner / "scripts").mkdir(parents=True)
-        manifest = {"schema_version": 2, "patch_id": "patch-20260727-051338-review-closure"}
-        (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
-        archive = "patch-20260727-051338-review-closure.tar.gz"
-        (root / "AGENT_PROMPT.md").write_text(
-            f"Apply patch pack `{archive}` from the Downloads folder.\n", encoding="utf-8"
-        )
-        for name in ("patch_pack_scope.py", "verify-agent-evidence.py"):
+        for name in ("validate-patch-pack.py", "patch_pack_scope.py", "verify-agent-evidence.py", "verify-agent-result.sh"):
             shutil.copy2(ROOT / "scripts" / name, planner / "scripts" / name)
-            shutil.copy2(ROOT / "scripts" / name, root / "scripts" / name)
+        (planner / "VERSION").write_bytes((ROOT / "VERSION").read_bytes())
+        archive = "patch-20260728-120000-gateway-compatible.tar.gz"
         return temp, root, planner, archive, archive + ".sha256"
 
     def run_validator(self, root, planner, archive, sidecar, response=None):

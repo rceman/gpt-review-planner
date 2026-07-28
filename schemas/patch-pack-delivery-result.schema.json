@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rceman/gpt-review-planner/schemas/patch-pack-delivery-result.schema.json",
+  "title": "Patch Pack Delivery Validator Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "valid", "validator", "mode", "patch_id", "errors", "warnings"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "valid": {"type": "boolean"},
+    "validator": {"const": "gpt-review-planner-delivery"},
+    "mode": {"enum": ["manual-download", "gateway-task-bundle", "prompt-only", "no-action"]},
+    "patch_id": {"type": ["string", "null"]},
+    "errors": {"type": "array", "items": {"$ref": "patch-pack-validator-result.schema.json#/$defs/finding"}},
+    "warnings": {"type": "array", "items": {"$ref": "patch-pack-validator-result.schema.json#/$defs/finding"}}
+  }
+}

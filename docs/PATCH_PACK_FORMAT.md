@@ -19,8 +19,21 @@ The local agent integrates and proves the patch. It does not reinterpret the fea
 Delivery is governed by [`PATCH_PACK_HANDOFF.md`](PATCH_PACK_HANDOFF.md). Schema-v2
 packs derive `<patch_id>.tar.gz` and its `.sha256` sidecar, and every actionable
 response ends with the exact `## AGENT_HANDOFF` block. The delivery validator
-must pass before handoff; bundled scope and evidence tools must be byte-identical
-to the pinned planner tools and must both start successfully with `--help`.
+must pass before handoff; bundled scope, evidence, and result-wrapper tools must
+be byte-identical to the pinned planner tools and must start successfully with
+`--help`.
+
+## Canonical execution entry point
+
+`AGENT_HANDOFF.md` is mandatory and is the only normative local-agent execution
+entry point. It contains exact manifest identity and the required Markdown
+headings for authority, role, prohibitions, application, gates, repair, evidence,
+commits, and response. `AGENT_PROMPT.md` is deprecated for one release and may
+exist only as a byte-identical compatibility alias; divergent content is invalid.
+
+Machine-readable artifacts and validator results use strict JSON. YAML is not a
+wire format. See [`STRUCTURED_FORMAT_POLICY.md`](STRUCTURED_FORMAT_POLICY.md) and
+[`GATEWAY_INTEROPERABILITY.md`](GATEWAY_INTEROPERABILITY.md).
 
 ## Test-execution policy
 
@@ -86,7 +99,8 @@ Matching only the union of paths is insufficient. A manifest that declares a fil
 as modified must fail when the repository actually deletes it.
 
 Every canonical pack includes `manifest.json`, a pending `evidence.json` template,
-and `scripts/patch_pack_scope.py`. Deviations are structured JSON entries in the
+`AGENT_HANDOFF.md`, and the three pinned validation tools under `scripts/`.
+Deviations are structured JSON entries in the
 completed evidence file. An undeclared path or mismatched operation type is a
 blocking deviation, not an implicit integration correction.
 

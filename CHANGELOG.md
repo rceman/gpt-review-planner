@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.3.0 — 2026-07-28
+
+- Made `AGENT_HANDOFF.md` the canonical mandatory executable patch-pack entry point and deprecated `AGENT_PROMPT.md` as a byte-identical one-release compatibility alias.
+- Added stable JSON output schemas and deterministic error codes for semantic and delivery validation.
+- Added `manual-download`, `gateway-task-bundle`, `prompt-only`, and `no-action` delivery modes without moving transport ownership into the planner.
+- Fixed evidence preparation to accept exactly two generated evidence files as untracked or staged additions while preserving the direct-child evidence-only commit contract.
+- Added gateway interoperability and structured JSON/Markdown/YAML ownership policies, a complete reference fixture, and focused regression coverage.
 - Added a normative English-only local-agent communication contract covering
   handoffs, prompts, execution reports, managed agent instructions, and tests.
 - Added a normative post-merge remote-branch cleanup and finalization contract.

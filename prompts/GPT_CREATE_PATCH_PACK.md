@@ -3,7 +3,7 @@
 Use the workflow pinned by the target repository's `.gpt-workflow.lock`.
 
 Read and follow `docs/AGENT_COMMUNICATION_LANGUAGE.md`. All local-agent-facing communication MUST be written in English regardless of the owner's conversation
-language. Every generated `AGENT_PROMPT.md`, `AGENT_HANDOFF`, correction prompt,
+language. Every generated `AGENT_HANDOFF.md`, correction prompt,
 merge/release instruction, and required agent execution report is English.
 Preserve exact filenames, commands, identifiers, errors, source excerpts, and
 localized repository content without translation; do not create bilingual
@@ -12,7 +12,7 @@ agent instructions.
 Inspect the repository or supplied archive and prepare an Executable Patch Pack.
 Own the architecture, behavior contract, canonical fixtures, native tests,
 principal production implementation, file-by-file patch, static review report,
-agent prompt, and acceptance gates.
+canonical agent handoff, and acceptance gates.
 
 GPT may perform static repository and artifact checks: archive integrity,
 manifest and patch/overlay/file-scope consistency, placeholder scans, textual
@@ -58,7 +58,8 @@ stop.
 
 The manifest, `changes.patch`, overlay, deletion list, and expected final repository
 diff must describe the same path scope. Include the pending `evidence.json` template,
-`patch_pack_scope.py`, and `verify-agent-evidence.py` in every canonical pack.
+canonical `AGENT_HANDOFF.md`, `patch_pack_scope.py`, `verify-agent-evidence.py`,
+and `verify-agent-result.sh` in every canonical pack.
 Validate exact scope before archiving.
 
 ## Required identity and evidence contract
@@ -67,12 +68,19 @@ Create schema-v2 manifests with a UTC timestamp ID, concise title and descriptio
 
 Include a pending `evidence.json` template whose requirement and gate IDs exactly match the manifest. Include pinned copies of `patch_pack_scope.py` and `verify-agent-evidence.py`. Do not create Markdown agent-result or deviation templates. Do not infer the baseline tag from an unreleased version file.
 
+`AGENT_HANDOFF.md` is the sole normative execution entry point. Do not generate
+a second independently edited `AGENT_PROMPT.md`; a temporary compatibility alias
+is permitted only when byte-identical to the handoff.
+
+Every delivered pack must pass `scripts/validate-patch-pack-delivery.py`.
+
 Before delivery, derive the archive basename exactly as `<manifest.patch_id>.tar.gz`
 and the sidecar as `<archive>.sha256`. Include exact byte-identical copies of
-`scripts/patch_pack_scope.py` and `scripts/verify-agent-evidence.py` from the
-pinned planner checkout; wrappers and shims are not permitted. Run both bundled
-tools with `--help`, construct a representative fixture, and run
-`scripts/validate-patch-pack-delivery.py`. The final actionable response must
+all three canonical bundled tools from the pinned planner checkout; wrappers and
+shims are not permitted. Run them with `--help`, validate the semantic pack in
+text and JSON modes, construct a representative fixture, and run the delivery
+validator in the applicable `manual-download` or `gateway-task-bundle` mode.
+The final actionable response must
 print the two plain-text filename fields and end with the exact top-level
 `## AGENT_HANDOFF` sentence defined by the handoff contract. Prompt-only and
 no-action responses must not claim an archive or runtime result.

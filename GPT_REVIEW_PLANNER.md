@@ -1,6 +1,6 @@
 # GPT Review Planner
 
-**Workflow version:** 1.0.0  
+**Workflow version:** 1.3.0
 **Status:** Active  
 **Canonical repository:** `https://github.com/rceman/gpt-review-planner`  
 **Default document:** `GPT_REVIEW_PLANNER.md`  
@@ -130,12 +130,20 @@ prevent local-branch shadowing.
 
 All local-agent-facing communication MUST be written in English, regardless of
 the language used by the owner when communicating with GPT. This includes every
-`AGENT_HANDOFF`, `AGENT_PROMPT.md`, implementation, correction, merge, cleanup,
+`AGENT_HANDOFF`, implementation, correction, merge, cleanup,
 and release instruction, plus every agent question, progress report, blocker,
 deviation, and final execution report. Exact repository-controlled literals may
 remain in their original language. Follow
 [`AGENT_COMMUNICATION_LANGUAGE.md`](docs/AGENT_COMMUNICATION_LANGUAGE.md);
 bilingual agent instructions are forbidden.
+
+Every executable patch pack uses `AGENT_HANDOFF.md` as its sole canonical
+execution entry point. A temporary `AGENT_PROMPT.md` compatibility alias is
+non-normative and valid only when byte-identical to the handoff. Semantic
+validation exposes stable text and JSON modes. Gateway protocol-v2 transport,
+routing, worktrees, task bundles, and result publication remain owned by
+`gpt-github-gateway`; follow [`GATEWAY_INTEROPERABILITY.md`](docs/GATEWAY_INTEROPERABILITY.md)
+and [`STRUCTURED_FORMAT_POLICY.md`](docs/STRUCTURED_FORMAT_POLICY.md).
 
 ---
 
