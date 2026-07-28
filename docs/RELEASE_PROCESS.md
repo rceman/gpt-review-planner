@@ -1,5 +1,7 @@
 # Release Process
 
+Final release reports follow [`AGENT_REPORTING.md`](AGENT_REPORTING.md): use one `Release CI` record and one `Tag CI` record without repeating their fields.
+
 ## Authority model
 
 `VERSION` is the canonical version source. `release-config.json` declares every file that must carry the same version. `scripts/release.py` is the only supported mutation mechanism.

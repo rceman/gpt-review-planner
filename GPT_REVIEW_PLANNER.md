@@ -1,5 +1,7 @@
 # GPT Review Planner
 
+Start with the [procedure index](docs/PROCEDURE_INDEX.md) before operational detail. After a terminal status, consult it and emit the handoff required by the next transition; `MERGE_READY` requires a merge handoff and is not merge completion.
+
 **Workflow version:** 1.3.0
 **Status:** Active  
 **Canonical repository:** `https://github.com/rceman/gpt-review-planner`  

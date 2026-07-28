@@ -1,4 +1,5 @@
 <!-- BEGIN GPT-REVIEW-PLANNER -->
+[Procedure index](../docs/PROCEDURE_INDEX.md) is the primary discovery entry point. After a terminal status, consult it and emit the next-transition handoff.
 > [!IMPORTANT]
 > Before substantial planning, implementation, review, or correction work,
 > load the external workflow pinned by [`.gpt-workflow.lock`](./.gpt-workflow.lock).

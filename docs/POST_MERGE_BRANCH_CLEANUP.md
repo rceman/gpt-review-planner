@@ -69,7 +69,7 @@ prefix. Then verify:
 
 The final merge report must include the feature branch, reviewed feature head,
 merge SHA and parents, merge CI run/job/exact SHA/URL/conclusion, ancestry
-result, deletion command and result, final remote inventory, retained local
+result, deletion command and result, final remote inventory (the final inventory), retained local
 branch and tip, final `refs/remotes/origin/main`, VERSION, worktree state, and exactly one
 of `MERGE_FINALIZED` or `MERGE_CLEANUP_BLOCKED`.
 
@@ -115,3 +115,4 @@ paths, errors, and repository-controlled literals remain unchanged. Follow
 If any safety check fails, stop and report the exact state. Do not delete the
 branch and use `MERGE_CLEANUP_BLOCKED` only after merge and exact-SHA CI have
 succeeded.
+Final reports follow [`AGENT_REPORTING.md`](AGENT_REPORTING.md): one compact Merge CI record, no repeated run/job/SHA/URL/conclusion fields, and no successful workflow logs. Failure diagnostics may include raw helper JSON or exact command output once when necessary.

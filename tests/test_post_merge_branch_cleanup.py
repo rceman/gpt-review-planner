@@ -31,7 +31,8 @@ class PostMergeBranchCleanupContractTests(unittest.TestCase):
             "LOCAL_FEATURE_REF=\"refs/heads/${FEATURE_BRANCH}\"",
         ):
             self.assertIn(text, self.runbook)
-            self.assertIn(text, self.prompt)
+        self.assertIn("docs/POST_MERGE_BRANCH_CLEANUP.md", self.prompt)
+        self.assertIn("prompts/AGENT_FINALIZE_MERGE.md", self.prompt)
         code = "\n".join(re.findall(r"```(?:bash)?\n(.*?)```", self.runbook + self.prompt, re.S))
         for forbidden in (
             "git rev-parse origin/main",
@@ -91,12 +92,9 @@ class PostMergeBranchCleanupContractTests(unittest.TestCase):
         self.assertIn("post-merge", self.handoff)
         self.assertIn("MERGE_FINALIZED", self.handoff)
         self.assertIn("MERGE_CLEANUP_BLOCKED", self.handoff)
-        for text in (
-            "git fetch origin --prune", "git merge-base --is-ancestor", "git push origin --delete",
-            "final inventory", "MERGE_FINALIZED", "MERGE_CLEANUP_BLOCKED",
-        ):
-            self.assertIn(text, self.prompt)
-        self.assertIn("same `AGENT_HANDOFF`", self.prompt)
+        for text in ("git fetch origin --prune", "git merge-base --is-ancestor", "git push origin --delete", "final inventory", "MERGE_FINALIZED", "MERGE_CLEANUP_BLOCKED"):
+            self.assertIn(text, self.runbook)
+        self.assertIn("AGENT_FINALIZE_MERGE.md", self.prompt)
 
     def test_no_cleanup_before_exact_ci_and_local_branch_retention(self):
         self.assertLess(self.runbook.index("exact-SHA CI succeeded"), self.runbook.index("git push origin --delete"))

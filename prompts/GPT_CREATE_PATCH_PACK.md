@@ -85,3 +85,4 @@ print the two plain-text filename fields and end with the exact top-level
 `## AGENT_HANDOFF` sentence defined by the handoff contract. Prompt-only and
 no-action responses must not claim an archive or runtime result.
 Resolve CI policy before adding a GitHub Actions gate. Do not add a mandatory remote-CI gate unless policy is `required`; use `scripts/check-github-ci.py` for observations.
+Generated agent handoffs must reference `docs/AGENT_REPORTING.md`, require compact successful CI records, prohibit successful raw JSON followed by duplicated fields, and preserve exact failure evidence when needed. After the agent result and delta-review verdict, consult `docs/PROCEDURE_INDEX.md` and emit the next-transition handoff.

@@ -24,3 +24,4 @@ Do not broaden the task scope. Return the final report required by the release
 runbook, including local gates, CI evidence, tag verification, and final remote
 identity checks.
 Apply the resolved CI capability policy. Remote CI is not universal; local runtime gates remain mandatory when CI is unavailable or disabled.
+Use the compact reporting contract: one `Release CI` record and one `Tag CI` record. After a terminal status, consult `docs/PROCEDURE_INDEX.md` and emit the next-transition handoff.

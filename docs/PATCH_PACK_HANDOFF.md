@@ -89,3 +89,6 @@ representative fixture and final response must be validated before handoff.
 GPT performs static and artifact validation only; executable quality gates are
 owned by the local coding agent and are not claimed as GPT results.
 When remote CI is unavailable or intentionally disabled, mandatory local runtime gates remain authoritative. Use `scripts/check-github-ci.py` for exact-SHA observations when policy permits or requires them.
+Merge-oriented prompt-only handoffs may load the complete canonical prompt from the pinned planner checkout: `prompts/AGENT_FINALIZE_MERGE.md`. The compact form must include `REPOSITORY`, `LOCAL_REPOSITORY`, `SSH_ORIGIN`, `MAIN_BRANCH`, `FEATURE_BRANCH`, `EXPECTED_MAIN_BEFORE`, `EXPECTED_FEATURE_HEAD`, `EXPECTED_VERSION`, `CI_POLICY`, `CI_WORKFLOW`, and `CI_EVENT`. Mutable `main`/`latest` references and summaries that replace the prompt are forbidden.
+
+After producing a terminal workflow status, consult `docs/PROCEDURE_INDEX.md` and emit the handoff required by the next transition.

@@ -1,5 +1,7 @@
 # GPT Review Planner
 
+Start with the [procedure index](docs/PROCEDURE_INDEX.md) for workflow roles, contracts, prompts, statuses, and next transitions. Use the [agent reporting contract](docs/AGENT_REPORTING.md) for compact final reports.
+
 Canonical workflow and tooling for a two-model software delivery process:
 
 - **GPT** owns architecture, behavior, fixtures, tests, static review, and the principal implementation. GPT does not execute runtime quality gates.

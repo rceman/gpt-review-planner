@@ -129,3 +129,4 @@ reports its run/job/URL in external GitHub or PR metadata. It must never amend
 
 Evidence created before this contract is not migrated or reconstructed. Historical files may be removed when the owner decides they are no longer useful; Git history remains the historical record.
 Remote CI is a capability-dependent gate, not a universal repository requirement. Record remote CI separately from local runtime-gate evidence and apply `docs/CI_CAPABILITY_POLICY.md`.
+Committed JSON evidence remains machine-verifiable; the compact final report is only a human/GPT projection. Compact reporting must not remove required fields from manifests, evidence, schemas, or helper output. Helper JSON may be captured internally, but successful JSON should not be pasted when the compact projection contains the required facts.

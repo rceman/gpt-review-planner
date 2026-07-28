@@ -119,48 +119,16 @@ When every approved criterion and required gate passes, scope matches, and no
 blocker remains, declare `MERGE_READY`. Stop after declaring `MERGE_READY`;
 record other ideas only in `FOLLOW_UP_BACKLOG`.
 
-If the owner authorizes merging the resulting feature, the generated
-`AGENT_HANDOFF` must include the complete post-merge procedure from
-`docs/POST_MERGE_BRANCH_CLEANUP.md` in the same `AGENT_HANDOFF` prompt. After normal
-`git merge --no-ff` integration and successful CI for the exact merge SHA, the
-agent must verify the reviewed feature tip is the current remote tip and an
-ancestor of `refs/remotes/origin/main`, run `git push origin --delete <FEATURE_BRANCH>`,
-prune refs, verify deletion, retain the local feature branch, and report the
-final inventory. The result must be `MERGE_FINALIZED` only after every check
-passes, or `MERGE_CLEANUP_BLOCKED` with the exact failed command and state if
-safe deletion cannot be completed. Cleanup is not an owner follow-up.
+If the owner authorizes merging the resulting feature, load the exact pinned
+`docs/PROCEDURE_INDEX.md` and `docs/POST_MERGE_BRANCH_CLEANUP.md`, then generate
+the complete immutable parameter block and handoff using
+`prompts/AGENT_FINALIZE_MERGE.md`. Do not duplicate the cleanup shell block in
+this prompt. Preserve all merge safety requirements, exact-SHA CI, fully
+qualified refs, remote deletion only after successful CI, local branch
+retention, and `MERGE_FINALIZED`/`MERGE_CLEANUP_BLOCKED` behavior. Use
+`docs/AGENT_REPORTING.md` for compact reporting.
 
-The merge handoff must include these exact cleanup commands after successful
-merge CI:
-
-```bash
-FEATURE_BRANCH="<FEATURE_BRANCH>"
-REMOTE_MAIN_REF="refs/remotes/origin/main"
-REMOTE_FEATURE_REF="refs/remotes/origin/${FEATURE_BRANCH}"
-LOCAL_FEATURE_REF="refs/heads/${FEATURE_BRANCH}"
-
-git fetch origin --prune
-test "$(git rev-parse --verify "${REMOTE_MAIN_REF}^{commit}")" = "<EXPECTED_MERGE_SHA>"
-test "$(git rev-parse --verify "${REMOTE_FEATURE_REF}^{commit}")" = "<EXPECTED_FEATURE_HEAD>"
-git merge-base --is-ancestor "${REMOTE_FEATURE_REF}" "${REMOTE_MAIN_REF}"
-git push origin --delete "${FEATURE_BRANCH}"
-git fetch origin --prune
-
-if git show-ref --verify --quiet "${REMOTE_FEATURE_REF}"; then
-  echo "ERROR: deleted remote feature ref still exists" >&2
-  exit 1
-fi
-
-test "$(git rev-parse --verify "${REMOTE_MAIN_REF}^{commit}")" = "<EXPECTED_MERGE_SHA>"
-test "$(git rev-parse --verify "${LOCAL_FEATURE_REF}^{commit}")" = "<EXPECTED_FEATURE_HEAD>"
-```
-
-It must then require verification of remote-branch absence, unchanged
-`refs/remotes/origin/main`, retained local branch and tip, unchanged repository
-files, and a clean worktree, together with the complete merge CI and final
-status report. Authoritative use of abbreviated `origin/main` or
-`origin/<FEATURE_BRANCH>` names is forbidden because a local branch may shadow
-them.
+After producing a terminal workflow status, consult `docs/PROCEDURE_INDEX.md` and emit the handoff required by the next transition.
 
 Return exactly these top-level sections:
 
