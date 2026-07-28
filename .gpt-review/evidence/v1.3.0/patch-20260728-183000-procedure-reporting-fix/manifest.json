@@ -1,0 +1,35 @@
+{
+  "schema_version": 2,
+  "patch_id": "patch-20260728-183000-procedure-reporting-fix",
+  "patch_timestamp": "20260728-183000",
+  "patch_slug": "procedure-reporting-fix",
+  "baseline_release": "v1.3.0",
+  "created_at": "2026-07-28T18:30:00Z",
+  "title": "Correct procedure transitions and merge handoff",
+  "description": "Correct verdict branching, unified merge handoff references, and parameterized merge execution.",
+  "evidence_directory": ".gpt-review/evidence/v1.3.0/patch-20260728-183000-procedure-reporting-fix",
+  "files_created": [],
+  "files_modified": [
+    "docs/PROCEDURE_INDEX.md",
+    "docs/PATCH_PACK_HANDOFF.md",
+    "docs/REVIEW_CLOSURE_PROTOCOL.md",
+    "prompts/AGENT_FINALIZE_MERGE.md",
+    "prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md",
+    "tests/test_procedure_index_and_reporting.py",
+    "tests/test_review_closure.py"
+  ],
+  "files_deleted": [],
+  "target": {"repository": "rceman/gpt-review-planner", "branch": "feature/procedure-index-compact-reporting", "base_revision": "a4e299ffc67232b755b22773f225f692d5d8cd4b"},
+  "requirements": [
+    {"id": "REQ-PROC-FIX-001", "summary": "Correct roles and branching transitions", "acceptance": ["Procedure roles and verdict branches route correction, owner decision, and merge-ready work correctly."]},
+    {"id": "REQ-HANDOFF-FIX-001", "summary": "Unified inline/reference handoff contract", "acceptance": ["Merge handoffs support complete inline instructions or a pinned canonical prompt with all parameters."]},
+    {"id": "REQ-MERGE-FIX-001", "summary": "Operational MAIN_BRANCH merge template", "acceptance": ["The reusable merge prompt parameterizes authoritative refs and enforces safe merge and cleanup."]},
+    {"id": "REQ-CLOSURE-FIX-001", "summary": "MERGE_READY retains required handoff", "acceptance": ["Stopping review expansion does not suppress the required next-transition merge handoff."]},
+    {"id": "REQ-TEST-FIX-001", "summary": "Semantic regression coverage", "acceptance": ["Focused tests assert roles, branching, handoff modes, parameterization, and closure semantics."]}
+  ],
+  "gates": [
+    {"id": "local-gates", "name": "Local gates", "kind": "command", "command": "repository gate suite"},
+    {"id": "implementation-ci", "name": "Implementation CI", "kind": "github-actions", "workflow": "Validate", "head": "implementation"}
+  ],
+  "workflow": {"repository": "rceman/gpt-review-planner", "version": "1.3.0", "commit": "a4e299ffc67232b755b22773f225f692d5d8cd4b", "document": "GPT_REVIEW_PLANNER.md"}
+}

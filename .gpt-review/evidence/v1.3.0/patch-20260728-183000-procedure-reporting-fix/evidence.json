@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "bb1c422829cda4a1a8153168b848e449c82a050a",
+  "requirements": [
+    {"id":"REQ-PROC-FIX-001","status":"pass","proofs":[{"kind":"source","path":"docs/PROCEDURE_INDEX.md","lines":[14,40],"sha256":"89386b60e348f323e7040834a78ff7befaeab76e13b41d0005184e5bceba400c"}]},
+    {"id":"REQ-HANDOFF-FIX-001","status":"pass","proofs":[{"kind":"source","path":"docs/PATCH_PACK_HANDOFF.md","lines":[82,90],"sha256":"0aca3fe000790fec13b0bbb01752072624a7d3a653b3a48cad348e48e80ef973"}]},
+    {"id":"REQ-MERGE-FIX-001","status":"pass","proofs":[{"kind":"source","path":"prompts/AGENT_FINALIZE_MERGE.md","lines":[9,66],"sha256":"94c7bcf9a920f8c8c05c70ca69221a6387d12bb266ff1cc4e2859256f40991fb"}]},
+    {"id":"REQ-CLOSURE-FIX-001","status":"pass","proofs":[{"kind":"source","path":"prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md","lines":[116,120],"sha256":"3d860c52bf8571c0388571a5b8ebe56d4f29976012a55a4865be040b7fef6f44"}]},
+    {"id":"REQ-TEST-FIX-001","status":"pass","proofs":[{"kind":"test","path":"tests/test_procedure_index_and_reporting.py","lines":[18,56],"sha256":"0fb59bb6b52f203e0eff491f754640c0f13f6ac3566af5dd6eb35f28526a93c8"}]}
+  ],
+  "gates": [
+    {"id":"local-gates","status":"pass","exit":0,"tests":145,"summary":"Validators, focused contracts, full unit tests, oracle tests, release consistency, and diff checks passed; pytest was unavailable because the environment has no pytest module."},
+    {"id":"implementation-ci","status":"pass","run":30392392653,"job":90386954696,"url":"https://github.com/rceman/gpt-review-planner/actions/runs/30392392653/job/90386954696","summary":"Exact corrective implementation SHA CI succeeded."}
+  ],
+  "deviations":[{"id":"D1","kind":"manifest-correction","summary":"Updated one legacy closure assertion to reflect the approved MERGE_READY handoff contract.","workaround":"Migrated the assertion from superseded stop-without-handoff wording to the required next-transition handoff wording.","scope_changed":true,"behavior_changed":false,"requirements":["REQ-CLOSURE-FIX-001","REQ-TEST-FIX-001"]}]
+}
