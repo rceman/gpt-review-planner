@@ -97,6 +97,10 @@ rejected.
 
 Before the evidence commit:
 
+The pack-level `evidence.json` remains pending. The completed repository copy
+contains the final implementation SHA, proofs, gate results, and deviations; it
+is never copied back into the pack.
+
 ```bash
 python scripts/verify-agent-evidence.py prepare \
   --pack /path/to/patch-pack \

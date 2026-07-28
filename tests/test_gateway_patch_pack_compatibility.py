@@ -112,6 +112,14 @@ class GatewayPatchPackCompatibilityTests(unittest.TestCase):
         (self.pack / "AGENT_PROMPT.md").write_bytes(handoff.read_bytes())
         self.assertEqual(self.semantic().returncode, 0, self.semantic().stderr)
 
+    def test_placeholders_in_opaque_payloads_are_not_scanned(self) -> None:
+        for relative in ("patch/changes.patch", "overlay/template.txt", "scripts/tool.py"):
+            path = self.pack / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("REPLACE_TASK_ID\n", encoding="utf-8")
+        payload = self.result_json()
+        self.assertNotIn("unresolved_placeholder", {item["code"] for item in payload["errors"]})
+
     def test_agent_prompt_alias_policy_is_deterministic(self) -> None:
         alias = self.pack / "AGENT_PROMPT.md"
         payload = self.result_json()

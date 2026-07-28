@@ -337,6 +337,8 @@ def scan_placeholders(root: Path, findings: list[Finding]) -> None:
         if path.is_symlink() or not path.is_file() or path.name == ".gitkeep":
             continue
         relative = path.relative_to(root).as_posix()
+        if relative.split("/", 1)[0] in {"patch", "overlay", "scripts"}:
+            continue
         try:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:

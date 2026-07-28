@@ -31,6 +31,12 @@ headings for authority, role, prohibitions, application, gates, repair, evidence
 commits, and response. `AGENT_PROMPT.md` is deprecated for one release and may
 exist only as a byte-identical compatibility alias; divergent content is invalid.
 
+## Evidence lifecycle
+
+The pack's `evidence.json` is always a pending pre-execution template. Completed
+evidence is created separately under the manifest evidence directory and is
+validated by `verify-agent-evidence.py`; it must never replace the pack template.
+
 Machine-readable artifacts and validator results use strict JSON. YAML is not a
 wire format. See [`STRUCTURED_FORMAT_POLICY.md`](STRUCTURED_FORMAT_POLICY.md) and
 [`GATEWAY_INTEROPERABILITY.md`](GATEWAY_INTEROPERABILITY.md).
