@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "dfd164fb12899e3d36a9ab69c24ab1d4aacbec8b",
+  "requirements": [
+    {"id":"REQ-HOST-001","status":"pass","proofs":[{"kind":"source","path":"docs/HOST_PREREQUISITES.md","lines":[1,33],"sha256":"6c40d1c2f6684d479525b27d5954fa16d64cd4e8d71fbfde75e840c8821af79f"}]},
+    {"id":"REQ-HOST-002","status":"pass","proofs":[{"kind":"source","path":"docs/HOST_PREREQUISITES.md","lines":[20,27],"sha256":"ed800bc2c1d22464e34090651f36435396d05813833195bcf1581c3968996d32"}]},
+    {"id":"REQ-GATE-001","status":"pass","proofs":[{"kind":"source","path":"docs/AGENT_EVIDENCE.md","lines":[48,68],"sha256":"13184d3d11b4c67f3d56cfb9f649c01ecf6ba1b6ff0583b4b8863fa76faf7f25"}]},
+    {"id":"REQ-DISCOVERY-001","status":"pass","proofs":[{"kind":"test","path":"tests/test_host_prerequisites.py","lines":[19,24],"sha256":"7043cc668735d7f74dcb8c56ae078b1f7772368b87d94d4cb90afce543692850"}]},
+    {"id":"REQ-RELEASE-001","status":"pass","proofs":[{"kind":"source","path":"docs/RELEASE_PROCESS.md","lines":[53,62],"sha256":"3041ac7652476cdbeffcb90f7f0b5c00ec7163d6fc6f1042c0409635d8920a4f"}]},
+    {"id":"REQ-HANDOFF-001","status":"pass","proofs":[{"kind":"source","path":"prompts/GPT_CREATE_PATCH_PACK.md","lines":[33,40],"sha256":"442174c8545b2bf6ac8df4b6827941da0ec94029aeed0a3d560ccfff2e943307"}]},
+    {"id":"REQ-TEST-001","status":"pass","proofs":[{"kind":"test","path":"tests/test_host_prerequisites.py","lines":[12,36],"sha256":"fe71f0590520887dcb17d8dd771059b17f877583d33fba5b1899e8cbfd0e5580"}]}
+  ],
+  "gates":[
+    {"id":"local-gates","status":"pass","exit":0,"tests":148,"summary":"All required gates passed; pytest: 147 passed."},
+    {"id":"implementation-ci","status":"pass","run":30394360978,"job":90393528318,"url":"https://github.com/rceman/gpt-review-planner/actions/runs/30394360978/job/90393528318","summary":"Exact implementation SHA CI succeeded."}
+  ],
+  "deviations": []
+}

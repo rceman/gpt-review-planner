@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "patch_id": "patch-20260728-190000-host-pytest-prerequisite",
+  "patch_timestamp": "20260728-190000",
+  "patch_slug": "host-pytest-prerequisite",
+  "baseline_release": "v1.3.0",
+  "created_at": "2026-07-28T19:00:00Z",
+  "title": "Document host validation prerequisites",
+  "description": "Document pytest host requirements and prevent contradictory gate evidence.",
+  "evidence_directory": ".gpt-review/evidence/v1.3.0/patch-20260728-190000-host-pytest-prerequisite",
+  "files_created": ["docs/HOST_PREREQUISITES.md", "tests/test_host_prerequisites.py"],
+  "files_modified": ["README.md", "GPT_REVIEW_PLANNER.md", "docs/AGENT_EVIDENCE.md", "docs/RELEASE_PROCESS.md", "prompts/GPT_CREATE_PATCH_PACK.md", "prompts/AGENT_RELEASE_VERSION.md"],
+  "files_deleted": [],
+  "target": {"repository":"rceman/gpt-review-planner","branch":"feature/procedure-index-compact-reporting","base_revision":"7c8ddd468bd37d6c6f8e9970379f2cfc47d58167"},
+  "requirements": [
+    {"id":"REQ-HOST-001","summary":"Canonical host prerequisites","acceptance":["The canonical document defines Git, Bash, Python 3, and pytest preflight."]},
+    {"id":"REQ-HOST-002","summary":"Debian and Ubuntu guidance","acceptance":["The document provides verified Debian/Ubuntu installation guidance and safe privilege rules."]},
+    {"id":"REQ-GATE-001","summary":"Missing runners cannot pass","acceptance":["Evidence rules reject contradictory pass summaries and require completed gates."]},
+    {"id":"REQ-DISCOVERY-001","summary":"Prerequisite discovery links","acceptance":["Primary workflow documents link to the host prerequisite document before gate execution."]},
+    {"id":"REQ-RELEASE-001","summary":"Release preflight","acceptance":["Release documentation requires pytest preflight before mutation and evidence."]},
+    {"id":"REQ-HANDOFF-001","summary":"Generated agent preflight","acceptance":["Patch-pack and release prompts require host-tool preflight and blocker reporting."]},
+    {"id":"REQ-TEST-001","summary":"Regression coverage","acceptance":["Standard-library tests cover the host document, links, evidence rule, and prompts."]}
+  ],
+  "gates":[{"id":"local-gates","name":"Local gates","kind":"command","command":"repository gate suite"},{"id":"implementation-ci","name":"Implementation CI","kind":"github-actions","workflow":"Validate","head":"implementation"}],
+  "workflow":{"repository":"rceman/gpt-review-planner","version":"1.3.0","commit":"7c8ddd468bd37d6c6f8e9970379f2cfc47d58167","document":"GPT_REVIEW_PLANNER.md"}
+}
