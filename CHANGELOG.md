@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added a normative post-merge remote-branch cleanup and finalization contract.
 - Added a bounded, machine-checkable patch-pack handoff contract and delivery validator.
 - Added a bounded review and closure protocol with acceptance-contract scope
   locking, evidence-based blocker thresholds, delta reviews, and explicit stop

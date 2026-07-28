@@ -19,6 +19,9 @@ recursive blocker expansion after an approved scope. Validate its machine
 contract with `python3 scripts/validate-review-closure.py`; implementation-result
 reviews use delta mode and stop when the `MERGE_READY` conditions are satisfied.
 
+After merge, follow the [post-merge branch cleanup contract](docs/POST_MERGE_BRANCH_CLEANUP.md)
+to verify exact-SHA integration and safely delete the merged remote feature branch.
+
 ## Review an attached project archive
 
 The canonical guide is [`docs/PROJECT_ARCHIVE_REVIEW.md`](docs/PROJECT_ARCHIVE_REVIEW.md).

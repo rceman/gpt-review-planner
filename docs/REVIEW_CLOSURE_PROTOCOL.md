@@ -163,6 +163,14 @@ After declaring `MERGE_READY`, the reviewer MUST stop the current review. It may
 record follow-up tasks but MUST NOT continue searching for optional improvements
 inside the same closure cycle.
 
+`MERGE_READY` is the final review verdict: it authorizes feature integration but
+does not claim that the merge has happened or that remote cleanup is complete.
+After a successful normal merge and exact merge-SHA CI, the local agent follows
+the [post-merge branch cleanup contract](POST_MERGE_BRANCH_CLEANUP.md). Branch
+cleanup is integration finalization, not a reason to restart the review. The
+final integration status is `MERGE_FINALIZED` only after safe remote deletion
+and verification, or `MERGE_CLEANUP_BLOCKED` if deletion cannot be completed.
+
 ## Diminishing-return stop rule
 
 The reviewer stops expanding the current patch when additional changes are

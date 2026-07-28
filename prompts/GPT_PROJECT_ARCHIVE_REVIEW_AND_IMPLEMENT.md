@@ -110,6 +110,33 @@ When every approved criterion and required gate passes, scope matches, and no
 blocker remains, declare `MERGE_READY`. Stop after declaring `MERGE_READY`;
 record other ideas only in `FOLLOW_UP_BACKLOG`.
 
+If the owner authorizes merging the resulting feature, the generated
+`AGENT_HANDOFF` must include the complete post-merge procedure from
+`docs/POST_MERGE_BRANCH_CLEANUP.md` in the same `AGENT_HANDOFF` prompt. After normal
+`git merge --no-ff` integration and successful CI for the exact merge SHA, the
+agent must verify the reviewed feature tip is the current remote tip and an
+ancestor of `origin/main`, run `git push origin --delete <FEATURE_BRANCH>`,
+prune refs, verify deletion, retain the local feature branch, and report the
+final inventory. The result must be `MERGE_FINALIZED` only after every check
+passes, or `MERGE_CLEANUP_BLOCKED` with the exact failed command and state if
+safe deletion cannot be completed. Cleanup is not an owner follow-up.
+
+The merge handoff must include these exact cleanup commands after successful
+merge CI:
+
+```bash
+git fetch origin --prune
+test "$(git rev-parse origin/main)" = "<EXPECTED_MERGE_SHA>"
+test "$(git rev-parse origin/<FEATURE_BRANCH>)" = "<EXPECTED_FEATURE_HEAD>"
+git merge-base --is-ancestor origin/<FEATURE_BRANCH> origin/main
+git push origin --delete <FEATURE_BRANCH>
+git fetch origin --prune
+```
+
+It must then require verification of remote-branch absence, unchanged
+`origin/main`, retained local branch and tip, unchanged repository files, and a
+clean worktree, together with the complete merge CI and final status report.
+
 Return exactly these top-level sections:
 
 1. `WORKFLOW_IDENTITY`
