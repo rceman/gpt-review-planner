@@ -128,6 +128,15 @@ GitHub APIs, fallback HTTPS remotes, squash, and history rewriting are forbidden
 Its machine-critical identity and ancestry checks use fully qualified refs to
 prevent local-branch shadowing.
 
+All local-agent-facing communication MUST be written in English, regardless of
+the language used by the owner when communicating with GPT. This includes every
+`AGENT_HANDOFF`, `AGENT_PROMPT.md`, implementation, correction, merge, cleanup,
+and release instruction, plus every agent question, progress report, blocker,
+deviation, and final execution report. Exact repository-controlled literals may
+remain in their original language. Follow
+[`AGENT_COMMUNICATION_LANGUAGE.md`](docs/AGENT_COMMUNICATION_LANGUAGE.md);
+bilingual agent instructions are forbidden.
+
 ---
 
 ## 3. Responsibility model

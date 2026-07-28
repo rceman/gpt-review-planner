@@ -2,6 +2,13 @@
 
 Prepare a review archive with filesystem and Git access.
 
+Write all execution communication and the final report in English regardless
+of the language used by the owner. Exact filenames, commands, identifiers,
+errors, source excerpts, task objectives, and localized repository content may
+remain in their original language inside otherwise English reporting. Do not
+duplicate instructions or reports bilingually. Follow the pinned
+`docs/AGENT_COMMUNICATION_LANGUAGE.md` contract.
+
 ## Preferred compact invocation
 
 The owner may invoke this prompt with only an immutable methodology link and

@@ -2,6 +2,12 @@
 
 Release this repository as `<TARGET_VERSION>`.
 
+Write all execution communication and the final report in English regardless
+of the language used by the owner. Preserve exact version strings, commands,
+paths, refs, tags, CI output, and error messages without translation. Do not
+duplicate instructions or reports bilingually. Follow
+`docs/AGENT_COMMUNICATION_LANGUAGE.md`.
+
 Before changing anything, read and follow `docs/RELEASE_PROCESS.md` completely.
 
 Use only:

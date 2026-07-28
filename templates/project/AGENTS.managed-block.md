@@ -16,6 +16,8 @@
 > Operating model:
 > - GPT owns architecture, behavior contracts, fixtures, tests, static/artifact review, and the principal implementation. GPT does not execute runtime quality gates.
 > - The local agent owns integration, dependency restoration, formatting, compilation, linting, runtime tests, benchmarks, evidence, and minimal integration corrections.
+> - Regardless of the owner's conversation language, all local-agent communication and execution reports must be written in English; preserve exact repository-controlled literals without translation.
+> - Read the pinned `docs/AGENT_COMMUNICATION_LANGUAGE.md` contract and do not duplicate instructions bilingually.
 > - The local agent must not redesign approved behavior or weaken tests and acceptance criteria.
 > - GPT reviews agent-reported runtime evidence without rerunning tests.
 >

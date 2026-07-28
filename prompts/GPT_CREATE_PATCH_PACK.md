@@ -2,6 +2,13 @@
 
 Use the workflow pinned by the target repository's `.gpt-workflow.lock`.
 
+Read and follow `docs/AGENT_COMMUNICATION_LANGUAGE.md`. All local-agent-facing communication MUST be written in English regardless of the owner's conversation
+language. Every generated `AGENT_PROMPT.md`, `AGENT_HANDOFF`, correction prompt,
+merge/release instruction, and required agent execution report is English.
+Preserve exact filenames, commands, identifiers, errors, source excerpts, and
+localized repository content without translation; do not create bilingual
+agent instructions.
+
 Inspect the repository or supplied archive and prepare an Executable Patch Pack.
 Own the architecture, behavior contract, canonical fixtures, native tests,
 principal production implementation, file-by-file patch, static review report,

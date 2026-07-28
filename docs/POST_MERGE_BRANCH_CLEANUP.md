@@ -103,6 +103,15 @@ evidence commits remain individually reachable, feature integration uses
 branch does not delete its commits because they remain reachable from `main`.
 The retained local branch is a convenience and is not repository evidence.
 
+## Communication language
+
+All merge and cleanup instructions and reports MUST be written in English,
+including exact-SHA CI evidence, ancestry and identity checks, remote deletion
+results, `MERGE_FINALIZED`, and `MERGE_CLEANUP_BLOCKED` reports. The owner's
+conversation language does not change this requirement. Exact commands, refs,
+paths, errors, and repository-controlled literals remain unchanged. Follow
+[`AGENT_COMMUNICATION_LANGUAGE.md`](AGENT_COMMUNICATION_LANGUAGE.md).
+
 If any safety check fails, stop and report the exact state. Do not delete the
 branch and use `MERGE_CLEANUP_BLOCKED` only after merge and exact-SHA CI have
 succeeded.

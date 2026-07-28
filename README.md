@@ -22,6 +22,10 @@ reviews use delta mode and stop when the `MERGE_READY` conditions are satisfied.
 After merge, follow the [post-merge branch cleanup contract](docs/POST_MERGE_BRANCH_CLEANUP.md)
 to verify exact-SHA integration and safely delete the merged remote feature branch.
 
+All GPT-to-agent handoffs and local-agent execution reports use English regardless
+of the owner's conversation language. See the normative
+[agent communication language contract](docs/AGENT_COMMUNICATION_LANGUAGE.md).
+
 ## Review an attached project archive
 
 The canonical guide is [`docs/PROJECT_ARCHIVE_REVIEW.md`](docs/PROJECT_ARCHIVE_REVIEW.md).
