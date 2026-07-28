@@ -6,10 +6,10 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 STATES = {"success", "pending", "failed", "cancelled", "timed_out", "action_required", "neutral", "skipped", "no_run", "unavailable", "not_applicable", "invalid_response"}
-EXIT = {"success": 0, "neutral": 0, "skipped": 0, "not_applicable": 0, "pending": 2, "failed": 3, "cancelled": 3, "timed_out": 3, "action_required": 3, "no_run": 0, "unavailable": 0}
+EXIT = {"success": 0, "not_applicable": 0, "pending": 2, "failed": 3, "cancelled": 3, "timed_out": 3, "action_required": 3, "neutral": 3, "skipped": 3, "no_run": 0, "unavailable": 0, "invalid_response": 5}
 
 def result(args, state, message, **values):
-    blocking = state in {"failed", "cancelled", "timed_out", "action_required"} or (state in {"no_run", "unavailable"} and args.policy == "required") or state == "pending"
+    blocking = state in {"failed", "cancelled", "timed_out", "action_required", "neutral", "skipped", "invalid_response"} or (state in {"no_run", "unavailable"} and args.policy == "required") or state == "pending"
     data = {"schema_version": 1, "repository": args.repository, "sha": args.sha, "policy": args.policy, "state": state, "blocking": blocking, "source": "policy" if state == "not_applicable" else "github-actions-rest", "run_id": None, "job_id": None, "run_url": None, "job_url": None, "workflow": None, "event": None, "status": None, "conclusion": None, "checked_sha": None, "message": message}
     data.update(values)
     if args.format == "json": print(json.dumps(data, sort_keys=True))
@@ -51,11 +51,23 @@ def main():
         candidates=[r for r in payload["workflow_runs"] if isinstance(r,dict) and r.get("head_sha")==a.sha and (not a.workflow or a.workflow in str(r.get("name")) or a.workflow in str(r.get("path"))) and (not a.event or not r.get("event") or r.get("event")==a.event)]
         if not candidates:
             result(a,"no_run","no matching exact-SHA workflow run was found"); return 0 if a.policy in {"auto","optional"} else 4
-        run=candidates[0]
+        run=sorted(candidates, key=lambda item: (str(item.get("created_at", "")), int(item.get("id", 0))), reverse=True)[0]
+        state=classify(run, None)
+        values={"run_id":run.get("id"),"run_url":run.get("html_url"),"workflow":run.get("name") or run.get("path"),"event":run.get("event"),"status":run.get("status"),"conclusion":run.get("conclusion"),"checked_sha":run.get("head_sha")}
         try: jobs=fetch(f"{base}/repos/{a.repository}/actions/runs/{run['id']}/jobs?per_page=100", token)
-        except (HTTPError, URLError, OSError, json.JSONDecodeError) as e: result(a,"unavailable",f"workflow found but jobs could not be queried: {e}"); return 4 if a.policy=="required" else 0
-        job=(jobs.get("jobs") or [None])[0] if isinstance(jobs,dict) else None
-        state=classify(run,job); values={"run_id":run.get("id"),"run_url":run.get("html_url"),"workflow":run.get("name") or run.get("path"),"event":run.get("event"),"status":run.get("status"),"conclusion":run.get("conclusion"),"checked_sha":run.get("head_sha")}
+        except (HTTPError, URLError, OSError, json.JSONDecodeError, KeyError) as e:
+            values["message"] = f"exact-SHA run {run.get('id')} resolved as {state}; job metadata unavailable: {e}"
+            data=result(a,state,values.pop("message"),**values)
+            if state=="pending" and a.wait and time.monotonic()<deadline: time.sleep(min(a.interval,max(0,deadline-time.monotonic()))); continue
+            if state=="pending" and a.wait: return 6
+            return EXIT[state]
+        if not isinstance(jobs, dict) or not isinstance(jobs.get("jobs"), list):
+            message=f"exact-SHA run {run.get('id')} resolved as {state}; job metadata unavailable: malformed jobs response"
+            result(a,state,message,**values)
+            if state=="pending" and a.wait and time.monotonic()<deadline: time.sleep(min(a.interval,max(0,deadline-time.monotonic()))); continue
+            if state=="pending" and a.wait: return 6
+            return EXIT[state]
+        job=(jobs.get("jobs") or [None])[0]
         if job: values.update(job_id=job.get("id"),job_url=job.get("html_url"))
         data=result(a,state,f"exact-SHA run {run.get('id')} is {state}",**values)
         if state=="pending" and a.wait and time.monotonic()<deadline: time.sleep(min(a.interval,max(0,deadline-time.monotonic()))); continue
