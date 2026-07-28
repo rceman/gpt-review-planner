@@ -10,8 +10,9 @@ the feature is authorized for merge, and no merge blocker remains. It does not
 claim that Git integration has happened.
 
 `MERGE_FINALIZED` may be reported only after the expected feature head was
-merged with the expected parents, `origin/main` points to the exact merge
-commit, exact-SHA CI succeeded, and the safe remote cleanup below completed.
+merged with the expected parents, the canonical remote-tracking main ref points
+to the exact merge commit, exact-SHA CI succeeded, and the safe remote cleanup
+below completed.
 
 `MERGE_CLEANUP_BLOCKED` is used only when merge and merge CI succeeded but safe
 remote branch deletion could not be completed. The merge remains valid, but
@@ -24,26 +25,44 @@ Use the reviewed feature branch and immutable expected values supplied by the
 owner. Remote deletion is permitted only after exact merge-SHA CI succeeds.
 
 ```bash
+FEATURE_BRANCH="<FEATURE_BRANCH>"
+REMOTE_MAIN_REF="refs/remotes/origin/main"
+REMOTE_FEATURE_REF="refs/remotes/origin/${FEATURE_BRANCH}"
+LOCAL_FEATURE_REF="refs/heads/${FEATURE_BRANCH}"
+
 git fetch origin --prune
 
-test "$(git rev-parse origin/main)" = "<EXPECTED_MERGE_SHA>"
+test "$(git rev-parse --verify "${REMOTE_MAIN_REF}^{commit}")" = \
+  "<EXPECTED_MERGE_SHA>"
 
-test "$(git rev-parse origin/<FEATURE_BRANCH>)" = "<EXPECTED_FEATURE_HEAD>"
+test "$(git rev-parse --verify "${REMOTE_FEATURE_REF}^{commit}")" = \
+  "<EXPECTED_FEATURE_HEAD>"
 
 git merge-base --is-ancestor \
-  origin/<FEATURE_BRANCH> \
-  origin/main
+  "${REMOTE_FEATURE_REF}" \
+  "${REMOTE_MAIN_REF}"
 
-git push origin --delete <FEATURE_BRANCH>
+git push origin --delete "${FEATURE_BRANCH}"
 
 git fetch origin --prune
+
+if git show-ref --verify --quiet "${REMOTE_FEATURE_REF}"; then
+  echo "ERROR: deleted remote feature ref still exists" >&2
+  exit 1
+fi
+
+test "$(git rev-parse --verify "${REMOTE_MAIN_REF}^{commit}")" = \
+  "<EXPECTED_MERGE_SHA>"
+
+test "$(git rev-parse --verify "${LOCAL_FEATURE_REF}^{commit}")" = \
+  "<EXPECTED_FEATURE_HEAD>"
 ```
 
 The deletion command uses the feature branch name without the `origin/`
 prefix. Then verify:
 
-- `refs/remotes/origin/<FEATURE_BRANCH>` does not exist;
-- `origin/main` still equals `<EXPECTED_MERGE_SHA>`;
+- `refs/remotes/origin/${FEATURE_BRANCH}` does not exist;
+- `refs/remotes/origin/main` still equals `<EXPECTED_MERGE_SHA>`;
 - the local `<FEATURE_BRANCH>` still exists and still points to its previous tip;
 - no tracked or untracked repository files were created by cleanup;
 - the worktree is clean.
@@ -51,15 +70,24 @@ prefix. Then verify:
 The final merge report must include the feature branch, reviewed feature head,
 merge SHA and parents, merge CI run/job/exact SHA/URL/conclusion, ancestry
 result, deletion command and result, final remote inventory, retained local
-branch and tip, final `origin/main`, VERSION, worktree state, and exactly one
+branch and tip, final `refs/remotes/origin/main`, VERSION, worktree state, and exactly one
 of `MERGE_FINALIZED` or `MERGE_CLEANUP_BLOCKED`.
 
 ## Safety and transport rules
 
 Never delete `origin/main` or `origin/HEAD`. Never delete a branch whose tip is
-not an ancestor of `origin/main`, or whose current remote tip differs from the
+not an ancestor of `refs/remotes/origin/main`, or whose current remote tip differs from the
 reviewed and merged feature head. Merged state cannot be inferred from a branch
 name, age, commit message, or an empty three-dot diff.
+
+Abbreviated names such as `origin/main` and `origin/<FEATURE_BRANCH>` MUST NOT
+be used for authoritative identity, ancestry, existence, or retention checks.
+A local branch named `origin/main` may shadow or make an abbreviated name
+ambiguous. `refs/remotes/origin/main` is the canonical remote-tracking main
+ref, `refs/remotes/origin/<FEATURE_BRANCH>` is the canonical remote feature
+ref, and `refs/heads/<FEATURE_BRANCH>` is the canonical retained local feature
+ref. Existing unrelated local branches, including `refs/heads/origin/main`,
+are not modified during cleanup.
 
 Never rename merged branches to `merged/*` or `archive/*`, delete the local
 feature branch, or use `git branch -d` or `git branch -D` during finalization.

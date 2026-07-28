@@ -125,6 +125,8 @@ the local feature branch is retained. If safe deletion fails after successful
 merge CI, report `MERGE_CLEANUP_BLOCKED`. Follow the normative
 [`POST_MERGE_BRANCH_CLEANUP.md`](docs/POST_MERGE_BRANCH_CLEANUP.md); `gh`,
 GitHub APIs, fallback HTTPS remotes, squash, and history rewriting are forbidden.
+Its machine-critical identity and ancestry checks use fully qualified refs to
+prevent local-branch shadowing.
 
 ---
 
