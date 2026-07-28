@@ -1,0 +1,241 @@
+{
+  "schema_version": 2,
+  "patch_id": "patch-20260728-134457-gateway-v2-compat",
+  "title": "Gateway protocol compatibility",
+  "description": "Aligns executable patch-pack semantics with gateway protocol v2.",
+  "created_at": "2026-07-28T13:44:57Z",
+  "patch_timestamp": "20260728-134457",
+  "patch_slug": "gateway-v2-compat",
+  "baseline_release": "v1.2.0",
+  "evidence_directory": ".gpt-review/evidence/v1.2.0/patch-20260728-134457-gateway-v2-compat",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v1.2.0",
+    "commit": "723a8f2a10b9413dadedaf225ad9921eca6b0d4b",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "rceman/gpt-review-planner",
+    "branch": "main",
+    "base_revision": "723a8f2a10b9413dadedaf225ad9921eca6b0d4b"
+  },
+  "files_created": [
+    "docs/GATEWAY_INTEROPERABILITY.md",
+    "docs/STRUCTURED_FORMAT_POLICY.md",
+    "examples/gateway-compatible-patch-pack/AGENT_HANDOFF.md",
+    "examples/gateway-compatible-patch-pack/AGENT_PROMPT.md",
+    "examples/gateway-compatible-patch-pack/BEHAVIOR_CONTRACT.md",
+    "examples/gateway-compatible-patch-pack/PATCH_SPEC.md",
+    "examples/gateway-compatible-patch-pack/README_FIRST.md",
+    "examples/gateway-compatible-patch-pack/VALIDATION_REPORT.md",
+    "examples/gateway-compatible-patch-pack/delivery/gateway-response.md",
+    "examples/gateway-compatible-patch-pack/delivery/manual-response.md",
+    "examples/gateway-compatible-patch-pack/evidence.json",
+    "examples/gateway-compatible-patch-pack/expected/acceptance-gates.md",
+    "examples/gateway-compatible-patch-pack/expected/allowed-deviations.md",
+    "examples/gateway-compatible-patch-pack/manifest.json",
+    "examples/gateway-compatible-patch-pack/overlay/demo.txt",
+    "examples/gateway-compatible-patch-pack/patch/delete-paths.txt",
+    "examples/gateway-compatible-patch-pack/scripts/patch_pack_scope.py",
+    "examples/gateway-compatible-patch-pack/scripts/verify-agent-evidence.py",
+    "examples/gateway-compatible-patch-pack/scripts/verify-agent-result.sh",
+    "schemas/patch-pack-delivery-result.schema.json",
+    "schemas/patch-pack-validator-result.schema.json",
+    "scripts/verify-agent-result.sh",
+    "templates/executable-patch-pack/AGENT_HANDOFF.md",
+    "templates/executable-patch-pack/scripts/patch_pack_scope.py",
+    "templates/executable-patch-pack/scripts/verify-agent-evidence.py",
+    "tests/test_gateway_patch_pack_compatibility.py"
+  ],
+  "files_modified": [
+    "CHANGELOG.md",
+    "GPT_REVIEW_PLANNER.md",
+    "README.md",
+    "RELEASE_CHECKLIST.md",
+    "VERSION",
+    "docs/AGENT_EVIDENCE.md",
+    "docs/PATCH_PACK_FORMAT.md",
+    "docs/PATCH_PACK_HANDOFF.md",
+    "prompts/GPT_CREATE_PATCH_PACK.md",
+    "scripts/new-patch-pack.sh",
+    "scripts/validate-patch-pack-delivery.py",
+    "scripts/validate-patch-pack.py",
+    "scripts/verify-agent-evidence.py",
+    "templates/executable-patch-pack/AGENT_PROMPT.md",
+    "templates/executable-patch-pack/README_FIRST.md",
+    "templates/executable-patch-pack/scripts/verify-agent-result.sh",
+    "tests/test_patch_pack_delivery.py",
+    "tests/test_repository.py"
+  ],
+  "files_deleted": [],
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "summary": "Canonical agent execution handoff",
+      "acceptance": [
+        "AC-001: Every ready executable patch pack requires regular non-symlink UTF-8 AGENT_HANDOFF.md with all canonical Markdown headings.",
+        "AC-002: Handoff workflow, target, base, patch, and evidence identity exactly match manifest.json.",
+        "AC-003: AGENT_PROMPT.md is absent by default and is accepted for one release only when byte-identical to AGENT_HANDOFF.md."
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "summary": "Stable semantic validator interface",
+      "acceptance": [
+        "AC-004: validate-patch-pack.py preserves human text mode and adds deterministic --format json output with schema version 1.",
+        "AC-005: Invalid packs return non-zero with stable error codes and no partial success.",
+        "AC-006: Strict JSON decoding rejects duplicate keys, unknown manifest fields, and gateway-owned transport fields."
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "summary": "Precise handoff and placeholder validation",
+      "acceptance": [
+        "AC-007: Required headings are parsed as separate Markdown headings and handoff size, encoding, NUL, empty, symlink, and identity defects fail closed.",
+        "AC-008: Only targeted unresolved placeholder forms fail.",
+        "AC-009: Shell redirection, comparisons, angle brackets, and XML fragments do not fail merely because of their punctuation."
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "summary": "Gateway-aware delivery validation",
+      "acceptance": [
+        "AC-010: Delivery validation supports manual-download, gateway-task-bundle, prompt-only, and no-action modes.",
+        "AC-011: Manual mode retains archive and sidecar naming while gateway mode uses a transport-neutral AGENT_HANDOFF.md sentence.",
+        "AC-012: Three bundled planner tools are byte-identical and start successfully with --help."
+      ]
+    },
+    {
+      "id": "REQ-005",
+      "summary": "Evidence lifecycle compatibility",
+      "acceptance": [
+        "AC-013: Prepare mode accepts exactly the two generated evidence files as untracked or staged additions only under the exact evidence directory.",
+        "AC-014: Prepare mode rejects third paths, wrong directories, non-identical manifests, invalid proofs, gates, and deviations.",
+        "AC-015: Committed mode requires a direct-child evidence-only commit changing exactly the two canonical paths."
+      ]
+    },
+    {
+      "id": "REQ-006",
+      "summary": "Structured format and ownership boundary",
+      "acceptance": [
+        "AC-016: JSON is canonical machine data, Markdown is canonical human and agent instruction data, and YAML is not accepted as wire input.",
+        "AC-017: Planner and gateway ownership are documented without implementing task-bundle, bus, routing, execution-mode, Airelay, or result transport in the planner.",
+        "AC-018: Planner manifests remain free of gateway transport-only fields."
+      ]
+    },
+    {
+      "id": "REQ-007",
+      "summary": "Canonical templates and reference fixture",
+      "acceptance": [
+        "AC-019: The canonical template and generator create AGENT_HANDOFF.md, copy all three exact tools, and distinguish template state from ready state.",
+        "AC-020: The gateway-compatible reference fixture passes semantic text, semantic JSON, manual delivery, and gateway delivery validation.",
+        "AC-021: Regression coverage implements the approved forty-case compatibility matrix."
+      ]
+    },
+    {
+      "id": "REQ-008",
+      "summary": "Minor release readiness",
+      "acceptance": [
+        "AC-022: VERSION and workflow documentation advance to 1.3.0 as an owner-approved public-contract minor release.",
+        "AC-023: CHANGELOG and release documentation describe the compatibility and deprecation window.",
+        "AC-024: No tag or release is created before evidence, GPT delta review, merge, and exact merged-main CI."
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "python-compile",
+      "name": "Python syntax compilation",
+      "kind": "command",
+      "command": "python3 -m compileall -q scripts tests examples"
+    },
+    {
+      "id": "unit-tests",
+      "name": "Repository unit tests",
+      "kind": "command",
+      "command": "python3 -m unittest discover -s tests -v"
+    },
+    {
+      "id": "shell-syntax",
+      "name": "Shell syntax",
+      "kind": "command",
+      "command": "bash -n setup.sh update.sh scripts/*.sh templates/executable-patch-pack/scripts/*.sh"
+    },
+    {
+      "id": "fixture-semantic-text",
+      "name": "Reference semantic text validation",
+      "kind": "command",
+      "command": "python3 scripts/validate-patch-pack.py examples/gateway-compatible-patch-pack"
+    },
+    {
+      "id": "fixture-semantic-json",
+      "name": "Reference semantic JSON validation",
+      "kind": "command",
+      "command": "python3 scripts/validate-patch-pack.py --format json examples/gateway-compatible-patch-pack"
+    },
+    {
+      "id": "delivery-manual",
+      "name": "Manual delivery validation",
+      "kind": "command",
+      "command": "python3 scripts/validate-patch-pack-delivery.py --mode manual-download --pack-root examples/gateway-compatible-patch-pack --planner-root . --archive-name patch-20260728-120000-gateway-compatible.tar.gz --sidecar-name patch-20260728-120000-gateway-compatible.tar.gz.sha256 --response-file examples/gateway-compatible-patch-pack/delivery/manual-response.md"
+    },
+    {
+      "id": "delivery-gateway",
+      "name": "Gateway delivery validation",
+      "kind": "command",
+      "command": "python3 scripts/validate-patch-pack-delivery.py --mode gateway-task-bundle --format json --pack-root examples/gateway-compatible-patch-pack --planner-root . --archive-name patch-20260728-120000-gateway-compatible.tar.gz --sidecar-name patch-20260728-120000-gateway-compatible.tar.gz.sha256 --response-file examples/gateway-compatible-patch-pack/delivery/gateway-response.md"
+    },
+    {
+      "id": "evidence-regression",
+      "name": "Evidence lifecycle regression tests",
+      "kind": "command",
+      "command": "python3 -m unittest tests.test_gateway_patch_pack_compatibility.GatewayEvidencePreparationTests -v"
+    },
+    {
+      "id": "release-check",
+      "name": "Version consistency",
+      "kind": "command",
+      "command": "python3 scripts/release.py check"
+    },
+    {
+      "id": "patch-scope",
+      "name": "Exact implementation scope",
+      "kind": "scope"
+    },
+    {
+      "id": "implementation-ci",
+      "name": "Implementation commit CI",
+      "kind": "github-actions",
+      "workflow": "Validate",
+      "head": "implementation"
+    },
+    {
+      "id": "agent-evidence",
+      "name": "Committed agent evidence",
+      "kind": "evidence"
+    }
+  ],
+  "gpt_static_checks_performed": [
+    "Audited planner main at 723a8f2a10b9413dadedaf225ad9921eca6b0d4b and gateway protocol-v2 public contracts.",
+    "Authored complete validator, delivery, evidence, template, schema, documentation, fixture, and regression-test changes.",
+    "Parsed every authored Python and JSON artifact and verified exact patch operation scope.",
+    "Executed dependency-free semantic and delivery artifact validators against the authored reference fixture in text and JSON modes.",
+    "Verified the outer binary patch contains no broad placeholder false positives and is parseable by git apply --numstat."
+  ],
+  "gpt_runtime_checks_not_performed": [
+    "Repository unit and integration tests were not executed by GPT.",
+    "Project compile, shell quality gates, release checks, and GitHub Actions were not executed by GPT.",
+    "No merge, tag, release, gateway task publication, Airelay dispatch, or rceman/typer operation was performed by GPT."
+  ],
+  "known_integration_risks": [
+    "The committed reference fixture cannot self-pin the commit that contains itself; it is a local semantic fixture pinned to the prior immutable planner baseline. Real post-release packs must pin the published v1.3.0 commit.",
+    "The outer execution pack is validated by v1.2.0 and therefore contains a byte-identical deprecated AGENT_PROMPT.md alias; the implementation removes that alias from the canonical template."
+  ],
+  "forbidden_deviations": [
+    "Do not modify rceman/gpt-github-gateway or rceman/typer.",
+    "Do not implement taskbundle transport, bus routing, gateway identity, execution mode, Airelay sessions, or result publication in the planner.",
+    "Do not weaken strict JSON, handoff identity, placeholder, scope, evidence, bundled-tool, or delivery validation.",
+    "Do not remove the two-commit implementation/evidence history or combine evidence into implementation.",
+    "Do not merge, tag, release, rebase, squash, amend, reset, force-push, or rewrite history."
+  ]
+}
