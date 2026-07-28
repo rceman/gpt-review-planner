@@ -35,6 +35,14 @@ The prompt must include the repository, local repository when known, branch,
 exact base or expected HEAD, exact required actions, runtime gates, constraints,
 and the required final report.
 
+Every merge-oriented prompt-only handoff must include the complete post-merge
+[`POST_MERGE_BRANCH_CLEANUP.md`](POST_MERGE_BRANCH_CLEANUP.md) sequence in the
+same `AGENT_HANDOFF` copy-ready prompt: exact merge-SHA checks, feature-tip ancestry and
+identity checks, `git push origin --delete <FEATURE_BRANCH>`, prune, and final
+verification. Its report must require `MERGE_FINALIZED` or
+`MERGE_CLEANUP_BLOCKED`; the handoff is not complete until those cleanup and
+report instructions are included.
+
 No-action mode must end exactly with this text, with no prose or section after
 `AGENT_HANDOFF`:
 

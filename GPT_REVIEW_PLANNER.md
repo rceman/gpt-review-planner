@@ -117,6 +117,17 @@ criteria and gates pass, declared and actual scope agree, and no evidenced
 blocker remains, declare `MERGE_READY` and stop the current review. Do not keep
 searching for optional improvements after closure.
 
+`MERGE_READY` authorizes a merge but does not finalize Git integration. A merge
+task becomes `MERGE_FINALIZED` only after exact merge-SHA CI succeeds, the
+reviewed remote feature tip is verified as an ancestor, the remote feature
+branch is deleted through the configured SSH `origin`, refs are pruned, and
+the local feature branch is retained. If safe deletion fails after successful
+merge CI, report `MERGE_CLEANUP_BLOCKED`. Follow the normative
+[`POST_MERGE_BRANCH_CLEANUP.md`](docs/POST_MERGE_BRANCH_CLEANUP.md); `gh`,
+GitHub APIs, fallback HTTPS remotes, squash, and history rewriting are forbidden.
+Its machine-critical identity and ancestry checks use fully qualified refs to
+prevent local-branch shadowing.
+
 ---
 
 ## 3. Responsibility model
