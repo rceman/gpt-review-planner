@@ -116,8 +116,8 @@ and the reopen basis must be reported.
 Permit one normal correction round. A later round requires a still-failing
 approved criterion, a demonstrable regression, or a new critical/high blocker.
 When every approved criterion and required gate passes, scope matches, and no
-blocker remains, declare `MERGE_READY`. Stop after declaring `MERGE_READY`;
-record other ideas only in `FOLLOW_UP_BACKLOG`.
+blocker remains, declare `MERGE_READY`. After declaring `MERGE_READY`, stop further review expansion and optional finding discovery. Do not end the actionable response before emitting the required merge-oriented `AGENT_HANDOFF` from the canonical merge prompt. Record other ideas only in
+`FOLLOW_UP_BACKLOG`.
 
 If the owner authorizes merging the resulting feature, load the exact pinned
 `docs/PROCEDURE_INDEX.md` and `docs/POST_MERGE_BRANCH_CLEANUP.md`, then generate

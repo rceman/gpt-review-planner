@@ -54,14 +54,6 @@ product content, and other repository-controlled literals may remain in their
 original language inside otherwise English instructions. Follow
 [`AGENT_COMMUNICATION_LANGUAGE.md`](AGENT_COMMUNICATION_LANGUAGE.md).
 
-Every merge-oriented prompt-only handoff must include the complete post-merge
-[`POST_MERGE_BRANCH_CLEANUP.md`](POST_MERGE_BRANCH_CLEANUP.md) sequence in the
-same `AGENT_HANDOFF` copy-ready prompt: exact merge-SHA checks, feature-tip ancestry and
-identity checks, `git push origin --delete <FEATURE_BRANCH>`, prune, and final
-verification. Its report must require `MERGE_FINALIZED` or
-`MERGE_CLEANUP_BLOCKED`; the handoff is not complete until those cleanup and
-report instructions are included.
-
 No-action mode must end exactly with this text, with no prose or section after
 `AGENT_HANDOFF`:
 
@@ -89,6 +81,12 @@ representative fixture and final response must be validated before handoff.
 GPT performs static and artifact validation only; executable quality gates are
 owned by the local coding agent and are not claimed as GPT results.
 When remote CI is unavailable or intentionally disabled, mandatory local runtime gates remain authoritative. Use `scripts/check-github-ci.py` for exact-SHA observations when policy permits or requires them.
-Merge-oriented prompt-only handoffs may load the complete canonical prompt from the pinned planner checkout: `prompts/AGENT_FINALIZE_MERGE.md`. The compact form must include `REPOSITORY`, `LOCAL_REPOSITORY`, `SSH_ORIGIN`, `MAIN_BRANCH`, `FEATURE_BRANCH`, `EXPECTED_MAIN_BEFORE`, `EXPECTED_FEATURE_HEAD`, `EXPECTED_VERSION`, `CI_POLICY`, `CI_WORKFLOW`, and `CI_EVENT`. Mutable `main`/`latest` references and summaries that replace the prompt are forbidden.
+## Post-merge merge-oriented prompt-only handoff
+
+This post-merge handoff contract governs merge-finalization prompts.
+
+A merge-oriented prompt-only handoff MUST provide complete merge-finalization instructions using exactly one of: complete inline instructions, or the preferred compact reference to `prompts/AGENT_FINALIZE_MERGE.md` from the exact pinned planner checkout or immutable tag/commit URL plus the complete parameter block. Compact reference mode is complete because the agent must load the canonical prompt and linked normative contracts before execution. Mutable `main`, `latest`, or unresolved references are forbidden; a summary must not replace loading the canonical prompt.
+
+Required parameters are `REPOSITORY`, `LOCAL_REPOSITORY`, `SSH_ORIGIN`, `MAIN_BRANCH`, `FEATURE_BRANCH`, `EXPECTED_MAIN_BEFORE`, `EXPECTED_FEATURE_HEAD`, `EXPECTED_VERSION`, `CI_POLICY`, `CI_WORKFLOW`, and `CI_EVENT`. Both modes require exact merge-SHA CI, feature-tip identity and ancestry, remote deletion only after successful CI, pruning, local feature-branch retention, final verification, and `MERGE_FINALIZED`, `MERGE_CLEANUP_BLOCKED`, or pre-merge `MERGE_BLOCKED`. No handoff is required to inline the cleanup sequence when it loads the complete pinned canonical prompt.
 
 After producing a terminal workflow status, consult `docs/PROCEDURE_INDEX.md` and emit the handoff required by the next transition.

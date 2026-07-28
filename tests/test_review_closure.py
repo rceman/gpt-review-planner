@@ -116,7 +116,8 @@ class ReviewClosureIntegrationTests(unittest.TestCase):
             "stronger contract",
         ):
             self.assertIn(phrase, text)
-        self.assertIn("Stop after declaring `MERGE_READY`", text)
+        self.assertIn("After declaring `MERGE_READY`", text)
+        self.assertIn("required merge-oriented `AGENT_HANDOFF`", text)
 
     def test_review_only_prompt_separates_blockers_from_backlog(self) -> None:
         text = self.text("prompts/GPT_PROJECT_ARCHIVE_REVIEW_ONLY.md")

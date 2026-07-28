@@ -16,10 +16,24 @@ class ProcedureIndexAndReportingTests(unittest.TestCase):
     def test_transitions_and_ownership(self):
         text=self.read('docs/PROCEDURE_INDEX.md')
         for value in ('IMPLEMENTATION_COMPLETE','GPT_DELTA_REVIEW','CORRECTION_REQUIRED','MERGE_READY','MERGE_FINALIZED','MERGE_CLEANUP_BLOCKED','GPT owns','local agent owns','separate task'): self.assertIn(value,text)
+        self.assertIn('GPT_CORRECTION_PATCH → AGENT_IMPLEMENTATION', text)
+        self.assertIn('OWNER_DECISION → task-specific approved transition', text)
+        self.assertIn('MERGE_READY\n    → GPT_MERGE_HANDOFF → MERGE_EXECUTION', text)
+        self.assertNotIn('OWNER_DECISION_REQUIRED → MERGE_EXECUTION', text)
+    def test_archive_roles_and_prompts(self):
+        text=self.read('docs/PROCEDURE_INDEX.md')
+        self.assertIn('| PROC-ARCHIVE-PREP | project requested | Local agent |', text)
+        self.assertIn('PROJECT_ARCHIVE_REVIEW.md', text)
+        self.assertIn('AGENT_PREPARE_PROJECT_ARCHIVE.md', text)
+        self.assertIn('GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md', text)
+        self.assertIn('GPT_PROJECT_ARCHIVE_REVIEW_ONLY.md', text)
     def test_merge_prompt_parameters_and_safety(self):
         text=self.read('prompts/AGENT_FINALIZE_MERGE.md')
         for value in ('<REPOSITORY>','<LOCAL_REPOSITORY>','<SSH_ORIGIN>','<MAIN_BRANCH>','<FEATURE_BRANCH>','<EXPECTED_MAIN_BEFORE>','<EXPECTED_FEATURE_HEAD>','<EXPECTED_VERSION>','<CI_POLICY>','<CI_WORKFLOW>','<CI_EVENT>','git merge --no-ff','exact merge-SHA CI','MERGE_FINALIZED','MERGE_CLEANUP_BLOCKED','MERGE_BLOCKED','delete only the remote'):
             self.assertIn(value,text)
+        for value in ('REMOTE_MAIN_REF="refs/remotes/origin/${MAIN_BRANCH}"','LOCAL_MAIN_REF="refs/heads/${MAIN_BRANCH}"','git switch "${MAIN_BRANCH}"','git push origin "refs/heads/${MAIN_BRANCH}:refs/heads/${MAIN_BRANCH}"','git diff --quiet','PARENT_ONE','PARENT_TWO','git push origin --delete "${FEATURE_BRANCH}"'):
+            self.assertIn(value,text)
+        self.assertNotIn('refs/remotes/origin/main',text); self.assertNotIn('refs/heads/main',text); self.assertNotIn('git switch main',text)
     def test_reporting_contract(self):
         text=self.read('docs/AGENT_REPORTING.md')
         self.assertIn('Merge CI: success | sha=<SHA> | run=<RUN_ID>',text)
@@ -31,8 +45,17 @@ class ProcedureIndexAndReportingTests(unittest.TestCase):
         archive=self.read('prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md')
         self.assertIn('AGENT_FINALIZE_MERGE.md',archive); self.assertNotIn('git push origin --delete "${FEATURE_BRANCH}"',archive)
         self.assertIn('AGENT_REPORTING.md',self.read('prompts/GPT_CREATE_PATCH_PACK.md'))
-    def test_required_reporting_and_statuses(self):
-        for p in ('docs/AGENT_EVIDENCE.md','docs/PATCH_PACK_HANDOFF.md','prompts/AGENT_RELEASE_VERSION.md'):
+    def test_handoff_and_closure_contracts(self):
+        handoff=self.read('docs/PATCH_PACK_HANDOFF.md')
+        for value in ('complete inline instructions','preferred compact reference','REPOSITORY','LOCAL_REPOSITORY','SSH_ORIGIN','MAIN_BRANCH','FEATURE_BRANCH','EXPECTED_MAIN_BEFORE','EXPECTED_FEATURE_HEAD','EXPECTED_VERSION','CI_POLICY','CI_WORKFLOW','CI_EVENT','summary must not replace'):
+            self.assertIn(value,handoff)
+        self.assertNotIn('must include the complete post-merge procedure',handoff)
+        archive=self.read('prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md')
+        self.assertNotIn('Stop after declaring `MERGE_READY`;',archive)
+        self.assertIn('Do not end the actionable response before emitting',archive)
+        self.assertIn('docs/PROCEDURE_INDEX.md',self.read('docs/REVIEW_CLOSURE_PROTOCOL.md'))
+        self.assertIn('does not suppress the next-transition handoff',self.read('docs/REVIEW_CLOSURE_PROTOCOL.md'))
+        for p in ('docs/AGENT_EVIDENCE.md','prompts/AGENT_RELEASE_VERSION.md'):
             self.assertTrue(self.read(p))
 
 if __name__ == '__main__': unittest.main()

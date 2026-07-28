@@ -12,6 +12,8 @@ delta, and defines an explicit stopping condition.
 
 ## Core terms
 
+Stopping the current review means stopping further finding discovery and contract expansion. It does not suppress the next-transition handoff required by `docs/PROCEDURE_INDEX.md`. A `MERGE_READY` actionable response must emit the merge-oriented `AGENT_HANDOFF`.
+
 - **Acceptance contract** — the owner-approved set of stable acceptance criteria
   for the current patch scope.
 - **Scope lock** — the approved objective, finding IDs, file operations,
