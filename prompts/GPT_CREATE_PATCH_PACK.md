@@ -84,3 +84,4 @@ The final actionable response must
 print the two plain-text filename fields and end with the exact top-level
 `## AGENT_HANDOFF` sentence defined by the handoff contract. Prompt-only and
 no-action responses must not claim an archive or runtime result.
+Resolve CI policy before adding a GitHub Actions gate. Do not add a mandatory remote-CI gate unless policy is `required`; use `scripts/check-github-ci.py` for observations.

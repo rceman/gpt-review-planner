@@ -48,3 +48,4 @@ the owner selects the target version and synchronized version files must not be
 edited manually. Release-commit CI must pass before tagging, and final tag CI is
 external metadata. Do not publish a GitHub Release without explicit authorization.
 Never force-push, rewrite published history, or use broad `git push --tags`.
+CI policy: resolve `required`, `auto`, `optional`, or `disabled` explicitly. Repository visibility alone MUST NOT decide whether remote CI is required.

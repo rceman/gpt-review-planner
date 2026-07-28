@@ -23,3 +23,4 @@ GitHub Release unless explicitly authorized.
 Do not broaden the task scope. Return the final report required by the release
 runbook, including local gates, CI evidence, tag verification, and final remote
 identity checks.
+Apply the resolved CI capability policy. Remote CI is not universal; local runtime gates remain mandatory when CI is unavailable or disabled.

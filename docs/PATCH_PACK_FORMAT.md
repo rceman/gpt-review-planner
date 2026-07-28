@@ -140,3 +140,4 @@ depends on the evidence commit itself is invalid. Final evidence-head or later
 PR-head CI is run after the evidence commit and reported only as external
 GitHub/PR metadata. The agent must not amend the evidence commit to insert a
 self-referential CI run or commit SHA.
+Repository visibility alone MUST NOT decide whether remote CI is required. Patch manifests add a required GitHub Actions gate only when resolved policy is `required`; local runtime gates remain authoritative.

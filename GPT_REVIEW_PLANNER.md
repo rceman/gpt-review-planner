@@ -1087,3 +1087,4 @@ evidence to insert its own CI run or commit SHA.
 `scripts/verify-agent-evidence.py` validates the implementation diff, proof hashes, requirement and gate completeness, direct commit ancestry, byte-identical manifest preservation, and exact two-file evidence diff without rerunning project tests.
 
 Repository versions are controlled by `VERSION`, `release-config.json`, and `scripts/release.py`. Concrete current versions are prohibited in README. The local agent prepares synchronized version files, executes quality gates, creates the release commit, waits for CI on that commit, and only then creates and explicitly pushes the immutable tag.
+Remote CI is a capability-dependent gate, not a universal repository requirement. Repository visibility alone MUST NOT decide whether remote CI is required. See `docs/CI_CAPABILITY_POLICY.md` for policy resolution.

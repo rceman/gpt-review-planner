@@ -88,3 +88,4 @@ representative fixture and final response must be validated before handoff.
 
 GPT performs static and artifact validation only; executable quality gates are
 owned by the local coding agent and are not claimed as GPT results.
+When remote CI is unavailable or intentionally disabled, mandatory local runtime gates remain authoritative. Use `scripts/check-github-ci.py` for exact-SHA observations when policy permits or requires them.
