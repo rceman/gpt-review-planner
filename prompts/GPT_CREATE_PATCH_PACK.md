@@ -31,6 +31,14 @@ or unresolved architecture decisions to the local agent. Leave only dependency
 restoration, environment integration, compilation, runtime test execution,
 evidence collection, and minimal integration corrections.
 
+Generated agent handoffs must list the host tools required by their declared
+runtime gates and require a tool-availability preflight before mutation when
+practical. Restoring or installing missing prerequisites belongs to local-agent
+environment ownership. If a required tool cannot be made available, stop before
+evidence creation and report the blocker; never record an unavailable required
+gate as `pass`. Do not require every target project to use pytest unless pytest
+is part of that task's declared gate suite. See `docs/HOST_PREREQUISITES.md`.
+
 The validation report must contain these sections:
 
 ```text

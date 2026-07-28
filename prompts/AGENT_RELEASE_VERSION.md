@@ -10,6 +10,12 @@ duplicate instructions or reports bilingually. Follow
 
 Before changing anything, read and follow `docs/RELEASE_PROCESS.md` completely.
 
+Read `docs/HOST_PREREQUISITES.md` before release mutation and verify:
+
+```bash
+python3 -m pytest --version
+```
+
 Use only:
 
 - `scripts/release.py`

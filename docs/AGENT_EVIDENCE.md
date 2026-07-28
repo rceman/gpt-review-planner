@@ -47,6 +47,28 @@ Text proof ranges are limited to 160 lines. The checker loads the cited file fro
 
 ## Compact gate results
 
+A required gate whose executable or module is missing is not `pass`; a missing required runner is an environment prerequisite failure. `No module named pytest` is an environment prerequisite failure: restore or install the prerequisite and rerun the gate, or report a blocker before creating committed evidence. Evidence preparation and the evidence commit wait until every required gate has executed successfully. A gate summary must not use `status: pass` while stating that part of the required suite was unavailable or skipped.
+
+This is invalid because status and summary contradict each other:
+
+```json
+{
+  "id": "local-gates",
+  "status": "pass",
+  "summary": "All gates passed; pytest was unavailable."
+}
+```
+
+A valid completed result is:
+
+```json
+{
+  "id": "local-gates",
+  "status": "pass",
+  "summary": "Unit, pytest, oracle, shell, compile, validator, release, and diff gates passed."
+}
+```
+
 Gate commands and expectations live only in `manifest.json`. `evidence.json` records compact results by gate ID:
 
 ```json

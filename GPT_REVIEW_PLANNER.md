@@ -12,6 +12,8 @@ Start with the [procedure index](docs/PROCEDURE_INDEX.md) before operational det
 
 ## 1. Purpose
 
+Local agents must consult the [host prerequisites](docs/HOST_PREREQUISITES.md) before runtime gates and evidence creation.
+
 This workflow combines two models with deliberately different responsibilities:
 
 - **GPT** is the principal architect, behavior owner, reviewer, test designer, and code author.

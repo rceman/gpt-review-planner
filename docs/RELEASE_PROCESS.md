@@ -52,6 +52,15 @@ The tag must match `VERSION` and resolve to the checked-out commit. Tag-triggere
 
 ## Required order
 
+Before release mutation and before evidence creation, complete the [host prerequisite](HOST_PREREQUISITES.md) preflight:
+
+```bash
+python3 --version
+python3 -m pytest --version
+```
+
+A missing required runner must be installed or resolved before `scripts/release.py prepare`, the release commit, committed evidence, or tag creation.
+
 ```text
 implementation and tests written
 → version prepared
