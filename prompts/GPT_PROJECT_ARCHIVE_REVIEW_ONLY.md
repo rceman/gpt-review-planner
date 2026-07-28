@@ -5,6 +5,12 @@ Review the attached archive without implementing it. The owner may supply
 missing scope means `full`, and only explicit restrictive language or explicit
 `objective-only` metadata narrows the review.
 
+Owner-facing review output may use the owner's selected language. Any later local-agent-facing artifact MUST be written in English regardless of that
+language, including `AGENT_HANDOFF`, implementation or correction prompts, and
+agent execution reports. Preserve exact repository literals without translation
+and do not create bilingual agent instructions. Follow the pinned
+`docs/AGENT_COMMUNICATION_LANGUAGE.md` contract.
+
 Resolve identity exactly as the primary archive-review prompt requires: read
 owner instructions, validate `.gpt-workflow.lock` when present, load its exact
 pinned `GPT_REVIEW_PLANNER.md`, `prompts/GPT_CREATE_PATCH_PACK.md`,

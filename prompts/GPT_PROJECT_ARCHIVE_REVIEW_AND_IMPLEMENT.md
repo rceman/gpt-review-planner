@@ -5,6 +5,15 @@ immutable prompt link and may supply `<OWNER_TASK_OBJECTIVE>`. A specific
 objective is a priority overlay, not the whole review, unless the owner
 explicitly restricts the scope.
 
+## Agent communication language
+
+Owner-facing discussion may use the owner's selected language. All local-agent-facing communication MUST be written in English, including every
+generated `AGENT_HANDOFF`, patch-pack prompt, implementation/correction/merge
+instruction, and every required agent progress, blocker, deviation, gate, CI,
+and final report. Preserve exact repository literals without translation and do
+not duplicate instructions bilingually. Follow
+`docs/AGENT_COMMUNICATION_LANGUAGE.md` from the pinned planner checkout.
+
 ## Phase 1 — resolve identity and inspect
 
 1. Read current owner instructions first.

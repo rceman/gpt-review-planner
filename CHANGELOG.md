@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added a normative English-only local-agent communication contract covering
+  handoffs, prompts, execution reports, managed agent instructions, and tests.
 - Added a normative post-merge remote-branch cleanup and finalization contract.
 - Added a bounded, machine-checkable patch-pack handoff contract and delivery validator.
 - Added a bounded review and closure protocol with acceptance-contract scope

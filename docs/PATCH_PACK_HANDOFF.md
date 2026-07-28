@@ -35,6 +35,19 @@ The prompt must include the repository, local repository when known, branch,
 exact base or expected HEAD, exact required actions, runtime gates, constraints,
 and the required final report.
 
+## Agent communication language
+
+All local-agent-facing communication MUST be written in English regardless of
+the language used by the owner when communicating with GPT. Every generated `AGENT_PROMPT.md` MUST be written in English, and every local-agent question,
+progress update, blocker, deviation, gate report, CI report, and final report
+must also be written in English.
+
+Agent-facing handoffs MUST NOT duplicate instructions bilingually. Exact
+filenames, commands, identifiers, error messages, source excerpts, localized
+product content, and other repository-controlled literals may remain in their
+original language inside otherwise English instructions. Follow
+[`AGENT_COMMUNICATION_LANGUAGE.md`](AGENT_COMMUNICATION_LANGUAGE.md).
+
 Every merge-oriented prompt-only handoff must include the complete post-merge
 [`POST_MERGE_BRANCH_CLEANUP.md`](POST_MERGE_BRANCH_CLEANUP.md) sequence in the
 same `AGENT_HANDOFF` copy-ready prompt: exact merge-SHA checks, feature-tip ancestry and
