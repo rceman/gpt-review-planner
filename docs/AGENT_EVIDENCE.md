@@ -128,3 +128,4 @@ reports its run/job/URL in external GitHub or PR metadata. It must never amend
 `evidence.json` to insert that CI run or the evidence commit SHA.
 
 Evidence created before this contract is not migrated or reconstructed. Historical files may be removed when the owner decides they are no longer useful; Git history remains the historical record.
+Remote CI is a capability-dependent gate, not a universal repository requirement. Record remote CI separately from local runtime-gate evidence and apply `docs/CI_CAPABILITY_POLICY.md`.

@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "57eb4664e995547bcbc1f0e7b04958de95cd87c1",
+  "requirements": [{"id":"REQ-CI-FIX-001","status":"pass","proofs":[{"kind":"source","path":"scripts/check-github-ci.py","lines":[18,28],"sha256":"72781b9300e8ab35928261bf6911156c8ee707f72426ca6c8d64e9df55478fab"},{"kind":"test","path":"tests/test_ci_capability_policy.py","lines":[42,67],"sha256":"e692f48108a8e3caa3a834273eee41e6f639695848233a55157b75d68a1849c7"}]}],
+  "gates":[{"id":"local-gates","status":"pass","exit":0,"tests":136,"summary":"Complete local gates passed."},{"id":"implementation-ci","status":"pass","run":30381595394,"job":90350498486,"url":"https://github.com/rceman/gpt-review-planner/actions/runs/30381595394/job/90350498486","summary":"Exact corrective implementation SHA CI succeeded."}],
+  "deviations":[]
+}

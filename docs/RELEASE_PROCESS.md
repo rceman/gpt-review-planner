@@ -276,3 +276,4 @@ Report:
 9. remote main/tag identity;
 10. confirmation that no force-push, rebase, squash, manual version editing,
     broad tag push, or unauthorized GitHub Release occurred.
+CI policy is capability-aware: an observed exact-SHA failure blocks, while permitted CI absence does not. Local runtime gates remain mandatory.

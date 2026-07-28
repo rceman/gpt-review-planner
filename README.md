@@ -211,3 +211,4 @@ bash scripts/bootstrap-rustc.sh
 ```
 
 See [`docs/FAST_RUSTC_BOOTSTRAP.md`](docs/FAST_RUSTC_BOOTSTRAP.md).
+Remote CI is a capability-dependent gate, not a universal repository requirement. Repository visibility alone MUST NOT decide whether remote CI is required. When remote CI is unavailable or intentionally disabled, mandatory local runtime gates remain authoritative.

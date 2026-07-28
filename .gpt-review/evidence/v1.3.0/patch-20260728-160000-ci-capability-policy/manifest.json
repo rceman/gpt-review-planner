@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "patch_id": "patch-20260728-160000-ci-capability-policy",
+  "patch_timestamp": "20260728-160000",
+  "patch_slug": "ci-capability-policy",
+  "baseline_release": "v1.3.0",
+  "created_at": "2026-07-28T16:00:00Z",
+  "title": "Add CI capability policy",
+  "description": "Add policy-aware exact-SHA CI verification.",
+  "evidence_directory": ".gpt-review/evidence/v1.3.0/patch-20260728-160000-ci-capability-policy",
+  "files_created": ["docs/CI_CAPABILITY_POLICY.md", "schemas/github-ci-status.schema.json", "scripts/check-github-ci.py", "tests/test_ci_capability_policy.py"],
+  "files_modified": ["GPT_REVIEW_PLANNER.md", "README.md", "docs/AGENT_EVIDENCE.md", "docs/PATCH_PACK_FORMAT.md", "docs/PATCH_PACK_HANDOFF.md", "docs/RELEASE_PROCESS.md", "prompts/AGENT_RELEASE_VERSION.md", "prompts/GPT_CREATE_PATCH_PACK.md", "templates/project/AGENTS.managed-block.md"],
+  "files_deleted": [],
+  "target": {"repository": "rceman/gpt-review-planner", "branch": "feature/ci-capability-policy", "base_revision": "b448b00b99cea402593490838867c430c269ff92"},
+  "requirements": [{"id":"REQ-CI-001","summary":"Define capability-aware CI policy","acceptance":["Policy modes and local-gate authority are documented."]}],
+  "gates": [{"id":"local-gates","name":"Local gates","kind":"command","command":"repository gate suite"},{"id":"implementation-ci","name":"Implementation CI","kind":"github-actions","workflow":"Validate","head":"implementation"}],
+  "workflow": {"repository":"rceman/gpt-review-planner","version":"1.3.0","commit":"b448b00b99cea402593490838867c430c269ff92","document":"GPT_REVIEW_PLANNER.md"}
+}
