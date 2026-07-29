@@ -157,6 +157,12 @@ the canonical machine format, Markdown is the canonical human/agent instruction
 format, and YAML is not accepted as a wire artifact; see
 [`docs/STRUCTURED_FORMAT_POLICY.md`](docs/STRUCTURED_FORMAT_POLICY.md).
 
+Gateway task continuity and terminal completion are defined by
+[`docs/GATEWAY_TASK_PROTOCOL.md`](docs/GATEWAY_TASK_PROTOCOL.md). GPT commits a
+durable plan record before an executable task bundle. New gateway-managed agents
+write one strict `agent-result.json` and invoke one generated `complete-task`
+command; interactive session text is never the terminal result.
+
 ```bash
 bash scripts/new-patch-pack.sh \
   --baseline-release vX.Y.Z \

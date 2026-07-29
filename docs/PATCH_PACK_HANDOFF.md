@@ -66,6 +66,25 @@ No agent action is required. Preserve the reported state and wait for the next o
 For every mode, `## AGENT_HANDOFF` is the final top-level section and no
 non-whitespace content may follow it.
 
+## Gateway terminal-output contract
+
+Every executable `AGENT_HANDOFF.md` contains `## TERMINAL_OUTPUT_PROTOCOL`.
+For future gateway-managed tasks it must state that:
+
+1. the interactive session response does not complete the task;
+2. the agent writes only the strict gateway-authoritative `agent-result.json`;
+3. the agent runs the exact generated `complete-task` command;
+4. the command is mandatory for `succeeded`, `needs_gpt_revision`, and `failed`;
+5. blockers are finalized through the gateway instead of asking the owner;
+6. gateway publication and derived Git checks must not be reimplemented as a
+   hand-written shell block.
+
+The result schema is `schemas/gateway-agent-result-v2.schema.json` and the
+dependency-free semantic validator is
+`scripts/validate-gateway-agent-result.py`. Legacy dual-output execution may be
+used only by a gateway version that predates the finalizer protocol; newly
+generated packs use the JSON-only contract.
+
 ## Canonical pack checks
 
 Every delivered pack must pass `scripts/validate-patch-pack-delivery.py`.

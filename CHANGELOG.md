@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Require a durable gateway-hub plan record before every executable task bundle.
+- Replace duplicated gateway terminal Markdown/JSON outputs with one strict `agent-result.json` contract.
+- Add a generated `complete-task` finalizer protocol for every success, revision, or failure outcome.
+- Add dependency-free schema validation and regression coverage for gateway terminal results.
+
 ## 1.3.0 — 2026-07-28
 
 - Made `AGENT_HANDOFF.md` the canonical mandatory executable patch-pack entry point and deprecated `AGENT_PROMPT.md` as a byte-identical one-release compatibility alias.

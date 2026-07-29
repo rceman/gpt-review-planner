@@ -26,6 +26,7 @@ REQUIRED_FILES = (
     "scripts/patch_pack_scope.py",
     "scripts/verify-agent-evidence.py",
     "scripts/verify-agent-result.sh",
+    "scripts/validate-gateway-agent-result.py",
     "gate-plan.json",
     "evidence-plan.json",
     "scripts/run-agent-gates.py",
@@ -46,6 +47,7 @@ REQUIRED_HANDOFF_HEADINGS = (
     "REQUIRED_RUNTIME_GATES",
     "REPAIR_POLICY",
     "EVIDENCE_AND_COMMITS",
+    "TERMINAL_OUTPUT_PROTOCOL",
     "RESPONSE_CONTRACT",
 )
 MANIFEST_KEYS = {
@@ -277,6 +279,21 @@ def validate_handoff(path: Path, manifest: dict[str, Any] | None, findings: list
     for heading in REQUIRED_HANDOFF_HEADINGS:
         if heading not in sections:
             findings.append(Finding("missing_agent_handoff_heading", "AGENT_HANDOFF.md", f"Missing required Markdown heading: ## {heading}."))
+    terminal = sections.get("TERMINAL_OUTPUT_PROTOCOL", "")
+    terminal_lower = terminal.lower()
+    required_terminal_fragments = (
+        "agent-result.json",
+        "complete-task",
+        "succeeded",
+        "needs_gpt_revision",
+        "failed",
+        "interactive",
+    )
+    for fragment in required_terminal_fragments:
+        if fragment not in terminal_lower:
+            findings.append(Finding(
+                "invalid_terminal_output_protocol", "AGENT_HANDOFF.md",
+                f"TERMINAL_OUTPUT_PROTOCOL must contain {fragment!r}."))
     if manifest:
         workflow = manifest.get("workflow") if isinstance(manifest.get("workflow"), dict) else {}
         target = manifest.get("target") if isinstance(manifest.get("target"), dict) else {}

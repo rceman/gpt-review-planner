@@ -40,6 +40,10 @@ Repairs are limited to defects directly demonstrated by patch application, compi
 
 Create one implementation commit containing only the declared implementation scope. Then generate exactly `manifest.json` and `evidence.json` in the declared evidence directory, verify prepare mode, create one direct-child evidence-only commit, verify committed mode, and push the feature branch without rewriting history.
 
+## TERMINAL_OUTPUT_PROTOCOL
+
+This is a gateway-managed GPT task. Interactive Airelay/Codex text does not complete it. Before ending for `succeeded`, `needs_gpt_revision`, or `failed`, write the strict gateway-authoritative `agent-result.json`, then invoke the exact gateway-generated `complete-task` command appended at runtime. Do not ask the owner for approval or clarification. Do not replace the finalizer with hand-written Git, JSON, or bus verification commands.
+
 ## RESPONSE_CONTRACT
 
-Write the complete execution response in English. Report base, implementation and evidence SHAs, every gate, repairs, deviations, CI evidence, remote branch state, VERSION, and worktree state. Do not merge, tag, or release.
+Write the concise structured result in English. Record status, summary/details, implementation and evidence SHAs when successful, every declared gate, deviations, and the next GPT action when revision is required. Derived repository, branch, worktree, remote, timestamp, and bus facts are gateway-owned. Do not merge, tag, or release.

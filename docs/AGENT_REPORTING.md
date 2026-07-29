@@ -28,6 +28,23 @@ evidence lifecycle and `resume` for interruption recovery. Agents invoke
 workflows. Scripts execute phases. Structured state carries progress. Models do
 not manually orchestrate deterministic shell pipelines.
 
+## Gateway-managed terminal reporting
+
+For a gateway-managed GPT task, the interactive Airelay/Codex response is only
+an execution log. It is never the terminal report. The agent writes one strict
+`agent-result.json` to the gateway-authoritative path and invokes the generated
+`complete-task` command for `succeeded`, `needs_gpt_revision`, or `failed`.
+
+Do not manually repeat repository, project, branch, timestamps, bundle digest,
+worktree checks, remote-head checks, or bus publication metadata. The finalizer
+derives and validates those facts. The agent records only status, concise
+summary/details, declared gate outcomes, deviations, required commit identities,
+and the next GPT action when revision is required.
+
+Do not ask the owner for approval or clarification. Finalize the blocker through
+the gateway. If a model turn ends without finalization, the gateway may issue one
+bounded corrective reprompt and then publish a synthetic failed result.
+
 This contract is the human/GPT projection of machine-verifiable execution evidence.
 
 1. Report each fact once.

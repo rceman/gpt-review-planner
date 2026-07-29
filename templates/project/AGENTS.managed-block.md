@@ -20,6 +20,10 @@
 > - Regardless of the owner's conversation language, all local-agent communication and execution reports must be written in English; preserve exact repository-controlled literals without translation.
 > - Read the pinned `docs/AGENT_COMMUNICATION_LANGUAGE.md` contract and do not duplicate instructions bilingually.
 > - The local agent must not redesign approved behavior or weaken tests and acceptance criteria.
+> - Before any executable gateway task is dispatched, GPT commits its durable plan record to the relevant gateway-hub project branch.
+> - A gateway-managed task is terminal only after strict `agent-result.json` is validated through the generated `complete-task` command; interactive session text is not completion.
+> - The local agent must finalize success, revision blockers, and failures through the gateway and must not ask the owner to continue the task interactively.
+> - GPT authors the principal patch and tests; the local agent applies them, executes runtime gates, produces evidence, and makes only narrow verified repairs.
 > - GPT reviews agent-reported runtime evidence without rerunning tests.
 >
 > Engineering baseline: when `engineering-profile.json` is present, validate

@@ -159,6 +159,46 @@ routing, worktrees, task bundles, and result publication remain owned by
 `gpt-github-gateway`; follow [`GATEWAY_INTEROPERABILITY.md`](docs/GATEWAY_INTEROPERABILITY.md)
 and [`STRUCTURED_FORMAT_POLICY.md`](docs/STRUCTURED_FORMAT_POLICY.md).
 
+### 2.2 Gateway-managed task continuity and terminal output
+
+Before GPT publishes any executable gateway task bundle, GPT MUST commit a
+non-executable plan record to the target project's gateway-hub branch. The
+canonical path is `inbox/<task_id>.plan.json`; the later task-bundle commit must
+descend from the plan commit and reference its path and commit identity. The plan
+records exact task identity, target baseline, objective, scope, acceptance
+criteria, role boundary, dependencies, current blocker, and next transition.
+This durable record is the cross-chat continuation source and is written before
+the local agent receives executable instructions.
+
+For gateway-managed tasks, the local agent authors one terminal artifact only:
+strict `agent-result.json`. `AGENT_RESPONSE.md` is not part of the new protocol.
+The gateway appends the authoritative result path and one generated
+`complete-task` command to `AGENT_HANDOFF.md`. Before ending for any reason, the
+agent writes the JSON and runs that command. The command, not interactive
+Airelay/Codex text, completes the task.
+
+Every terminal status uses the same path:
+
+```text
+succeeded | needs_gpt_revision | failed
+→ write agent-result.json
+→ invoke complete-task
+→ gateway validates and atomically publishes the bus result/checkpoint
+```
+
+The agent must not ask the owner for approval or clarification from a
+gateway-managed execution turn. A blocker is encoded as `needs_gpt_revision` or
+`failed`, finalized, and returned to GPT through the bus. Gateway transport owns
+result enrichment, branch/checkpoint publication, corrective reprompting, and a
+synthetic failure when an agent turn ends without finalization. See
+[`GATEWAY_TASK_PROTOCOL.md`](docs/GATEWAY_TASK_PROTOCOL.md).
+
+The responsibility boundary remains strict: GPT inspects the repository and
+authors the principal production patch, tests, schemas, fixtures, and docs. The
+local agent applies that patch, restores dependencies, executes runtime gates,
+creates evidence/commits, and performs only directly evidenced narrow repairs.
+An architecture-only prose handoff is not an executable patch pack.
+
 ---
 
 ## 3. Responsibility model

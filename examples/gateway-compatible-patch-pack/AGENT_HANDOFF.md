@@ -40,6 +40,10 @@ Make only directly evidenced narrow integration repairs and record deviations.
 
 Create an implementation commit followed by an exact two-file direct-child evidence commit.
 
+## TERMINAL_OUTPUT_PROTOCOL
+
+This gateway-managed fixture is complete only after a strict `agent-result.json` is written and the generated `complete-task` command exits successfully. Interactive session text does not complete the task. Finalize `succeeded`, `needs_gpt_revision`, and `failed` outcomes through the same command.
+
 ## RESPONSE_CONTRACT
 
 Return the complete execution report in English with commands, gates, commits, deviations, and final repository state.

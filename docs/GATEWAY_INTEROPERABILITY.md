@@ -27,4 +27,27 @@ Delivery modes are separate from transport implementation:
 - `gateway-task-bundle`: validates the same semantic pack and a transport-neutral materialized-pack handoff;
 - `prompt-only` and `no-action`: validate response contracts without claiming a pack.
 
+Before `gateway-task-bundle` submission, GPT commits
+`inbox/<task_id>.plan.json` to the same project branch. The executable bundle
+commit must descend from and reference that plan commit. The plan is passive
+continuity state and is not discovered as executable input.
+
+Planner-owned terminal semantics are:
+
+- one strict agent-authored `agent-result.json`;
+- statuses `succeeded`, `needs_gpt_revision`, and `failed`;
+- mandatory finalization through a gateway-generated `complete-task` command;
+- no interactive owner dialogue from a gateway execution turn;
+- a required `TERMINAL_OUTPUT_PROTOCOL` handoff section.
+
+Gateway-owned mechanics are:
+
+- generating the finalizer and authoritative paths;
+- validating repository, commits, branch, scope, gates, and evidence;
+- enriching and atomically committing the bus result and checkpoint;
+- clearing project activity and advancing the queue;
+- corrective reprompt and synthetic terminal failure.
+
+See [`GATEWAY_TASK_PROTOCOL.md`](GATEWAY_TASK_PROTOCOL.md).
+
 Protocol-v1 records remain gateway read compatibility and do not alter planner pack semantics.

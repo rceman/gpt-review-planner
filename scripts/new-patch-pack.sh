@@ -65,7 +65,7 @@ evidence_directory=".gpt-review/evidence/${baseline_release}/${patch_id}"
 mkdir -p "$output_root"
 cp -a "$source_dir" "$destination"
 touch "$destination/evidence.json"
-for tool in patch_pack_scope.py verify-agent-evidence.py verify-agent-result.sh; do
+for tool in patch_pack_scope.py verify-agent-evidence.py verify-agent-result.sh validate-gateway-agent-result.py; do
   cp "$repo_root/scripts/$tool" "$destination/scripts/$tool"
 done
 chmod +x "$destination/scripts/"*
