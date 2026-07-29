@@ -13,6 +13,9 @@ Start with the [procedure index](docs/PROCEDURE_INDEX.md) before operational det
 ## 1. Purpose
 
 Local agents must consult the [host prerequisites](docs/HOST_PREREQUISITES.md) before runtime gates and evidence creation.
+For automated capture, use the pinned gate plan and `scripts/run-agent-gates.py`,
+then generate evidence with `scripts/generate-agent-evidence.py`; render compact
+handoff facts with `scripts/render-agent-report.py`.
 
 This workflow combines two models with deliberately different responsibilities:
 

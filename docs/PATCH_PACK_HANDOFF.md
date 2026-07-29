@@ -90,3 +90,7 @@ A merge-oriented prompt-only handoff MUST provide complete merge-finalization in
 Required parameters are `REPOSITORY`, `LOCAL_REPOSITORY`, `SSH_ORIGIN`, `MAIN_BRANCH`, `FEATURE_BRANCH`, `EXPECTED_MAIN_BEFORE`, `EXPECTED_FEATURE_HEAD`, `EXPECTED_VERSION`, `CI_POLICY`, `CI_WORKFLOW`, and `CI_EVENT`. Both modes require exact merge-SHA CI, feature-tip identity and ancestry, remote deletion only after successful CI, pruning, local feature-branch retention, final verification, and `MERGE_FINALIZED`, `MERGE_CLEANUP_BLOCKED`, or pre-merge `MERGE_BLOCKED`. No handoff is required to inline the cleanup sequence when it loads the complete pinned canonical prompt.
 
 After producing a terminal workflow status, consult `docs/PROCEDURE_INDEX.md` and emit the handoff required by the next transition.
+
+Executable packs may use the canonical `gate-plan.json`, `evidence-plan.json`,
+and bundled automation scripts to capture runtime gates and generate evidence.
+Intermediate logs and helper JSON remain outside committed evidence.

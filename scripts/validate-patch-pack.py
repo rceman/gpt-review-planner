@@ -26,6 +26,11 @@ REQUIRED_FILES = (
     "scripts/patch_pack_scope.py",
     "scripts/verify-agent-evidence.py",
     "scripts/verify-agent-result.sh",
+    "gate-plan.json",
+    "evidence-plan.json",
+    "scripts/run-agent-gates.py",
+    "scripts/generate-agent-evidence.py",
+    "scripts/render-agent-report.py",
     "expected/acceptance-gates.md",
     "expected/allowed-deviations.md",
 )
