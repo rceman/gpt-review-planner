@@ -62,24 +62,28 @@ def main():
     if repo not in evpath.parents or not evpath.name.startswith('patch-') or not PATCH_RE.fullmatch(evpath.name): die('invalid evidence directory identity')
     if out != evpath/'manifest.json' or repo in resolved.parents or resolved==repo: die('invalid output binding')
     if out.exists() or resolved.exists() or evpath.exists(): die('output or evidence directory already exists')
-    statuses=subprocess.check_output(['git','-C',str(repo),'diff','--name-status','-z',a.base_revision+'..'+sha,'--'])
-    created=[]; modified=[]; deleted=[]; parts=statuses.decode().split('\0'); i=0
-    while i<len(parts) and parts[i]:
-        fields=parts[i].split('\t'); code=fields[0]; paths=fields[1:]
-        if code[0] in 'RC':
-            if len(paths)!=2: die('malformed rename/copy record')
-            deleted.append(safe_rel(paths[0])); created.append(safe_rel(paths[1]))
-        elif code[0] in 'AMD':
-            if len(paths)!=1: die('malformed diff record')
-            p=safe_rel(paths[0]); getattr({'A':created,'M':modified,'D':deleted}[code[0]],'append')(p)
-        elif code[0]=='T': modified.append(safe_rel(paths[0]))
+    statuses=subprocess.check_output(['git','-C',str(repo),'diff','--name-status','-z','-M','-C','--find-copies-harder',a.base_revision+'..'+sha,'--'])
+    created=[]; modified=[]; deleted=[]; tokens=statuses.decode('utf-8').split('\0'); i=0
+    while i < len(tokens) and tokens[i]:
+        code=tokens[i]; i+=1; kind=code[0]
+        if kind in 'RC':
+            if i+1 >= len(tokens) or not tokens[i] or not tokens[i+1]: die('truncated rename/copy record')
+            old,new=safe_rel(tokens[i]),safe_rel(tokens[i+1]); i+=2
+            if kind=='R': deleted.append(old)
+            created.append(new)
+        elif kind in 'AMDT':
+            if i >= len(tokens) or not tokens[i]: die('truncated status record')
+            p=safe_rel(tokens[i]); i+=1
+            (created if kind=='A' else deleted if kind=='D' else modified).append(p)
         else: die('unsupported diff status')
-        i+=1
     evprefix=ev.rstrip('/')+'/'
     created=[p for p in created if not p.startswith(evprefix)]; modified=[p for p in modified if not p.startswith(evprefix)]; deleted=[p for p in deleted if not p.startswith(evprefix)]
     if len(set(created+modified+deleted))!=len(created+modified+deleted): die('duplicate scope path')
     manifest=dict(seed); manifest.update({'schema_version':2,'patch_id':evpath.name,'patch_timestamp':evpath.name.split('-')[1]+'-'+evpath.name.split('-')[2],'patch_slug':'evidence-automation','created_at':datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),'evidence_directory':ev,'files_created':sorted(created),'files_modified':sorted(modified),'files_deleted':sorted(deleted)})
-    manifest.setdefault('target',{})['base_revision']=a.base_revision; manifest.setdefault('workflow',{})['commit']=sha
+    manifest.setdefault('target',{})['base_revision']=a.base_revision
+    workflow=manifest.setdefault('workflow',{}); commit_value=workflow.get('commit')
+    if commit_value in {'HEAD','implementation'}: workflow['commit']=sha
+    elif commit_value != sha: die('workflow.commit must be implementation, HEAD, or the exact implementation SHA')
     resolved_plan={'schema_version':1,'requirements':[],'deviations':plan.get('deviations',[])}
     for req in plan.get('requirements',[]):
         item={k:req[k] for k in req if k in {'id','status','note','deviation'}}; item['proofs']=[resolve_proof(repo,sha,p) for p in req.get('proofs',[])]; resolved_plan['requirements'].append(item)

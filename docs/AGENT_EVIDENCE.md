@@ -163,6 +163,11 @@ plan → `scripts/prepare-agent-evidence.py` → generated manifest and resolved
 plan → gate runner → evidence generator → independent verifier → compact
 renderer. The preparation helper performs no CI operation; it derives scope and
 resolves selectors from the exact implementation commit.
+The seed and semantic plan live outside the repository; the fresh evidence
+directory must not exist before preparation. The helper creates it and writes
+the generated manifest, while the resolved plan remains external. Worktree
+cleanliness is required and no scope, SHA, or proof-range synchronization is
+manual.
 
 Evidence generation intentionally occurs with the new evidence directory in the
 worktree. Only its declared `manifest.json` and generated `evidence.json` are
