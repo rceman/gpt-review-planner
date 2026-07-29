@@ -48,6 +48,13 @@ class GateEvidenceAutomationTests(unittest.TestCase):
             metrics=json.loads((out/"gate-run.json").read_text())["gates"][0]["metrics"]
             self.assertEqual(metrics, {"oracle":3})
 
+    def test_generator_validates_directory_level_status_safely(self):
+        source=(ROOT/"scripts/generate-agent-evidence.py").read_text()
+        self.assertIn("--porcelain=v1','-z'", source)
+        self.assertIn("evidence directory contains an invalid file", source)
+        self.assertIn("untracked directory is outside declared evidence directory", source)
+        self.assertIn("must not be a symlink", source)
+
 
 if __name__ == "__main__":
     unittest.main()

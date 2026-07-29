@@ -94,3 +94,6 @@ After producing a terminal workflow status, consult `docs/PROCEDURE_INDEX.md` an
 Executable packs may use the canonical `gate-plan.json`, `evidence-plan.json`,
 and bundled automation scripts to capture runtime gates and generate evidence.
 Intermediate logs and helper JSON remain outside committed evidence.
+The generator accepts only the declared evidence directory's manifest and
+generated evidence file, whether Git reports them individually or as a compact
+directory-level untracked entry; it validates the expanded contents.

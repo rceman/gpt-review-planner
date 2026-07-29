@@ -157,3 +157,12 @@ Gate plans, gate-run results, and evidence plans are generated separately. Use
 `scripts/run-agent-gates.py` for exact-commit runtime capture and
 `scripts/generate-agent-evidence.py` for proof hashes, metrics, and CI identity;
 the runner never edits `evidence.json`.
+
+Evidence generation intentionally occurs with the new evidence directory in the
+worktree. Only its declared `manifest.json` and generated `evidence.json` are
+allowed. Git may report that directory as one untracked directory entry or as
+individual files; the generator expands and validates directory contents rather
+than trusting the directory entry. Directory-level status never permits
+arbitrary files, nested directories, symlinks, or unrelated worktree changes.
+Existing committed evidence remains immutable, and generated evidence must not
+be manually edited after generation.
