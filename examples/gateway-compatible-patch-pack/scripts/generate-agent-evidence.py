@@ -55,7 +55,7 @@ def main():
     evidence_directory=(repo / manifest.get('evidence_directory','')).resolve()
     validate_worktree(repo, Path(a.manifest), output, evidence_directory)
     if run.get('implementation_commit') != sha or run.get('status') != 'pass': die('gate-run identity or status mismatch')
-    manifest_ids={g['id'] for g in manifest.get('gates',[])}
+    manifest_ids={g['id'] for g in manifest.get('gates',[]) if g.get('kind','command') == 'command'}
     run_ids=[g.get('id') for g in run.get('gates',[])]
     if len(run_ids)!=len(set(run_ids)) or set(run_ids)!=manifest_ids: die('gate-run gate IDs do not match manifest')
     mids={r['id'] for r in manifest.get('requirements',[])}; req=[]; seen_req=set()
@@ -88,7 +88,9 @@ def main():
         elif 'tests' in g: item['tests']=g['tests']; item['summary']=g.get('summary','')
         else: item['summary']=g.get('summary','')
         gates.append(item)
-    for key,value in ci.items(): gates.append({'id':key,'status':'pass','run':value.get('run_id'),'job':value.get('job_id'),'url':value.get('job_url') or value.get('run_url'),'summary':value.get('message','')})
+    ci_gate_ids={g['id'] for g in manifest.get('gates',[]) if g.get('kind') == 'github-actions'}
+    if set(ci) != ci_gate_ids: die('CI result keys do not match manifest CI gates')
+    for key,value in ci.items(): gates.append({'id':key,'status':'pass','run':value.get('run_id'),'job':value.get('job_id'),'run_url':value.get('run_url'),'job_url':value.get('job_url'),'summary':value.get('message','')})
     result={'schema_version':1,'implementation_commit':sha,'requirements':req,'gates':gates,'deviations':plan.get('deviations',[])}
     target=Path(a.output); target.parent.mkdir(parents=True,exist_ok=True); fd,tmp=tempfile.mkstemp(dir=target.parent); os.close(fd); Path(tmp).write_text(json.dumps(result,indent=2,sort_keys=True)+'\n',encoding='utf-8'); os.replace(tmp,target)
     print(f"Evidence generated: {target}")
