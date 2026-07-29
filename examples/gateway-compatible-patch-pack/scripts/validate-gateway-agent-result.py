@@ -53,17 +53,21 @@ def validate(path:Path, task_id:str, manifest_path:Path|None):
             if not isinstance(item,dict) or set(item)!={"id","status","exit","summary"}: error(errors,"invalid_gate",f"gates[{i}] has invalid fields"); continue
             if not isinstance(item["id"],str) or not item["id"] or item["id"] in gate_ids: error(errors,"invalid_gate_id",f"gates[{i}].id is empty or duplicate")
             gate_ids.append(item["id"])
-            if item["status"] not in {"pass","fail","not_run"} or not isinstance(item["exit"],int) or not isinstance(item["summary"],str) or not item["summary"].strip(): error(errors,"invalid_gate",f"gates[{i}] has invalid status, exit, or summary")
+            if item["status"] not in {"pass","fail","not_run"} or not isinstance(item["exit"],int) or isinstance(item["exit"],bool) or not isinstance(item["summary"],str) or not item["summary"].strip() or len(item["summary"].encode())>2048: error(errors,"invalid_gate",f"gates[{i}] has invalid status, exit, or summary")
     deviations=value.get("deviations")
     if not isinstance(deviations,list) or len(deviations)>64: error(errors,"invalid_deviations","deviations must be an array of up to 64 entries")
     else:
         expected={"id","kind","summary","workaround","scope_changed","behavior_changed","requirements"}
         for i,item in enumerate(deviations):
             if not isinstance(item,dict) or set(item)!=expected: error(errors,"invalid_deviation",f"deviations[{i}] has invalid fields"); continue
+            for field in ("id","kind","summary"):
+                if not isinstance(item[field],str) or not item[field].strip(): error(errors,"invalid_deviation",f"deviations[{i}].{field} must be a non-empty string")
+            if not isinstance(item["workaround"],str): error(errors,"invalid_deviation",f"deviations[{i}].workaround must be a string")
             if item["behavior_changed"] is not False: error(errors,"behavior_change_forbidden",f"deviations[{i}].behavior_changed must be false")
-            if not isinstance(item["scope_changed"],bool) or not isinstance(item["requirements"],list): error(errors,"invalid_deviation",f"deviations[{i}] has invalid types")
+            if not isinstance(item["scope_changed"],bool) or not isinstance(item["requirements"],list) or any(not isinstance(x,str) or not x for x in item["requirements"]): error(errors,"invalid_deviation",f"deviations[{i}] has invalid types")
     for field in ("implementation_commit","evidence_commit"):
-        if field in value and not SHA_RE.fullmatch(str(value[field])): error(errors,"invalid_commit",f"{field} must be a lowercase 40-character SHA")
+        if field in value and (not isinstance(value[field],str) or not SHA_RE.fullmatch(value[field])): error(errors,"invalid_commit",f"{field} must be a lowercase 40-character SHA")
+    if "next_action" in value and (not isinstance(value["next_action"],str) or not value["next_action"].strip() or len(value["next_action"].encode())>2048): error(errors,"invalid_next_action","next_action must contain 1 to 2048 UTF-8 bytes")
     if status=="succeeded":
         for field in ("implementation_commit","evidence_commit"):
             if field not in value: error(errors,"missing_commit",f"succeeded requires {field}")

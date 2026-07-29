@@ -32,6 +32,27 @@ class GatewayTerminalProtocolTests(unittest.TestCase):
             root=Path(d); manifest=root/'manifest.json'; manifest.write_text(json.dumps({'gates':[{'id':'one'},{'id':'two'}]}))
             value=self.base('succeeded'); value.update({'implementation_commit':'1'*40,'evidence_commit':'2'*40,'gates':[{'id':'one','status':'pass','exit':0,'summary':'ok'}]})
             codes={x['code'] for x in self.validator.validate(self.write(root,value),'task_001',manifest)}; self.assertIn('gate_identity_mismatch',codes)
+    def test_scalar_types_and_bounds_match_schema(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d)
+            cases=[]
+            value=self.base('succeeded'); value.update({'implementation_commit':int('1'*40),'evidence_commit':'2'*40,'gates':[{'id':'one','status':'pass','exit':0,'summary':'ok'}]}); cases.append((value,'invalid_commit'))
+            value=self.base('succeeded'); value.update({'implementation_commit':'1'*40,'evidence_commit':'2'*40,'gates':[{'id':'one','status':'pass','exit':True,'summary':'ok'}]}); cases.append((value,'invalid_gate'))
+            value=self.base(); value['next_action']='x'*2049; cases.append((value,'invalid_next_action'))
+            value=self.base(); value['gates']=[{'id':'one','status':'pass','exit':0,'summary':'x'*2049}]; cases.append((value,'invalid_gate'))
+            for value,code in cases:
+                with self.subTest(code=code):
+                    codes={x['code'] for x in self.validator.validate(self.write(root,value),'task_001',None)}
+                    self.assertIn(code,codes)
+    def test_deviation_values_match_schema(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d); valid={'id':'D1','kind':'integration','summary':'bounded','workaround':'none','scope_changed':False,'behavior_changed':False,'requirements':['REQ-001']}
+            cases=[]
+            for field,value in (('id',''),('kind',''),('summary',''),('workaround',1),('requirements',[1])):
+                item=dict(valid); item[field]=value; result=self.base(); result['deviations']=[item]; cases.append(result)
+            for value in cases:
+                codes={x['code'] for x in self.validator.validate(self.write(root,value),'task_001',None)}
+                self.assertIn('invalid_deviation',codes)
     def test_patch_validator_requires_terminal_protocol(self):
         module=load('scripts/validate-patch-pack.py','patch_validator'); self.assertIn('TERMINAL_OUTPUT_PROTOCOL',module.REQUIRED_HANDOFF_HEADINGS)
         with tempfile.TemporaryDirectory() as d:
