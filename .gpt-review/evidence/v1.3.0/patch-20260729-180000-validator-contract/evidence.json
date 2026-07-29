@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "e4d34a026b3eac4a32d584673f3fbd823f22093d",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/validate-gateway-agent-result.py",
+          "start_line": 56,
+          "end_line": 56,
+          "sha256": "29e174baf57616984e8d675acf0bd82d86cc7c5f42d3f50aae3047b43d2bca8f",
+          "symbol": "isinstance(item[\"exit\"],bool)"
+        },
+        {
+          "kind": "source",
+          "path": "scripts/validate-gateway-agent-result.py",
+          "start_line": 69,
+          "end_line": 69,
+          "sha256": "29e240256dae0a6cef2aa892e1cdacace1a6297ad9437172d1bdd5a3f17ce1cd",
+          "symbol": "not isinstance(value[field],str)"
+        }
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "test",
+          "path": "tests/test_gateway_terminal_protocol.py",
+          "start_line": 47,
+          "end_line": 47,
+          "sha256": "837bdb1d86cb4c13e2563ee87d0b7e20552751a2f3ef063b96ddbd4def443cfe",
+          "symbol": "test_deviation_values_match_schema"
+        },
+        {
+          "kind": "source",
+          "path": "examples/gateway-compatible-patch-pack/scripts/validate-gateway-agent-result.py",
+          "start_line": 70,
+          "end_line": 70,
+          "sha256": "b32f5ca8934d307c821308868e7011313dfcf77950d2ebffe29530d7c3d7d969",
+          "symbol": "invalid_next_action"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "python-tests",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "python-compile",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "result-validator-help",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "terminal-protocol-tests",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "portable-copy",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "patch-scope",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Exact three-file scope verified."
+    }
+  ],
+  "deviations": []
+}

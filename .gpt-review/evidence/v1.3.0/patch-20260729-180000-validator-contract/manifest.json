@@ -1,0 +1,71 @@
+{
+  "schema_version": 2,
+  "patch_id": "patch-20260729-180000-validator-contract",
+  "title": "Align Result Validator Contract",
+  "description": "Aligns dependency-free gateway result validation with the normative JSON schema and adds regression coverage.",
+  "created_at": "2026-07-29T18:00:00Z",
+  "patch_timestamp": "20260729-180000",
+  "patch_slug": "validator-contract",
+  "baseline_release": "v1.3.0",
+  "evidence_directory": ".gpt-review/evidence/v1.3.0/patch-20260729-180000-validator-contract",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v1.2.0",
+    "commit": "07ab94b358e8634fa0e547acaa0cf6e237ebbc2e",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "rceman/gpt-review-planner",
+    "branch": "agent/task-20260729-150500-planner-json-finalization-v2",
+    "base_revision": "d6f4cd78632a5469cb9feb84be038c9567389029"
+  },
+  "files_created": [],
+  "files_modified": [
+    "examples/gateway-compatible-patch-pack/scripts/validate-gateway-agent-result.py",
+    "scripts/validate-gateway-agent-result.py",
+    "tests/test_gateway_terminal_protocol.py"
+  ],
+  "files_deleted": [],
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "summary": "Enforce schema scalar types and byte bounds in the dependency-free validator.",
+      "acceptance": [
+        "Commit identifiers must be strings rather than values coercible to strings.",
+        "Boolean gate exits and oversized gate summaries are rejected.",
+        "next_action is validated whenever present and remains bounded."
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "summary": "Validate deviation values and preserve the portable validator copy.",
+      "acceptance": [
+        "Deviation string and requirements item types match the schema.",
+        "The canonical and gateway-compatible validator copies are byte-identical.",
+        "Native tests cover the corrected mismatch cases."
+      ]
+    }
+  ],
+  "gates": [
+    {"id":"python-tests","name":"Dependency-free tests","kind":"command","command":"python3 -m unittest discover -s tests -v"},
+    {"id":"python-compile","name":"Python compile","kind":"command","command":"python3 -m compileall -q scripts tests"},
+    {"id":"result-validator-help","name":"Validator startup","kind":"command","command":"python3 scripts/validate-gateway-agent-result.py --help"},
+    {"id":"terminal-protocol-tests","name":"Terminal protocol tests","kind":"command","command":"python3 -m unittest tests.test_gateway_terminal_protocol -v"},
+    {"id":"portable-copy","name":"Portable copy equality","kind":"command","command":"cmp scripts/validate-gateway-agent-result.py examples/gateway-compatible-patch-pack/scripts/validate-gateway-agent-result.py"},
+    {"id":"patch-scope","name":"Exact patch scope","kind":"scope"}
+  ],
+  "gpt_static_checks_performed": [
+    "Reconstructed the committed validator and test files by exact Git blob identity.",
+    "Authored and locally executed the new focused regression cases.",
+    "Verified the two validator copies are byte-identical and the patch passes git diff --check."
+  ],
+  "gpt_runtime_checks_not_performed": [
+    "The complete planner test suite and committed evidence workflow require the host repository."
+  ],
+  "known_integration_risks": [],
+  "forbidden_deviations": [
+    "Do not modify files outside the three declared paths.",
+    "Do not redesign the result schema or gateway protocol.",
+    "Do not merge, release, tag, amend, rebase, or force-push."
+  ]
+}
