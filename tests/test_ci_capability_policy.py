@@ -9,7 +9,10 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         type(self).calls += 1; type(self).headers=dict(self.headers)
         is_jobs='/jobs' in self.path; status=type(self).jobs_status if is_jobs else type(self).runs_status
-        body=json.dumps(type(self).jobs_payload if is_jobs else type(self).payload).encode(); self.send_response(status); self.send_header('Content-Type','application/json'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body)
+        source=type(self).jobs_payload if is_jobs else type(self).payload
+        if isinstance(source,list) and source and isinstance(source[0],dict) and 'workflow_runs' in source[0]: body=json.dumps(source.pop(0)).encode()
+        else: body=json.dumps(source).encode()
+        self.send_response(status); self.send_header('Content-Type','application/json'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body)
     def log_message(self,*args): pass
 
 class CICapabilityTests(unittest.TestCase):
@@ -27,6 +30,11 @@ class CICapabilityTests(unittest.TestCase):
     def test_wrong_sha_rejected(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':'b'*40,'status':'completed','conclusion':'success'}]}; self.assertEqual(self.run_data()['state'],'no_run')
     def test_pending_without_wait(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'queued','conclusion':None}]}; p=self.run_tool(); self.assertEqual(p.returncode,2); self.assertEqual(json.loads(p.stdout)['state'],'pending')
     def test_pending_wait_timeout(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'queued','conclusion':None}]}; p=self.run_tool(extra=('--wait','--timeout','1','--interval','1')); self.assertEqual(p.returncode,6)
+    def test_wait_absorbs_no_run_then_pending_then_success(self):
+        Handler.payload=[{'workflow_runs':[]},{'workflow_runs':[]},{'workflow_runs':[{'id':1,'head_sha':SHA,'status':'queued','conclusion':None}]},{'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'success','html_url':'u'}]}]
+        p=self.run_tool(policy='required',extra=('--wait','--timeout','5','--interval','1')); self.assertEqual(p.returncode,0); self.assertEqual(json.loads(p.stdout)['state'],'success')
+    def test_wait_permanent_no_run_times_out(self):
+        Handler.payload={'workflow_runs':[]}; p=self.run_tool(policy='required',extra=('--wait','--timeout','1','--interval','1')); self.assertEqual(p.returncode,6); self.assertEqual(json.loads(p.stdout)['state'],'timed_out')
     def test_failure_required(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'failure'}]}; self.assertEqual(self.run_tool(policy='required').returncode,3)
     def test_neutral_active_policies_block(self):
         Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'neutral'}]}

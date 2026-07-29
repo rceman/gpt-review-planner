@@ -20,7 +20,9 @@ Automation executes mechanics.
 Generated artifacts carry machine facts.
 The agent does not manually synchronize derived data.
 
-When present, use `scripts/run-agent-evidence-workflow.py run` for the complete
+When the workflow runner exists, the agent invokes only `run` or `resume`. The
+agent must not invoke underlying CI, gate, preparation, evidence, verification,
+commit, or reporting helpers manually. Use `scripts/run-agent-evidence-workflow.py run` for the complete
 evidence lifecycle and `resume` for interruption recovery. Agents invoke
 workflows. Scripts execute phases. Structured state carries progress. Models do
 not manually orchestrate deterministic shell pipelines.

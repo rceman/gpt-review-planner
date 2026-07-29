@@ -79,7 +79,10 @@ def main():
     evprefix=ev.rstrip('/')+'/'
     created=[p for p in created if not p.startswith(evprefix)]; modified=[p for p in modified if not p.startswith(evprefix)]; deleted=[p for p in deleted if not p.startswith(evprefix)]
     if len(set(created+modified+deleted))!=len(created+modified+deleted): die('duplicate scope path')
-    manifest=dict(seed); manifest.update({'schema_version':2,'patch_id':evpath.name,'patch_timestamp':evpath.name.split('-')[1]+'-'+evpath.name.split('-')[2],'patch_slug':'evidence-automation','created_at':datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),'evidence_directory':ev,'files_created':sorted(created),'files_modified':sorted(modified),'files_deleted':sorted(deleted)})
+    match=PATCH_RE.fullmatch(evpath.name)
+    try: stamp=datetime.strptime(match.group(1)+match.group(2), '%Y%m%d%H%M%S').replace(tzinfo=timezone.utc)
+    except (ValueError, AttributeError): die('invalid evidence directory calendar timestamp')
+    manifest=dict(seed); manifest.update({'schema_version':2,'patch_id':evpath.name,'patch_timestamp':match.group(1)+'-'+match.group(2),'patch_slug':match.group(3),'created_at':stamp.strftime('%Y-%m-%dT%H:%M:%SZ'),'evidence_directory':ev,'files_created':sorted(created),'files_modified':sorted(modified),'files_deleted':sorted(deleted)})
     manifest.setdefault('target',{})['base_revision']=a.base_revision
     workflow=manifest.setdefault('workflow',{}); commit_value=workflow.get('commit')
     if commit_value in {'HEAD','implementation'}: workflow['commit']=sha
@@ -87,5 +90,10 @@ def main():
     resolved_plan={'schema_version':1,'requirements':[],'deviations':plan.get('deviations',[])}
     for req in plan.get('requirements',[]):
         item={k:req[k] for k in req if k in {'id','status','note','deviation'}}; item['proofs']=[resolve_proof(repo,sha,p) for p in req.get('proofs',[])]; resolved_plan['requirements'].append(item)
-    atomic(out,manifest); atomic(resolved,resolved_plan); print(f'Evidence inputs prepared: manifest={out} resolved_plan={resolved}')
+    atomic(resolved,resolved_plan)
+    try: atomic(out,manifest)
+    except Exception:
+        if resolved.exists(): resolved.unlink()
+        raise
+    print(f'Evidence inputs prepared: manifest={out} resolved_plan={resolved}')
 if __name__=='__main__': main()
