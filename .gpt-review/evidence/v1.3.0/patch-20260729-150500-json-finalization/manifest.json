@@ -1,0 +1,143 @@
+{
+  "schema_version": 2,
+  "patch_id": "patch-20260729-150500-json-finalization",
+  "title": "Define JSON-only gateway finalization",
+  "description": "Defines durable plan-before-execution records and a single strict JSON terminal result finalized through one gateway command.",
+  "created_at": "2026-07-29T15:05:00Z",
+  "patch_timestamp": "20260729-150500",
+  "patch_slug": "json-finalization",
+  "baseline_release": "v1.3.0",
+  "evidence_directory": ".gpt-review/evidence/v1.3.0/patch-20260729-150500-json-finalization",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v1.2.0",
+    "commit": "07ab94b358e8634fa0e547acaa0cf6e237ebbc2e",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "rceman/gpt-review-planner",
+    "branch": "main",
+    "base_revision": "b1a45b1e9475ab29dfd3e84d523b70897c7b8918"
+  },
+  "files_created": [
+    "docs/GATEWAY_TASK_PROTOCOL.md",
+    "examples/gateway-compatible-patch-pack/scripts/validate-gateway-agent-result.py",
+    "schemas/gateway-agent-result-v2.schema.json",
+    "scripts/validate-gateway-agent-result.py",
+    "tests/test_gateway_terminal_protocol.py"
+  ],
+  "files_modified": [
+    "CHANGELOG.md",
+    "GPT_REVIEW_PLANNER.md",
+    "README.md",
+    "docs/AGENT_REPORTING.md",
+    "docs/GATEWAY_INTEROPERABILITY.md",
+    "docs/PATCH_PACK_HANDOFF.md",
+    "examples/gateway-compatible-patch-pack/AGENT_HANDOFF.md",
+    "examples/gateway-compatible-patch-pack/AGENT_PROMPT.md",
+    "scripts/new-patch-pack.sh",
+    "scripts/validate-patch-pack.py",
+    "templates/executable-patch-pack/AGENT_HANDOFF.md",
+    "templates/executable-patch-pack/AGENT_PROMPT.md",
+    "templates/project/AGENTS.managed-block.md"
+  ],
+  "files_deleted": [],
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "summary": "Persist every gateway execution plan before dispatch.",
+      "acceptance": [
+        "AC-001: The normative workflow requires a non-executable inbox/<task_id>.plan.json commit before the matching taskbundle commit.",
+        "AC-002: The plan record contains task identity, exact baseline, objective, scope, acceptance criteria, role boundary, and continuation state.",
+        "AC-003: GPT owns the principal implementation and the local agent is limited to application, runtime gates, evidence, and narrow repairs."
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "summary": "Replace duplicate human and machine terminal artifacts with one strict JSON result.",
+      "acceptance": [
+        "AC-004: Future gateway-managed handoffs require only agent-result.json as agent-authored terminal output.",
+        "AC-005: Interactive Airelay/Codex text is explicitly non-terminal.",
+        "AC-006: succeeded, needs_gpt_revision, and failed all require finalization.",
+        "AC-007: The JSON schema forbids unknown properties and conditionally requires successful commit identities and revision next_action."
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "summary": "Make terminal completion one validated command.",
+      "acceptance": [
+        "AC-008: Every generated executable pack contains TERMINAL_OUTPUT_PROTOCOL.",
+        "AC-009: The protocol tells the agent to write agent-result.json and invoke the gateway-generated complete-task command.",
+        "AC-010: validate-patch-pack.py rejects missing or incomplete terminal protocol sections.",
+        "AC-011: new-patch-pack.sh bundles the dependency-free gateway result validator."
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "summary": "Provide dependency-free validation and regression coverage.",
+      "acceptance": [
+        "AC-012: validate-gateway-agent-result.py rejects duplicate keys, unknown fields, wrong task IDs, invalid status contracts, and gate mismatches.",
+        "AC-013: Native tests cover success, failure, needs-GPT-revision, duplicate keys, unknown fields, missing terminal heading, template content, and plan documentation."
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "python-tests",
+      "name": "Dependency-free tests",
+      "kind": "command",
+      "command": "python3 -m unittest discover -s tests -v"
+    },
+    {
+      "id": "python-compile",
+      "name": "Python compile",
+      "kind": "command",
+      "command": "python3 -m compileall -q scripts tests"
+    },
+    {
+      "id": "shell-syntax",
+      "name": "Shell syntax",
+      "kind": "command",
+      "command": "bash -n scripts/new-patch-pack.sh"
+    },
+    {
+      "id": "result-validator-help",
+      "name": "Result validator startup",
+      "kind": "command",
+      "command": "python3 scripts/validate-gateway-agent-result.py --help >/dev/null"
+    },
+    {
+      "id": "patch-validator-tests",
+      "name": "Patch validator protocol regression",
+      "kind": "command",
+      "command": "python3 -m unittest tests.test_gateway_terminal_protocol.GatewayTerminalProtocolTests.test_patch_validator_requires_terminal_protocol -v"
+    },
+    {
+      "id": "patch-scope",
+      "name": "Exact patch scope",
+      "kind": "scope"
+    }
+  ],
+  "gpt_static_checks_performed": [
+    "Inspected planner 1.3.0 workflow, reporting, gateway interoperability, patch handoff, pack generator, pack validator, executable handoff template, and managed AGENTS contract.",
+    "Separated planner-owned semantic contracts from gateway-owned transport and publication mechanics.",
+    "Authored the JSON schema, dependency-free validator, native tests, documentation, and exact source patch.",
+    "Committed the coordination plan to rceman/typer before preparing this executable task."
+  ],
+  "gpt_runtime_checks_not_performed": [
+    "Python unit tests and compileall.",
+    "Shell syntax execution.",
+    "Patch application against the host repository.",
+    "Agent evidence workflow, Git commits, pushes, CI, or gateway publication."
+  ],
+  "known_integration_risks": [
+    "This bootstrap task still runs under the deployed legacy dual-output gateway protocol; the new JSON-only protocol applies only after the corresponding gateway implementation is merged and installed.",
+    "The current legacy gateway task must be finalized before this taskbundle can execute."
+  ],
+  "forbidden_deviations": [
+    "Do not implement gateway runtime mechanics in the planner repository.",
+    "Do not remove legacy gateway compatibility from deployed gateway code in this task.",
+    "Do not redesign the evidence workflow, change release state, create tags, or broaden beyond the declared files.",
+    "Do not delegate principal implementation work back to the local agent."
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "c2282774df6b4c5185ed99003548801f49b84515",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "documentation",
+          "path": "docs/GATEWAY_TASK_PROTOCOL.md",
+          "start_line": 8,
+          "end_line": 8,
+          "sha256": "494435093d1834c64008b6149a51c4bd5ba4848ab2cb35b9e0ae91f63d9721d0",
+          "symbol": "inbox/<task_id>.plan.json"
+        }
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "schemas/gateway-agent-result-v2.schema.json",
+          "start_line": 26,
+          "end_line": 26,
+          "sha256": "f7f60e5077e78a6e2f1a58ad62c99d2e39752beb4436cd8191f6d90b9ebd4903",
+          "symbol": "needs_gpt_revision"
+        }
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "documentation",
+          "path": "templates/executable-patch-pack/AGENT_HANDOFF.md",
+          "start_line": 45,
+          "end_line": 45,
+          "sha256": "61a5c672067b4e666cc14e559c1fe98b185ad6a89b50df7e71d2ab19ec4d9c85",
+          "symbol": "complete-task"
+        }
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "test",
+          "path": "tests/test_gateway_terminal_protocol.py",
+          "start_line": 30,
+          "end_line": 30,
+          "sha256": "c9eb276d2cfbc9819c328525106b7e4ed01c8682caa085f5a1768d8f251c7fdf",
+          "symbol": "test_succeeded_requires_exact_manifest_gates"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "python-tests",
+      "status": "pass",
+      "exit": 0,
+      "summary": "168 tests passed."
+    },
+    {
+      "id": "python-compile",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "shell-syntax",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "result-validator-help",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "patch-validator-tests",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "patch-scope",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Exact 18-file scope verified."
+    }
+  ],
+  "deviations": []
+}
