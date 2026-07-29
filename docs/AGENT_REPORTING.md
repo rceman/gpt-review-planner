@@ -20,7 +20,8 @@ Automation executes mechanics.
 Generated artifacts carry machine facts.
 The agent does not manually synchronize derived data.
 
-When the workflow runner exists, the agent invokes only `run` or `resume`. The
+When the workflow runner exists, the agent provides one semantic task specification
+and invokes only `run --task` or `resume`. The
 agent must not invoke underlying CI, gate, preparation, evidence, verification,
 commit, or reporting helpers manually. Use `scripts/run-agent-evidence-workflow.py run` for the complete
 evidence lifecycle and `resume` for interruption recovery. Agents invoke

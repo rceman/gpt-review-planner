@@ -18,7 +18,8 @@ then generate evidence with `scripts/generate-agent-evidence.py`; render compact
 handoff facts with `scripts/render-agent-report.py`.
 Before runtime gates or evidence creation, read [`docs/AGENT_REPORTING.md`](docs/AGENT_REPORTING.md)
 and follow its bounded agent execution rules.
-When the workflow runner exists, the agent invokes only run or resume; it must
+When the workflow runner exists, the agent provides one semantic task specification
+and invokes only run or resume; it must
 not invoke underlying CI, gate, preparation, evidence, verification, commit,
 or reporting helpers manually. Use `scripts/run-agent-evidence-workflow.py` for the complete
 evidence lifecycle rather than manually orchestrating its phases.

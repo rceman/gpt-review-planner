@@ -180,7 +180,10 @@ than trusting the directory entry. Directory-level status never permits
 arbitrary files, nested directories, symlinks, or unrelated worktree changes.
 Existing committed evidence remains immutable, and generated evidence must not
 be manually edited after generation.
-When the workflow runner exists, the agent invokes only run or resume. The agent
+When the workflow runner exists, the agent provides one semantic task JSON and
+invokes only `run --task` or `resume`. The runner persists normalized inputs and
+state under the Git common directory; agents never assemble temporary input
+directories manually. The agent
 must not invoke underlying CI, gate, preparation, evidence, verification,
 commit, or reporting helpers manually. Scripts execute phases and structured
 state carries progress.

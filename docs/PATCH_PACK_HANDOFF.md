@@ -105,3 +105,7 @@ Intermediate logs and helper JSON remain outside committed evidence.
 The generator accepts only the declared evidence directory's manifest and
 generated evidence file, whether Git reports them individually or as a compact
 directory-level untracked entry; it validates the expanded contents.
+The agent provides one semantic task specification to the workflow runner.
+Runtime state is stored under the Git common directory. Agents invoke workflows;
+scripts execute phases; structured state carries progress. Models do not manually
+orchestrate deterministic shell pipelines or assemble temporary input directories.

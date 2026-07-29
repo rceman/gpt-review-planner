@@ -31,13 +31,53 @@ def validate_workflow(w):
     if set(ci)!=allowed or ci['policy'] not in {'required','auto','optional','disabled'}: raise RuntimeError('invalid CI workflow input')
     if not isinstance(ci['timeout_seconds'],int) or ci['timeout_seconds']<=0 or not isinstance(ci['interval_seconds'],int) or ci['interval_seconds']<1: raise RuntimeError('invalid CI timing')
     if any(not isinstance(w[k],str) or not w[k] for k in ('repository','branch','version','evidence_root','evidence_slug','evidence_commit_message')): raise RuntimeError('invalid workflow identity')
+def quarantine_untracked(repo, evidence_root, destination):
+    raw=subprocess.run(['git','-C',str(repo),'status','--porcelain=v1','-z','--untracked-files=all'],stdout=subprocess.PIPE,check=True).stdout
+    tokens=raw.decode('utf-8').split('\0'); paths=[]; i=0
+    while i < len(tokens) and tokens[i]:
+        record=tokens[i]; i+=1
+        if len(record)<3: raise RuntimeError('malformed git status record')
+        status=record[:2]; path=record[3:]
+        if status=='??': paths.append(path.rstrip('/'))
+        elif status not in {'  '} or path: continue
+        if status=='??' and i < len(tokens) and status[0] in 'RC': i+=1
+    root=Path(evidence_root).as_posix().rstrip('/')+'/'
+    candidates=set()
+    for path in paths:
+        if path.startswith(root): candidates.add(path.split('/')[len(root.split('/'))-1])
+    for name in sorted(candidates):
+        source=repo/evidence_root/name
+        if not source.is_dir() or source.is_symlink(): raise RuntimeError('invalid untracked evidence candidate')
+        tracked=subprocess.run(['git','-C',str(repo),'ls-files','--error-unmatch',str(source.relative_to(repo))],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
+        if tracked: raise RuntimeError('committed evidence cannot be quarantined')
+        files=[]
+        for item in source.iterdir():
+            if item.is_symlink() or not item.is_file() or item.name not in {'manifest.json','evidence.json'}: raise RuntimeError('unsafe evidence candidate contents')
+            files.append(item)
+        target=destination/source.name; target.parent.mkdir(parents=True,exist_ok=True); hashes=[]
+        for item in files: hashes.append({'source':str(item.relative_to(repo)),'sha256':hashlib.sha256(item.read_bytes()).hexdigest()})
+        shutil.move(str(source),str(target)); write_json(destination/'quarantine.json', {'items':hashes})
 def main():
     ap=argparse.ArgumentParser(); sub=ap.add_subparsers(dest='command',required=True)
-    runp=sub.add_parser('run'); runp.add_argument('--repo',required=True); runp.add_argument('--inputs',required=True)
+    runp=sub.add_parser('run'); runp.add_argument('--repo',required=True); runp.add_argument('--task'); runp.add_argument('--inputs')
     resp=sub.add_parser('resume'); resp.add_argument('--repo',required=True); resp.add_argument('--run-id')
     a=ap.parse_args(); repo=Path(a.repo).resolve(); common=git_common(repo); root=common/'gpt-review'; root.mkdir(parents=True,exist_ok=True)
     if a.command=='run':
-        inputs=Path(a.inputs).resolve(); workflow=load(inputs/'workflow.json'); validate_workflow(workflow)
+        if bool(a.task)==bool(a.inputs): raise SystemExit('run requires exactly one of --task or --inputs')
+        if a.task:
+            task=load(Path(a.task)); required={'workflow','manifest_seed','evidence_plan','gate_plan'}
+            if set(task)!=required: raise SystemExit('invalid task file')
+            inputs=Path(tempfile.mkdtemp(prefix='evidence-inputs-',dir=root/'runs'))/'inputs'; inputs.mkdir(parents=True)
+            for name in required: write_json(inputs/(name.replace('_','-')+'.json'),task[name])
+            # retain the historical filenames used by phase scripts
+            for src,dst in [('manifest-seed.json','manifest-seed.json'),('evidence-plan.json','evidence-plan.json'),('gate-plan.json','gate-plan.json')]: pass
+            workflow=task['workflow']; write_json(inputs/'workflow.json',workflow)
+        else:
+            inputs=Path(a.inputs).resolve(); workflow=load(inputs/'workflow.json')
+        validate_workflow(workflow)
+        if a.task:
+            for name in ('manifest_seed','evidence_plan','gate_plan'):
+                source=inputs/(name.replace('_','-')+'.json'); target=inputs/({'manifest_seed':'manifest-seed.json','evidence_plan':'evidence-plan.json','gate_plan':'gate-plan.json'}[name]); shutil.copy2(source,target)
         head=call(['git','rev-parse','HEAD'],repo).strip(); branch=call(['git','branch','--show-current'],repo).strip()
         run_id=hashlib.sha256((str(repo)+branch+head+(inputs/'workflow.json').read_bytes().hex()).encode()).hexdigest()[:20]
         state_dir=root/'runs'/run_id; state_dir.mkdir(parents=True,exist_ok=True)
@@ -53,7 +93,6 @@ def main():
     try:
         if PHASES.index(phase)<=0:
             if call(['git','branch','--show-current'],repo).strip()!=workflow['branch'] or Path(repo/'VERSION').read_text().strip()!=workflow['version']: raise RuntimeError('repository identity mismatch')
-            if call(['git','status','--porcelain','--untracked-files=all'],repo).strip(): raise RuntimeError('worktree must be clean')
             if call(['git','remote','get-url','origin'],repo).strip()=='': raise RuntimeError('origin unavailable')
             save('IDENTITY_VERIFIED')
         if PHASES.index(phase)<=1:
@@ -63,11 +102,8 @@ def main():
             if load(out).get('state')!='success': raise RuntimeError('implementation CI was not successful')
             save('IMPLEMENTATION_CI_VERIFIED')
         if PHASES.index(phase)<=2:
-            # Only quarantine matching, untracked evidence attempts; never use task-specific paths.
-            evidence_root=repo/workflow['evidence_root']; evidence_root.mkdir(parents=True,exist_ok=True)
-            for candidate in evidence_root.glob('patch-*-'+workflow['evidence_slug']):
-                if candidate.is_dir():
-                    target=Path(tempfile.mkdtemp(prefix='gpt-review-stale-'))/candidate.name; target.parent.mkdir(parents=True,exist_ok=True); shutil.move(str(candidate),str(target))
+            evidence_root=Path(workflow['evidence_root']); quarantine_untracked(repo,evidence_root,Path(state['state_file']).parent/'quarantine')
+            if call(['git','status','--porcelain','--untracked-files=all'],repo).strip(): raise RuntimeError('worktree must be clean after quarantine')
             wt=state_dir/'worktree'; call(['git','worktree','add','--detach',str(wt),state['implementation_sha']],repo); state['worktree']=str(wt); save('WORKTREE_CREATED')
         if PHASES.index(phase)<=3:
             gateout=state_dir/'gate-run'; call(['python3',str(repo/'scripts/run-agent-gates.py'),'--repo',state['worktree'],'--plan',str(inputs/'gate-plan.json'),'--implementation-commit',state['implementation_sha'],'--output-dir',str(gateout)],repo); save('GATES_COMPLETED',gate_run=str(gateout/'gate-run.json'))
@@ -86,7 +122,9 @@ def main():
         if PHASES.index(phase)<=8:
             call(['python3',str(repo/'scripts/verify-agent-evidence.py'),'committed','--pack',str(state_dir/'pack'),'--repo',str(repo),'--implementation-commit',state['implementation_sha'],'--evidence-commit',state['evidence_commit']],repo); save('COMMITTED_VERIFIED')
         if PHASES.index(phase)<=9:
-            call(['git','push','--ff-only','origin',f"refs/heads/{workflow['branch']}:refs/heads/{workflow['branch']}"],repo); save('EVIDENCE_PUSHED')
+            remote=call(['git','ls-remote','origin',f"refs/heads/{workflow['branch']}"],repo).strip().split()[0]
+            if remote and call(['git','merge-base','--is-ancestor',remote,state['evidence_commit']],repo,timeout=60) is None: pass
+            call(['git','push','origin',f"refs/heads/{workflow['branch']}:refs/heads/{workflow['branch']}"],repo); save('EVIDENCE_PUSHED')
         if PHASES.index(phase)<=10:
             out=state_dir/'evidence-ci.json'; text=call(['python3',str(repo/'scripts/check-github-ci.py'),'--repository',workflow['repository'],'--sha',state['evidence_commit'],'--policy',workflow['ci']['policy'],'--workflow',workflow['ci']['workflow'],'--event',workflow['ci']['event'],'--wait','--timeout',str(workflow['ci']['timeout_seconds']),'--interval',str(workflow['ci']['interval_seconds']),'--format','json'],repo); out.write_text(text,encoding='utf-8')
             if load(out).get('state')!='success': raise RuntimeError('evidence CI was not successful')
