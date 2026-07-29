@@ -90,7 +90,7 @@ def main():
         gates.append(item)
     ci_gate_ids={g['id'] for g in manifest.get('gates',[]) if g.get('kind') == 'github-actions'}
     if set(ci) != ci_gate_ids: die('CI result keys do not match manifest CI gates')
-    for key,value in ci.items(): gates.append({'id':key,'status':'pass','run':value.get('run_id'),'job':value.get('job_id'),'run_url':value.get('run_url'),'job_url':value.get('job_url'),'summary':value.get('message','')})
+    for key,value in ci.items(): gates.append({'id':key,'status':'pass','run':value.get('run_id'),'job':value.get('job_id'),'url':value.get('run_url'),'run_url':value.get('run_url'),'job_url':value.get('job_url'),'summary':value.get('message','')})
     result={'schema_version':1,'implementation_commit':sha,'requirements':req,'gates':gates,'deviations':plan.get('deviations',[])}
     target=Path(a.output); target.parent.mkdir(parents=True,exist_ok=True); fd,tmp=tempfile.mkstemp(dir=target.parent); os.close(fd); Path(tmp).write_text(json.dumps(result,indent=2,sort_keys=True)+'\n',encoding='utf-8'); os.replace(tmp,target)
     print(f"Evidence generated: {target}")
