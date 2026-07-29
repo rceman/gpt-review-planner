@@ -32,6 +32,8 @@ REQUIRED_FILES = (
     "scripts/generate-agent-evidence.py",
     "scripts/render-agent-report.py",
     "scripts/prepare-agent-evidence.py",
+    "scripts/run-agent-evidence-workflow.py",
+    "finalization-plan.json",
     "expected/acceptance-gates.md",
     "expected/allowed-deviations.md",
 )

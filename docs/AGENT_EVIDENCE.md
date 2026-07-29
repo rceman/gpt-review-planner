@@ -168,6 +168,9 @@ directory must not exist before preparation. The helper creates it and writes
 the generated manifest, while the resolved plan remains external. Worktree
 cleanliness is required and no scope, SHA, or proof-range synchronization is
 manual.
+When the workflow runner is present, agents must invoke it instead of manually
+running the gate, CI, preparation, generation, verification, and reporting
+phases.
 
 Evidence generation intentionally occurs with the new evidence directory in the
 worktree. Only its declared `manifest.json` and generated `evidence.json` are
