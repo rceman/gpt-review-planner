@@ -16,6 +16,8 @@ Local agents must consult the [host prerequisites](docs/HOST_PREREQUISITES.md) b
 For automated capture, use the pinned gate plan and `scripts/run-agent-gates.py`,
 then generate evidence with `scripts/generate-agent-evidence.py`; render compact
 handoff facts with `scripts/render-agent-report.py`.
+Before runtime gates or evidence creation, read [`docs/AGENT_REPORTING.md`](docs/AGENT_REPORTING.md)
+and follow its bounded agent execution rules.
 
 This workflow combines two models with deliberately different responsibilities:
 

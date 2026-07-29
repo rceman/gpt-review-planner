@@ -1,5 +1,25 @@
 # Agent Reporting Contract
 
+## Bounded agent execution
+
+Use one exact-SHA CI helper invocation with `--wait`; manual sleeps and duplicate
+polling are prohibited. Use one script-managed detached worktree and remove it
+after execution. Rely on subprocess exit status, bounded timeouts, and
+structured gate-run, CI, and evidence JSON. Do not use routine `ps`, repeated
+`ls` or `cat`, one-off JSON readers, or manually synchronize counts, SHAs, URLs,
+scope, summaries, or proof hashes.
+
+Prepare proof selectors before publication and complete the local pipeline
+preflight before pushing. Committed evidence is immutable; stale uncommitted
+attempts are disposable only after validation and quarantine, never overwrite or
+reuse them. A blocker contains only phase, stable reason, bounded diagnostic,
+preserved state, and the exact next action.
+
+The model decides semantics.
+Automation executes mechanics.
+Generated artifacts carry machine facts.
+The agent does not manually synchronize derived data.
+
 This contract is the human/GPT projection of machine-verifiable execution evidence.
 
 1. Report each fact once.

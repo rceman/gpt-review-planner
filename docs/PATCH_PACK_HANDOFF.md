@@ -85,6 +85,14 @@ When remote CI is unavailable or intentionally disabled, mandatory local runtime
 
 This post-merge handoff contract governs merge-finalization prompts.
 
+## Bounded agent execution
+
+Before runtime gates or evidence creation, read [`AGENT_REPORTING.md`](AGENT_REPORTING.md)
+and follow its bounded rules: one `check-github-ci.py --wait` per SHA, one
+detached worktree, structured results, no manual sleeps or routine process
+inspection, and no manual synchronization of generated facts. Fresh evidence
+attempts are required; stale uncommitted output is not authoritative.
+
 A merge-oriented prompt-only handoff MUST provide complete merge-finalization instructions using exactly one of: complete inline instructions, or the preferred compact reference to `prompts/AGENT_FINALIZE_MERGE.md` from the exact pinned planner checkout or immutable tag/commit URL plus the complete parameter block. Compact reference mode is complete because the agent must load the canonical prompt and linked normative contracts before execution. Mutable `main`, `latest`, or unresolved references are forbidden; a summary must not replace loading the canonical prompt.
 
 Required parameters are `REPOSITORY`, `LOCAL_REPOSITORY`, `SSH_ORIGIN`, `MAIN_BRANCH`, `FEATURE_BRANCH`, `EXPECTED_MAIN_BEFORE`, `EXPECTED_FEATURE_HEAD`, `EXPECTED_VERSION`, `CI_POLICY`, `CI_WORKFLOW`, and `CI_EVENT`. Both modes require exact merge-SHA CI, feature-tip identity and ancestry, remote deletion only after successful CI, pruning, local feature-branch retention, final verification, and `MERGE_FINALIZED`, `MERGE_CLEANUP_BLOCKED`, or pre-merge `MERGE_BLOCKED`. No handoff is required to inline the cleanup sequence when it loads the complete pinned canonical prompt.
