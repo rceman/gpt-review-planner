@@ -60,10 +60,13 @@
           "status": {"enum": ["pass", "fail", "skip"]},
           "exit": {"type": "integer"},
           "tests": {"type": "integer", "minimum": 0},
+          "metrics": {"type": "object", "minProperties": 1, "propertyNames": {"pattern": "^[A-Za-z0-9._-]+$"}, "additionalProperties": {"type": "integer", "minimum": 0}},
           "summary": {"type": "string"},
           "run": {"type": "integer", "minimum": 1},
           "job": {"type": "integer", "minimum": 1},
           "url": {"type": "string", "format": "uri"},
+          "run_url": {"type": "string", "format": "uri"},
+          "job_url": {"type": "string", "format": "uri"},
           "note": {"type": "string"},
           "deviation": {"type": "string", "minLength": 1}
         }

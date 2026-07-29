@@ -447,7 +447,7 @@ def validate_evidence(
         label = f"evidence.gates[{index}]"
         if not isinstance(item, dict):
             raise EvidenceError(f"{label} must be an object")
-        allowed = {"id", "status", "exit", "tests", "summary", "run", "job", "url", "note", "deviation"}
+        allowed = {"id", "status", "exit", "tests", "metrics", "summary", "run", "job", "url", "run_url", "job_url", "note", "deviation"}
         unknown = set(item) - allowed
         if unknown:
             raise EvidenceError(f"{label} has unknown fields: {', '.join(sorted(unknown))}")
@@ -469,7 +469,17 @@ def validate_evidence(
         if gate_kind == "command":
             if item.get("exit") != 0:
                 raise EvidenceError(f"{label}.exit must be 0 for a passed command gate")
+            if "tests" in item and "metrics" in item:
+                raise EvidenceError(f"{label} must not contain both tests and metrics")
+            if "metrics" in item:
+                metrics = item["metrics"]
+                if not isinstance(metrics, dict) or not metrics:
+                    raise EvidenceError(f"{label}.metrics must be a non-empty object")
+                if any(not isinstance(k, str) or not k or not isinstance(v, int) or isinstance(v, bool) or v < 0 for k, v in metrics.items()):
+                    raise EvidenceError(f"{label}.metrics must contain non-negative integer values")
         elif gate_kind == "github-actions":
+            if "metrics" in item or "tests" in item:
+                raise EvidenceError(f"{label} CI gates must not contain command metrics")
             if not isinstance(item.get("run"), int) or item["run"] <= 0:
                 raise EvidenceError(f"{label}.run must be a positive workflow run ID")
             if not isinstance(item.get("url"), str) or not item["url"].startswith("https://github.com/"):

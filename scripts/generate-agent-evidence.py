@@ -25,16 +25,37 @@ def main():
     output=Path(a.output).resolve(); allowed={str(output),str(output.parent/'manifest.json')}
     if any(line[3:].strip() not in allowed for line in dirty.splitlines()): die('repository is dirty except intended evidence files')
     manifest=read_json(a.manifest); plan=read_json(a.evidence_plan); run=read_json(a.gate_run)
-    mids={r['id'] for r in manifest.get('requirements',[])}; req=[]
+    if run.get('implementation_commit') != sha or run.get('status') != 'pass': die('gate-run identity or status mismatch')
+    manifest_ids={g['id'] for g in manifest.get('gates',[])}
+    run_ids=[g.get('id') for g in run.get('gates',[])]
+    if len(run_ids)!=len(set(run_ids)) or set(run_ids)!=manifest_ids: die('gate-run gate IDs do not match manifest')
+    evidence_dir=(repo/manifest.get('evidence_directory','')).resolve()
+    output=Path(a.output).resolve()
+    if output.exists(): die('output already exists')
+    if output.parent != evidence_dir: die('output is outside manifest evidence directory')
+    mids={r['id'] for r in manifest.get('requirements',[])}; req=[]; seen_req=set()
     for item in plan.get('requirements',[]):
         if item['id'] not in mids: die(f"requirement mismatch: {item['id']}")
-        req.append({**item,'proofs':[proof(repo,sha,p) for p in item['proofs']]})
+        if item['id'] in seen_req: die(f"duplicate requirement: {item['id']}")
+        seen_req.add(item['id'])
+        record={'id':item['id'],'status':item['status'],'proofs':[proof(repo,sha,p) for p in item['proofs']]}
+        for key in ('note','deviation'):
+            if key in item: record[key]=item[key]
+        req.append(record)
+    if seen_req != mids: die('evidence-plan requirements incomplete')
     ci={}
+    seen_ci=set()
     for pair in a.ci_result:
         if '=' not in pair: die('invalid ci-result')
-        key,path=pair.split('=',1); ci[key]=read_json(path)
+        key,path=pair.split('=',1)
+        if key in seen_ci: die('duplicate ci-result key')
+        seen_ci.add(key); ci[key]=read_json(path)
         value=ci[key]
-        if value.get('repository')!=manifest['workflow']['repository'] or value.get('sha')!=sha or value.get('checked_sha')!=sha or value.get('state')!='success' or value.get('conclusion')!='success': die('CI identity or success mismatch')
+        target_repo=manifest.get('target',{}).get('repository')
+        if value.get('repository')!=target_repo or value.get('sha')!=sha or value.get('checked_sha')!=sha or value.get('state')!='success' or value.get('status')!='completed' or value.get('conclusion')!='success' or value.get('blocking') is not False: die('CI identity or success mismatch')
+        if not isinstance(value.get('run_id'),int) or value['run_id']<=0 or (value.get('job_id') is not None and (not isinstance(value['job_id'],int) or value['job_id']<=0)): die('invalid CI IDs')
+        if not str(value.get('run_url','')).startswith('https://github.com/'): die('invalid CI run URL')
+        if value.get('job_id') is not None and not str(value.get('job_url','')).startswith('https://github.com/'): die('invalid CI job URL')
     gates=[]
     for g in run.get('gates',[]):
         item={k:g[k] for k in ('id','status','exit') if k in g}

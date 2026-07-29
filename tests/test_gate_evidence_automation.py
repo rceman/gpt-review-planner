@@ -37,6 +37,17 @@ class GateEvidenceAutomationTests(unittest.TestCase):
             result = subprocess.check_output(["python3", str(ROOT / "scripts/render-agent-report.py"), "--evidence", str(evidence)], text=True)
             self.assertEqual(result.strip(), "Local gates: success | pytest=150 | unittest=148")
 
+    def test_declared_metrics_are_not_parser_names(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td) / "repo"; repo.mkdir(); (repo / "x").write_text("x")
+            subprocess.run(["git", "init", "-q", str(repo)], check=True); subprocess.run(["git", "-C", str(repo), "add", "x"], check=True)
+            subprocess.run(["git", "-C", str(repo), "-c", "user.email=a@b", "-c", "user.name=a", "commit", "-qm", "x"], check=True)
+            sha=subprocess.check_output(["git","-C",str(repo),"rev-parse","HEAD"],text=True).strip(); plan=Path(td)/"p.json"
+            plan.write_text(json.dumps({"schema_version":1,"gates":[{"id":"g","steps":[{"id":"u","argv":["python3","-c","print('Ran 3 tests')"],"parser":"unittest","metric":"oracle","timeout_seconds":5}]}]}))
+            out=Path(td)/"out"; subprocess.run(["python3",str(ROOT/"scripts/run-agent-gates.py"),"--repo",str(repo),"--plan",str(plan),"--implementation-commit",sha,"--output-dir",str(out)],check=True)
+            metrics=json.loads((out/"gate-run.json").read_text())["gates"][0]["metrics"]
+            self.assertEqual(metrics, {"oracle":3})
+
 
 if __name__ == "__main__":
     unittest.main()
