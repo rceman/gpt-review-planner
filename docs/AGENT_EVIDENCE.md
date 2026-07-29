@@ -158,6 +158,12 @@ Gate plans, gate-run results, and evidence plans are generated separately. Use
 `scripts/generate-agent-evidence.py` for proof hashes, metrics, and CI identity;
 the runner never edits `evidence.json`.
 
+Preparation follows one bounded sequence: manifest seed plus semantic evidence
+plan → `scripts/prepare-agent-evidence.py` → generated manifest and resolved
+plan → gate runner → evidence generator → independent verifier → compact
+renderer. The preparation helper performs no CI operation; it derives scope and
+resolves selectors from the exact implementation commit.
+
 Evidence generation intentionally occurs with the new evidence directory in the
 worktree. Only its declared `manifest.json` and generated `evidence.json` are
 allowed. Git may report that directory as one untracked directory entry or as

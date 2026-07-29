@@ -31,6 +31,7 @@ REQUIRED_FILES = (
     "scripts/run-agent-gates.py",
     "scripts/generate-agent-evidence.py",
     "scripts/render-agent-report.py",
+    "scripts/prepare-agent-evidence.py",
     "expected/acceptance-gates.md",
     "expected/allowed-deviations.md",
 )
