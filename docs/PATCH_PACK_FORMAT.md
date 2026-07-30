@@ -1,143 +1,21 @@
-# Executable Patch Pack Format
+# GPT Patch Pack v1 Format
 
-An Executable Patch Pack is a repository-aware implementation handoff authored
-primarily by GPT.
+[`GPT_PATCH_PACK_V1.md`](GPT_PATCH_PACK_V1.md) is normative.
 
-It must contain:
+The only supported executable format is one deterministic `.tar.gz` archive
+with one root, strict `MANIFEST.json`, relocatable `SHA256SUMS`,
+`AGENT_TASK.md`, `payload/apply.py`, and `payload/changes.patch`.
 
-- normative behavior;
-- exact file-level implementation;
-- target-language tests;
-- canonical fixtures;
-- validation truth;
-- local-agent execution instructions;
-- acceptance gates;
-- workflow and repository pins.
+Build with `scripts/build-gpt-patch-pack-v1.py`. Verify and apply with
+`scripts/gpt-patch-pack-runner-v1.py`. The runner validates in detached
+worktree A, generates a full-index binary patch, replays it in detached
+worktree B, verifies the exact target tree, and touches the real checkout only
+with explicit `--apply`.
 
-The local agent integrates and proves the patch. It does not reinterpret the feature.
+The manifest declares disjoint created, modified, and deleted paths. Rename is
+deleted old path plus created new path. Copy is created new path.
 
-Delivery is governed by [`PATCH_PACK_HANDOFF.md`](PATCH_PACK_HANDOFF.md). Schema-v2
-packs derive `<patch_id>.tar.gz` and its `.sha256` sidecar, and every actionable
-response ends with the exact `## AGENT_HANDOFF` block. The delivery validator
-must pass before handoff; bundled scope, evidence, and result-wrapper tools must
-be byte-identical to the pinned planner tools and must start successfully with
-`--help`.
-
-## Canonical execution entry point
-
-`AGENT_HANDOFF.md` is mandatory and is the only normative local-agent execution
-entry point. It contains exact manifest identity and the required Markdown
-headings for authority, role, prohibitions, application, gates, repair, evidence,
-commits, and response. `AGENT_PROMPT.md` is deprecated for one release and may
-exist only as a byte-identical compatibility alias; divergent content is invalid.
-
-## Evidence lifecycle
-
-The pack's `evidence.json` is always a pending pre-execution template. Completed
-evidence is created separately under the manifest evidence directory and is
-validated by `verify-agent-evidence.py`; it must never replace the pack template.
-
-Machine-readable artifacts and validator results use strict JSON. YAML is not a
-wire format. See [`STRUCTURED_FORMAT_POLICY.md`](STRUCTURED_FORMAT_POLICY.md) and
-[`GATEWAY_INTEROPERABILITY.md`](GATEWAY_INTEROPERABILITY.md).
-
-## Test-execution policy
-
-GPT authors the implementation, tests, fixtures, patch payload, manifest, and
-static/artifact review. GPT may inspect archive integrity, manifest consistency,
-patch/overlay/file-scope consistency, placeholders, text, ASTs, and other
-non-runtime metadata. GPT must not install dependencies, compile or build the
-project, run formatters or project linters, execute tests, benchmarks, or smoke
-checks, or start project services. Runtime validation is not executed by GPT.
-
-The local coding agent restores dependencies, runs all required formatting,
-compile, lint, unit, integration, E2E, benchmark, and runtime gates, fixes only
-verified narrow integration defects, and records exact evidence. GPT reviews
-that evidence without rerunning the gates.
-
-Every `VALIDATION_REPORT.md` must have these separate sections:
-
-```text
-GPT_STATIC_CHECKS_PERFORMED
-GPT_RUNTIME_CHECKS_NOT_PERFORMED
-AGENT_RUNTIME_GATES_REQUIRED
-AGENT_RUNTIME_RESULTS
-```
-
-Before agent execution, `AGENT_RUNTIME_RESULTS` must say exactly:
-`Pending local-agent execution.`. The final agent result must distinguish
-`Written by GPT`, `Executed by agent`, `Result`, and `Evidence or log location`.
-
-## Exact file-scope invariant
-
-The following sets must agree:
-
-- `manifest.json` created, modified, and deleted paths;
-- created and modified paths represented by `patch/changes.patch`;
-- created and modified paths supplied by `overlay/`;
-- `patch/delete-paths.txt`;
-- the final repository diff from `target.base_revision`.
-
-`changes.patch` paths are extracted through `git apply --numstat -z`, not by
-manually splitting quoted `diff --git` headers. UTF-8 names, spaces, and embedded
-whitespace therefore retain their exact repository spelling. Leading and trailing
-spaces are significant and must not be trimmed by the manifest, overlay, patch, or
-deletion-list validators.
-
-Native Git rename/copy numstat records are supported. In NUL-delimited numstat,
-these records expose an empty pathname field followed by separate old and new
-pathnames; both paths are included in patch payload scope. The final-result verifier
-continues to classify rename as old deleted plus new created, and copy as new
-created.
-
-NUL, LF, and CR characters in repository paths are not supported by the patch-pack
-manifest and line-based deletion-list format and must be rejected explicitly.
-
-The final verifier preserves operation classes:
-
-- `A` and untracked paths → created;
-- `M` and `T` → modified;
-- `D` → deleted;
-- `R` → old path deleted and new path created;
-- `C` → new path created.
-
-Matching only the union of paths is insufficient. A manifest that declares a file
-as modified must fail when the repository actually deletes it.
-
-Every canonical pack includes `manifest.json`, a pending `evidence.json` template,
-`AGENT_HANDOFF.md`, and the three pinned validation tools under `scripts/`.
-Deviations are structured JSON entries in the
-completed evidence file. An undeclared path or mismatched operation type is a
-blocking deviation, not an implicit integration correction.
-
-## Timestamp identity, requirements, and JSON evidence
-
-Schema version 2 adds `title`, `description`, `created_at`, `patch_timestamp`, `patch_slug`, `baseline_release`, `evidence_directory`, stable `requirements`, and required `gates`.
-
-The canonical patch ID is:
-
-```text
-patch-<UTC-YYYYMMDD-HHMMSS>-<one-to-three-word-slug>
-```
-
-After runtime validation, the agent commits exactly two evidence files:
-
-```text
-manifest.json
- evidence.json
-```
-
-The saved manifest is byte-identical to the pack manifest. `evidence.json` does not repeat manifest commands, requirement text, acceptance criteria, expected scope, patch identity, or evidence commit SHA. It records compact requirement proof references, compact gate results, and deviations.
-
-Every manifest requirement must appear exactly once in evidence. Passing requirements require verifiable proof from the implementation commit. Every manifest gate must appear exactly once and pass. The pinned evidence checker verifies these claims and Git history without executing the project gates again.
-
-## Pre-evidence gates and external final-head CI
-
-Committed gates are limited to facts knowable before the evidence commit is
-created: local commands, implementation scope, evidence preparation, and
-implementation-commit CI. A gate whose `head` is `evidence` or whose result
-depends on the evidence commit itself is invalid. Final evidence-head or later
-PR-head CI is run after the evidence commit and reported only as external
-GitHub/PR metadata. The agent must not amend the evidence commit to insert a
-self-referential CI run or commit SHA.
-Repository visibility alone MUST NOT decide whether remote CI is required. Patch manifests add a required GitHub Actions gate only when resolved policy is `required`; local runtime gates remain authoritative.
+Compatibility requires explicit authorization under
+`COMPATIBILITY_AUTHORIZATION.md`. Without authorization, legacy formats,
+automatic detection, migration, aliases, adapters, fallbacks, and dual paths
+are rejected.

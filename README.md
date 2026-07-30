@@ -144,7 +144,7 @@ python scripts/validate-project-integration.py /path/to/project
 
 ## Create a patch pack
 
-See the [patch-pack handoff contract](docs/PATCH_PACK_HANDOFF.md) and the
+GPT Patch Pack v1 is the only executable format. Read the [patch-pack handoff contract](docs/PATCH_PACK_HANDOFF.md) and the
 [reusable creation prompt](prompts/GPT_CREATE_PATCH_PACK.md) for canonical
 `AGENT_HANDOFF.md`, archive names, semantic JSON validation, delivery modes,
 and final handoff syntax. `AGENT_PROMPT.md` is not a second instruction source;
@@ -165,14 +165,23 @@ command; interactive session text is never the terminal result.
 
 ```bash
 bash scripts/new-patch-pack.sh \
+  --repo /path/to/target \
+  --repository owner/repository \
+  --accepted-origin-url git@github.com:owner/repository.git \
+  --branch feature/example \
+  --base-commit 0123456789abcdef0123456789abcdef01234567 \
+  --remote origin \
+  --remote-ref refs/remotes/origin/feature/example \
   --baseline-release vX.Y.Z \
   --slug evidence-checker \
   --title "Committed evidence checker" \
   --description "Adds committed JSON evidence verification." \
-  --target-repository owner/repository \
-  --target-branch feature/example \
-  --base-revision 0123456789abcdef0123456789abcdef01234567 \
-  --output /path/to/output
+  --changes-patch /path/to/changes.patch \
+  --agent-task /path/to/AGENT_TASK.md \
+  --requirements /path/to/requirements.json \
+  --gates /path/to/gates.json \
+  --output-directory /path/to/output \
+  --planner-commit <planner-sha>
 ```
 
 The generator assigns a UTC timestamp and creates a patch ID such as:
@@ -191,11 +200,14 @@ The resulting evidence directory contains exactly:
 
 See [`docs/PATCH_PACK_FORMAT.md`](docs/PATCH_PACK_FORMAT.md) and [`docs/AGENT_EVIDENCE.md`](docs/AGENT_EVIDENCE.md).
 
-Validate a ready pack for humans or gateway builders:
+Verify or explicitly apply:
 
 ```bash
-python3 scripts/validate-patch-pack.py /path/to/pack
-python3 scripts/validate-patch-pack.py --format json /path/to/pack
+python3 scripts/gpt-patch-pack-runner-v1.py \
+  --archive /path/to/<patch_id>.tar.gz \
+  --archive-sha256 <sha256> \
+  --repo /path/to/target \
+  --apply
 ```
 
 ## Release workflow

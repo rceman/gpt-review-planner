@@ -1,6 +1,0 @@
-{
-  "schema_version": 1,
-  "gates": [
-    {"id":"local-gates","steps":[{"id":"shell-syntax","argv":["bash","-n","setup.sh"],"parser":"exit","timeout_seconds":300},{"id":"unit","argv":["python3","-m","unittest","discover","-s","tests","-v"],"parser":"unittest","metric":"unittest","timeout_seconds":1800},{"id":"pytest","argv":["python3","-m","pytest","-q"],"parser":"pytest","metric":"pytest","timeout_seconds":1800}]}
-  ]
-}

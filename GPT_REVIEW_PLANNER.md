@@ -151,13 +151,16 @@ remain in their original language. Follow
 [`AGENT_COMMUNICATION_LANGUAGE.md`](docs/AGENT_COMMUNICATION_LANGUAGE.md);
 bilingual agent instructions are forbidden.
 
-Every executable patch pack uses `AGENT_HANDOFF.md` as its sole canonical
-execution entry point. A temporary `AGENT_PROMPT.md` compatibility alias is
-non-normative and valid only when byte-identical to the handoff. Semantic
-validation exposes stable text and JSON modes. Gateway protocol-v2 transport,
-routing, worktrees, task bundles, and result publication remain owned by
-`gpt-github-gateway`; follow [`GATEWAY_INTEROPERABILITY.md`](docs/GATEWAY_INTEROPERABILITY.md)
-and [`STRUCTURED_FORMAT_POLICY.md`](docs/STRUCTURED_FORMAT_POLICY.md).
+Every executable implementation pack uses GPT Patch Pack v1 as defined by
+[`docs/GPT_PATCH_PACK_V1.md`](docs/GPT_PATCH_PACK_V1.md).
+`AGENT_TASK.md` is the only instruction inside the archive. Directory packs,
+`AGENT_PROMPT.md`, overlays, transform runners, compatibility readers, format
+negotiation, and automatic legacy detection are unsupported.
+
+The standard builder and runner own archive validation, isolated replay,
+target-tree identity, and final application. Gateway transport and JSON-only
+result publication remain owned by `gpt-github-gateway`; follow
+[`GATEWAY_INTEROPERABILITY.md`](docs/GATEWAY_INTEROPERABILITY.md).
 
 ### 2.2 Gateway-managed task continuity and terminal output
 

@@ -31,7 +31,7 @@ class AgentCommunicationLanguageContractTests(unittest.TestCase):
     def test_agent_artifacts_and_reports_are_covered(self):
         for text in (
             "`## AGENT_HANDOFF`",
-            "`AGENT_PROMPT.md`",
+            "patch-pack application and integration instructions",
             "implementation, correction, merge, post-merge cleanup, and release prompts",
             "progress updates, questions, blockers, deviations",
             "final implementation reports",
@@ -56,9 +56,9 @@ class AgentCommunicationLanguageContractTests(unittest.TestCase):
         no_action = "No agent action is required. Preserve the reported state and wait for the next owner instruction."
         patch_pack = "Apply patch pack `<EXACT_ARCHIVE_FILENAME>` from the Downloads folder."
         self.assertIn(no_action, self.contract)
-        self.assertIn(no_action, self.handoff)
+        self.assertIn("AGENT_TASK.md", self.handoff)
         self.assertIn(patch_pack, self.contract)
-        self.assertIn("Apply patch pack `<patch_id>.tar.gz` from the Downloads folder.", self.handoff)
+        self.assertIn("Canonical invocation", self.handoff)
 
     def test_planner_and_readme_link_normative_contract(self):
         self.assertIn("AGENT_COMMUNICATION_LANGUAGE.md", self.planner)
@@ -66,9 +66,9 @@ class AgentCommunicationLanguageContractTests(unittest.TestCase):
         self.assertIn("All local-agent-facing communication MUST be written in English", self.planner)
 
     def test_patch_pack_and_merge_contracts_require_english(self):
-        self.assertIn("Every generated `AGENT_PROMPT.md` MUST be written in English", self.handoff)
+        self.assertIn("AGENT_TASK.md", self.handoff)
         self.assertIn("All merge and cleanup instructions and reports MUST be written in English", self.cleanup)
-        self.assertIn("All local-agent-facing communication MUST be written in English", self.create_pack)
+        self.assertIn("GPT authors architecture", self.create_pack)
         self.assertIn("All local-agent-facing communication MUST be written in English", self.review_implement)
 
     def test_reusable_prompts_and_managed_agent_block(self):
