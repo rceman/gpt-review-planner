@@ -1,0 +1,179 @@
+{
+  "schema_version": 2,
+  "format": "gpt-patch-pack-v1",
+  "patch_id": "patch-20260730-203531-workflow-performance-budget-kpi-review-r1",
+  "title": "Workflow performance budget and KPI",
+  "description": "Mandatory ten-minute bounded workflow performance policy and KPI definitions.",
+  "created_at": "2026-07-30T20:35:31Z",
+  "runner_version": "1.0.0",
+  "baseline_release": "v1.4.0",
+  "evidence_directory": ".gpt-review/evidence/v1.4.0/patch-20260730-203531-workflow-performance-budget-kpi-review-r1",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v1.4.0",
+    "commit": "ebaa52b409674a8c52b67deb55290c2595f023d6",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "rceman/gpt-review-planner",
+    "accepted_origin_urls": [
+      "git@github.com:rceman/gpt-review-planner.git"
+    ],
+    "branch": "docs/workflow-performance-budget-kpi",
+    "base_revision": "c32a73534d20583e84ec4828381110b01554527f",
+    "remote": "origin",
+    "remote_ref": "refs/remotes/origin/docs/workflow-performance-budget-kpi"
+  },
+  "payload": {
+    "patch": "payload/changes.patch",
+    "format": "git-binary-full-index"
+  },
+  "files_created": [],
+  "files_modified": [
+    "tests/test_workflow_performance_budget.py"
+  ],
+  "files_deleted": [],
+  "target_tree": "7261dcfa20de3ae4126682262005cc1df00d1cb3",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "summary": "Mandatory ten-minute workflow budget",
+      "acceptance": [
+        "Every bounded run has a ten-minute terminalization target and first status check."
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "summary": "Incident and delay handling",
+      "acceptance": [
+        "Overruns are incidents with delay classes and bounded follow-up."
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "summary": "Durable KPI measurement",
+      "acceptance": [
+        "Duration, durable facts, rolling percentiles, rates, and targets are defined."
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "summary": "Regression coverage and version synchronization",
+      "acceptance": [
+        "Focused tests enforce the policy and version is synchronized to 1.4.0."
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "focused",
+      "name": "Focused KPI regression",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "tests.test_workflow_performance_budget",
+        "-v"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "unit",
+      "name": "Repository unit tests",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "pytest",
+      "name": "Pytest suite",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "compile",
+      "name": "Python compilation",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "compileall",
+        "-q",
+        "scripts",
+        "tests",
+        "examples"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "release",
+      "name": "Release consistency",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "scripts/release.py",
+        "check"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "diff",
+      "name": "Diff check",
+      "kind": "command",
+      "argv": [
+        "git",
+        "diff",
+        "--check",
+        "c32a73534d20583e84ec4828381110b01554527f..ebaa52b409674a8c52b67deb55290c2595f023d6",
+        "--"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    }
+  ],
+  "compatibility": {
+    "scope": "none",
+    "authorized": false,
+    "canonical_implementation": "GPT Patch Pack v1",
+    "legacy_behavior": "unsupported and out of scope",
+    "authorization_source": null,
+    "supported_legacy_versions": [],
+    "direction": "none",
+    "removal_condition": null
+  },
+  "metadata": {
+    "planner_commit": "dae784c2aefb88a4508f8a372da9a2e506bc56ca",
+    "gpt_static_checks_performed": [
+      "Focused normative policy review."
+    ],
+    "gpt_runtime_checks_not_performed": [
+      "Runtime results are captured by the declared local gate plan."
+    ]
+  }
+}
