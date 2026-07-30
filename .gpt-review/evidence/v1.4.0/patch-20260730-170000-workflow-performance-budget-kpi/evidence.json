@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "dae784c2aefb88a4508f8a372da9a2e506bc56ca",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "status": "pass",
+      "note": "The canonical policy defines the 10-minute budget and dispatch-plus-10-minute check.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "GPT_REVIEW_PLANNER.md",
+          "lines": [
+            948,
+            962
+          ],
+          "sha256": "3f9dfcc46440f30cc9e5ded873f2c87ca1813d1357132023c015c5aa3e1930ee"
+        }
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "status": "pass",
+      "note": "The policy defines incident classification, cause classes, external justification, and optimization escalation.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "GPT_REVIEW_PLANNER.md",
+          "lines": [
+            963,
+            980
+          ],
+          "sha256": "83223ee57a6e0edc6851599069043d9e44df123ac7a7b69c81e2d2d10b070755"
+        }
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "status": "pass",
+      "note": "The policy defines duration, durable facts, rolling KPI fields, percentile method, and targets.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "GPT_REVIEW_PLANNER.md",
+          "lines": [
+            981,
+            1005
+          ],
+          "sha256": "b126c0b2bb829b28c1a8bf501eff71828a88b6a4645ed584ef63d1dfaeae56ad"
+        }
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "status": "pass",
+      "note": "Focused regression coverage and version synchronization passed.",
+      "proofs": [
+        {
+          "kind": "test",
+          "path": "tests/test_workflow_performance_budget.py",
+          "lines": [
+            12,
+            55
+          ],
+          "sha256": "2413b6d010a50a54b157ca1407101437c3dfa4364e0448dbc821f22ff1efd264"
+        },
+        {
+          "kind": "source",
+          "path": "CHANGELOG.md",
+          "lines": [
+            3,
+            8
+          ],
+          "sha256": "24256d5364c52eb611e62598b7371e6145e1b2c209c6dc852c98f64cbb451a14"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "focused",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "focused_count": 4
+      }
+    },
+    {
+      "id": "unit",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "unit_count": 158
+      }
+    },
+    {
+      "id": "pytest",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "pytest_count": 160
+      }
+    },
+    {
+      "id": "compile",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "release",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "diff",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    }
+  ],
+  "deviations": [],
+  "compatibility_scope": "none",
+  "compatibility_authorized": false,
+  "compatibility_features_added": [],
+  "legacy_paths_added": [],
+  "fallbacks_added": [],
+  "migration_behavior_added": []
+}
