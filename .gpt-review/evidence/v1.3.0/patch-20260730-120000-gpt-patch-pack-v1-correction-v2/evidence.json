@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "3fdcee4f29c97dfe3b2d08a02b21d3f8a46cb27a",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "status": "pass",
+      "note": "Validated by archive boundary and shared validator implementation.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt-patch-pack-runner-v1.py",
+          "lines": [
+            115,
+            170
+          ],
+          "sha256": "86132686c1e136bd389a9da618e876920555e60f312314f4026307a36bbab8bc"
+        }
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "status": "pass",
+      "note": "Validated by bounded execution and apply safety implementation.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt-patch-pack-runner-v1.py",
+          "lines": [
+            45,
+            82
+          ],
+          "sha256": "ac7e99fde7a9730fefea1dc395b57a9661d4f45eee06133ccb0521920ae5e2ca"
+        },
+        {
+          "kind": "source",
+          "path": "scripts/gpt-patch-pack-runner-v1.py",
+          "lines": [
+            470,
+            575
+          ],
+          "sha256": "9d4385633d910f9f743dd5a3e372c27523a2a53ba5028f2852f44ec2cbf26a31"
+        }
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "status": "pass",
+      "note": "Validated by shared compatibility contract.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt_patch_pack_v1_common.py",
+          "lines": [
+            10,
+            155
+          ],
+          "sha256": "50df9b8639c749c95d698c7224ad78e418782ad4751b5b561ba92d0549e02d62"
+        }
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "status": "pass",
+      "note": "Validated by captured gate execution and evidence binding.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/generate-agent-evidence.py",
+          "lines": [
+            45,
+            110
+          ],
+          "sha256": "d07b3921720d62b329df7ac10ee8e13e9d1cfdb2a562bd1ac61aa2959f94f2ff"
+        },
+        {
+          "kind": "test",
+          "path": "tests/test_agent_evidence.py",
+          "lines": [
+            1,
+            120
+          ],
+          "sha256": "1952dd665bdc45e540cb271fed87ba9b72a749026fd2ecc88eb5388ef3d39c2b"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "unit",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "unit_count": 142
+      }
+    },
+    {
+      "id": "pytest",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "pytest_count": 144
+      }
+    },
+    {
+      "id": "compile",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "review-closure",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "engineering-catalog",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "release",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    }
+  ],
+  "deviations": [],
+  "compatibility_scope": "none",
+  "compatibility_authorized": false,
+  "compatibility_features_added": [],
+  "legacy_paths_added": [],
+  "fallbacks_added": [],
+  "migration_behavior_added": []
+}

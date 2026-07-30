@@ -1,0 +1,276 @@
+{
+  "schema_version": 2,
+  "format": "gpt-patch-pack-v1",
+  "patch_id": "patch-20260730-120000-gpt-patch-pack-v1-correction-v2",
+  "title": "GPT Patch Pack v1 correction v2",
+  "description": "Strict data-only archive, validator, evidence, and safety corrections.",
+  "created_at": "2026-07-30T12:00:00Z",
+  "runner_version": "1.0.0",
+  "baseline_release": "v1.3.0",
+  "evidence_directory": ".gpt-review/evidence/v1.3.0/patch-20260730-120000-gpt-patch-pack-v1-correction-v2",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v1.3.0",
+    "commit": "3fdcee4f29c97dfe3b2d08a02b21d3f8a46cb27a",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "rceman/gpt-review-planner",
+    "accepted_origin_urls": [
+      "git@github.com:rceman/gpt-review-planner.git"
+    ],
+    "branch": "agent/gpt-patch-pack-v1-correction-v2",
+    "base_revision": "f8cb8bc67c138f7e0e026c9270d3bd89dcd855d1",
+    "remote": "origin",
+    "remote_ref": "refs/remotes/origin/agent/gpt-patch-pack-v1-correction-v2"
+  },
+  "payload": {
+    "patch": "payload/changes.patch",
+    "format": "git-binary-full-index"
+  },
+  "files_created": [
+    "docs/COMPATIBILITY_AUTHORIZATION.md",
+    "docs/GPT_PATCH_PACK_V1.md",
+    "scripts/build-gpt-patch-pack-v1.py",
+    "scripts/gpt-patch-pack-runner-v1.py",
+    "scripts/gpt_patch_pack_v1_common.py",
+    "scripts/selftest-gpt-patch-pack-v1.py",
+    "scripts/validate-compatibility-declaration.py",
+    "templates/gpt-patch-pack-v1/AGENT_TASK.md",
+    "templates/gpt-patch-pack-v1/MANIFEST.example.json",
+    "templates/gpt-patch-pack-v1/README.md",
+    "tests/test_compatibility_authorization.py",
+    "tests/test_gpt_patch_pack_v1.py"
+  ],
+  "files_modified": [
+    "CHANGELOG.md",
+    "GPT_REVIEW_PLANNER.md",
+    "README.md",
+    "docs/AGENT_EVIDENCE.md",
+    "docs/PATCH_PACK_FORMAT.md",
+    "docs/PATCH_PACK_HANDOFF.md",
+    "docs/PROCEDURE_INDEX.md",
+    "docs/RELEASE_PROCESS.md",
+    "prompts/GPT_CREATE_PATCH_PACK.md",
+    "schemas/agent-evidence.schema.json",
+    "schemas/patch-manifest.schema.json",
+    "scripts/generate-agent-evidence.py",
+    "scripts/new-patch-pack.sh",
+    "scripts/run-agent-gates.py",
+    "scripts/validate-patch-pack-delivery.py",
+    "scripts/validate-patch-pack.py",
+    "scripts/verify-agent-evidence.py",
+    "tests/test_agent_communication_language.py",
+    "tests/test_agent_evidence.py",
+    "tests/test_ci_capability_policy.py",
+    "tests/test_gateway_terminal_protocol.py",
+    "tests/test_host_prerequisites.py",
+    "tests/test_post_merge_branch_cleanup.py",
+    "tests/test_procedure_index_and_reporting.py",
+    "tests/test_repository.py",
+    "tests/test_review_closure.py"
+  ],
+  "files_deleted": [
+    "examples/gateway-compatible-patch-pack/AGENT_HANDOFF.md",
+    "examples/gateway-compatible-patch-pack/AGENT_PROMPT.md",
+    "examples/gateway-compatible-patch-pack/BEHAVIOR_CONTRACT.md",
+    "examples/gateway-compatible-patch-pack/PATCH_SPEC.md",
+    "examples/gateway-compatible-patch-pack/README_FIRST.md",
+    "examples/gateway-compatible-patch-pack/VALIDATION_REPORT.md",
+    "examples/gateway-compatible-patch-pack/delivery/gateway-response.md",
+    "examples/gateway-compatible-patch-pack/delivery/manual-response.md",
+    "examples/gateway-compatible-patch-pack/evidence-plan.json",
+    "examples/gateway-compatible-patch-pack/evidence.json",
+    "examples/gateway-compatible-patch-pack/expected/acceptance-gates.md",
+    "examples/gateway-compatible-patch-pack/expected/allowed-deviations.md",
+    "examples/gateway-compatible-patch-pack/finalization-plan.json",
+    "examples/gateway-compatible-patch-pack/gate-plan.json",
+    "examples/gateway-compatible-patch-pack/manifest.json",
+    "examples/gateway-compatible-patch-pack/overlay/demo.txt",
+    "examples/gateway-compatible-patch-pack/patch/delete-paths.txt",
+    "examples/gateway-compatible-patch-pack/scripts/generate-agent-evidence.py",
+    "examples/gateway-compatible-patch-pack/scripts/patch_pack_scope.py",
+    "examples/gateway-compatible-patch-pack/scripts/prepare-agent-evidence.py",
+    "examples/gateway-compatible-patch-pack/scripts/render-agent-report.py",
+    "examples/gateway-compatible-patch-pack/scripts/run-agent-evidence-workflow.py",
+    "examples/gateway-compatible-patch-pack/scripts/run-agent-gates.py",
+    "examples/gateway-compatible-patch-pack/scripts/validate-gateway-agent-result.py",
+    "examples/gateway-compatible-patch-pack/scripts/verify-agent-evidence.py",
+    "examples/gateway-compatible-patch-pack/scripts/verify-agent-result.sh",
+    "templates/executable-patch-pack/AGENT_HANDOFF.md",
+    "templates/executable-patch-pack/AGENT_PROMPT.md",
+    "templates/executable-patch-pack/BEHAVIOR_CONTRACT.md",
+    "templates/executable-patch-pack/PATCH_SPEC.md",
+    "templates/executable-patch-pack/README_FIRST.md",
+    "templates/executable-patch-pack/VALIDATION_REPORT.md",
+    "templates/executable-patch-pack/evidence-plan.json",
+    "templates/executable-patch-pack/evidence.json",
+    "templates/executable-patch-pack/expected/acceptance-gates.md",
+    "templates/executable-patch-pack/expected/allowed-deviations.md",
+    "templates/executable-patch-pack/expected/file-tree.txt",
+    "templates/executable-patch-pack/expected/test-list.txt",
+    "templates/executable-patch-pack/finalization-plan.json",
+    "templates/executable-patch-pack/fixtures/.gitkeep",
+    "templates/executable-patch-pack/gate-plan.json",
+    "templates/executable-patch-pack/manifest.json",
+    "templates/executable-patch-pack/overlay/.gitkeep",
+    "templates/executable-patch-pack/patch/.gitkeep",
+    "templates/executable-patch-pack/patch/base-file-hashes.sha256",
+    "templates/executable-patch-pack/patch/changes.patch",
+    "templates/executable-patch-pack/patch/delete-paths.txt",
+    "templates/executable-patch-pack/reference/.gitkeep",
+    "templates/executable-patch-pack/scripts/apply.sh",
+    "templates/executable-patch-pack/scripts/generate-agent-evidence.py",
+    "templates/executable-patch-pack/scripts/patch_pack_scope.py",
+    "templates/executable-patch-pack/scripts/prepare-agent-evidence.py",
+    "templates/executable-patch-pack/scripts/render-agent-report.py",
+    "templates/executable-patch-pack/scripts/run-agent-evidence-workflow.py",
+    "templates/executable-patch-pack/scripts/run-agent-gates.py",
+    "templates/executable-patch-pack/scripts/run-reference-tests.sh",
+    "templates/executable-patch-pack/scripts/validate-static.sh",
+    "templates/executable-patch-pack/scripts/verify-agent-evidence.py",
+    "templates/executable-patch-pack/scripts/verify-agent-result.sh",
+    "tests/test_agent_evidence_workflow.py",
+    "tests/test_gate_evidence_automation.py",
+    "tests/test_gateway_patch_pack_compatibility.py",
+    "tests/test_patch_pack_delivery.py",
+    "tests/test_prepare_agent_evidence.py"
+  ],
+  "target_tree": "becab0663e26cbc268ce26d3da16f8deb9c9012c",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "summary": "Data-only archive and strict validation",
+      "acceptance": [
+        "Canonical archive has no executable payload and strict validation is shared."
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "summary": "Safe apply and deterministic execution",
+      "acceptance": [
+        "Existing created paths are rejected and process execution is bounded."
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "summary": "Compatibility declarations",
+      "acceptance": [
+        "Unauthorized and authorized declarations are validated."
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "summary": "Evidence captures real gates",
+      "acceptance": [
+        "Evidence is generated from captured exact manifest commands."
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "unit",
+      "name": "Repository unit tests",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "pytest",
+      "name": "Pytest suite",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "compile",
+      "name": "Python compilation",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "compileall",
+        "-q",
+        "scripts",
+        "tests",
+        "examples"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "review-closure",
+      "name": "Review closure validator",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "scripts/validate-review-closure.py"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "engineering-catalog",
+      "name": "Engineering catalog validator",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "scripts/validate-engineering-catalog.py"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "release",
+      "name": "Release consistency",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "scripts/release.py",
+        "check"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    }
+  ],
+  "compatibility": {
+    "scope": "none",
+    "authorized": false,
+    "canonical_implementation": "GPT Patch Pack v1",
+    "legacy_behavior": "unsupported and out of scope",
+    "authorization_source": null,
+    "supported_legacy_versions": [],
+    "direction": "none",
+    "removal_condition": null
+  },
+  "metadata": {
+    "planner_commit": "3fdcee4f29c97dfe3b2d08a02b21d3f8a46cb27a",
+    "gpt_static_checks_performed": [
+      "Independent review of data-only archive and strict validation corrections."
+    ],
+    "gpt_runtime_checks_not_performed": [
+      "Runtime evidence is captured by the declared gate plan."
+    ]
+  }
+}
