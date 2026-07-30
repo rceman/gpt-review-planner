@@ -4,9 +4,9 @@
 
 This is the only supported executable patch-pack format.
 
-Compatibility scope: none  
-Compatibility authorization: not granted  
-Canonical implementation: GPT Patch Pack v1 archive plus standard runner  
+Compatibility scope: none
+Compatibility authorization: not granted
+Canonical implementation: GPT Patch Pack v1 archive plus standard runner
 Legacy behavior: unsupported and out of scope
 
 ## Archive
