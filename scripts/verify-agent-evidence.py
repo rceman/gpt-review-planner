@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gpt_patch_pack_v1_common import load_json as load_strict_json
+from gpt_patch_pack_v1_common import load_json as load_strict_json, validate_manifest as validate_shared_manifest
 
 class EvidenceError(RuntimeError):
     pass
@@ -83,20 +83,35 @@ def validate(repo: Path,manifest: dict,evidence: dict,implementation: str) -> No
         raise EvidenceError(f"unknown top-level fields: {sorted(unknown)}")
     if manifest.get("format")!="gpt-patch-pack-v1":
         raise EvidenceError("manifest is not GPT Patch Pack v1")
+    # Canonical v1 packs carry the complete manifest contract.  The small
+    # evidence-only fixtures used by legacy verifier tests intentionally omit
+    # pack transport fields and are validated by the evidence contract below.
+    if "payload" in manifest:
+        try:
+            validate_shared_manifest(manifest)
+        except ValueError as exc:
+            raise EvidenceError(f"shared manifest validation failed: {exc}") from exc
     base=manifest["target"]["base_revision"]
     expected=(set(manifest["files_created"]),set(manifest["files_modified"]),set(manifest["files_deleted"]))
     if scope(repo,base,implementation)!=expected:
         raise EvidenceError("implementation scope mismatch")
     if evidence.get("implementation_commit")!=implementation:
         raise EvidenceError("implementation commit mismatch")
+    declaration=manifest.get("compatibility", {"scope":"none", "authorized":False})
+    if not isinstance(declaration, dict):
+        raise EvidenceError("manifest compatibility declaration missing")
     required_compat={
-        "compatibility_scope":"none","compatibility_authorized":False,
-        "compatibility_features_added":[],"legacy_paths_added":[],
-        "fallbacks_added":[],"migration_behavior_added":[],
+        "compatibility_scope": declaration.get("scope"),
+        "compatibility_authorized": declaration.get("authorized"),
+        "compatibility_features_added": [], "legacy_paths_added": [],
+        "fallbacks_added": [], "migration_behavior_added": [],
     }
     for key,value in required_compat.items():
         if evidence.get(key)!=value:
             raise EvidenceError(f"compatibility evidence mismatch: {key}")
+    if declaration.get("authorized") is False:
+        if any(evidence.get(key) for key in ("compatibility_features_added", "legacy_paths_added", "fallbacks_added", "migration_behavior_added")):
+            raise EvidenceError("unauthorized compatibility evidence")
     manifest_requirements=[item["id"] for item in manifest["requirements"]]
     evidence_requirements=evidence.get("requirements")
     if [item.get("id") for item in evidence_requirements]!=manifest_requirements:
