@@ -259,25 +259,12 @@
       }
     },
     "compatibility": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "scope",
-        "authorized",
-        "canonical_implementation",
-        "legacy_behavior",
-        "authorization_source",
-        "supported_legacy_versions",
-        "direction",
-        "removal_condition"
-      ],
+      "oneOf": [{
+      "type": "object", "additionalProperties": false,
+      "required": ["scope","authorized","canonical_implementation","legacy_behavior","authorization_source","supported_legacy_versions","direction","removal_condition"],
       "properties": {
-        "scope": {
-          "const": "none"
-        },
-        "authorized": {
-          "const": false
-        },
+        "scope": {"const": "none"},
+        "authorized": {"const": false},
         "canonical_implementation": {
           "type": "string",
           "minLength": 1
@@ -298,7 +285,19 @@
         "removal_condition": {
           "type": "null"
         }
-      }
+      }}, {
+      "type": "object", "additionalProperties": false,
+      "required": ["scope","authorized","canonical_implementation","legacy_behavior","authorization_source","supported_legacy_versions","direction","removal_condition"],
+      "properties": {
+        "scope": {"type":"string","minLength":1,"not":{"const":"none"}},
+        "authorized": {"const":true},
+        "canonical_implementation": {"type":"string","minLength":1},
+        "legacy_behavior": {"type":"string","minLength":1},
+        "authorization_source": {"type":"string","minLength":1},
+        "supported_legacy_versions": {"type":"array","minItems":1,"items":{"type":"string","minLength":1},"uniqueItems":true},
+        "direction": {"enum":["forward","backward","bidirectional"]},
+        "removal_condition": {"type":"string","minLength":1}
+      }}]
     },
     "metadata": {
       "type": "object",

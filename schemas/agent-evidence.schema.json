@@ -33,27 +33,23 @@
     "deviations": {
       "type": "array"
     },
-    "compatibility_scope": {
-      "const": "none"
-    },
-    "compatibility_authorized": {
-      "const": false
-    },
+    "compatibility_scope": {"type":"string","minLength":1},
+    "compatibility_authorized": {"type":"boolean"},
     "compatibility_features_added": {
       "type": "array",
-      "maxItems": 0
+      "items":{"type":"string"}
     },
     "legacy_paths_added": {
       "type": "array",
-      "maxItems": 0
+      "items":{"type":"string"}
     },
     "fallbacks_added": {
       "type": "array",
-      "maxItems": 0
+      "items":{"type":"string"}
     },
     "migration_behavior_added": {
       "type": "array",
-      "maxItems": 0
+      "items":{"type":"string"}
     }
   }
 }

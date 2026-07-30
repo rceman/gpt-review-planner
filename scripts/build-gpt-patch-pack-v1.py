@@ -13,7 +13,7 @@ import sys
 import tarfile
 import tempfile
 
-from gpt_patch_pack_v1_common import DEFAULT_COMPATIBILITY, validate_compatibility
+from gpt_patch_pack_v1_common import DEFAULT_COMPATIBILITY, validate_compatibility, load_json, validate_manifest
 
 RUNNER_VERSION = "1.0.0"
 
@@ -123,8 +123,12 @@ def main() -> int:
     if git(repo, "rev-parse", args.remote_ref) != args.base_commit:
         raise BuildError("remote ref mismatch")
 
-    requirements = json.loads(args.requirements.read_text())["requirements"]
-    gates = json.loads(args.gates.read_text())["gates"]
+    requirements = load_json(args.requirements)["requirements"]
+    gates = load_json(args.gates)["gates"]
+    compatibility = dict(DEFAULT_COMPATIBILITY)
+    if args.compatibility_declaration:
+        compatibility = load_json(args.compatibility_declaration)
+        validate_compatibility(compatibility)
     epoch = os.environ.get("SOURCE_DATE_EPOCH")
     now = datetime.fromtimestamp(int(epoch), timezone.utc) if epoch is not None else datetime.now(timezone.utc)
     patch_id = f"patch-{now:%Y%m%d-%H%M%S}-{args.slug}"
@@ -180,13 +184,14 @@ def main() -> int:
             "target_tree": target_tree,
             "requirements": requirements,
             "gates": gates,
-            "compatibility": dict(DEFAULT_COMPATIBILITY),
+            "compatibility": compatibility,
             "metadata": {
                 "planner_commit": planner_commit,
                 "gpt_static_checks_performed": ["Binary patch applied in an isolated worktree and target tree recorded."],
                 "gpt_runtime_checks_not_performed": ["Target runtime gates are executed by the standard runner."],
             },
         }
+        validate_manifest(manifest, pack_root=pack)
         (pack/"MANIFEST.json").write_text(json.dumps(manifest, indent=2)+"\n")
         checksums(pack)
         args.output_directory.mkdir(parents=True, exist_ok=True)

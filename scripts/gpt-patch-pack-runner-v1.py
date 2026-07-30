@@ -19,7 +19,7 @@ import tempfile
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gpt_patch_pack_v1_common import DEFAULT_COMPATIBILITY, validate_compatibility
+from gpt_patch_pack_v1_common import DEFAULT_COMPATIBILITY, validate_compatibility, validate_manifest as validate_manifest_common
 
 RUNNER_VERSION = "1.0.0"
 MAX_ARCHIVE_ENTRIES = 4096
@@ -237,6 +237,10 @@ def validate_manifest(pack: Path) -> dict[str, Any]:
     except (OSError, UnicodeDecodeError) as exc:
         raise PackError("AGENT_TASK.md is not valid UTF-8") from exc
     value = load_json(pack / "MANIFEST.json")
+    try:
+        validate_manifest_common(value, pack_root=pack)
+    except ValueError as exc:
+        raise PackError(str(exc)) from exc
     required = {
         "schema_version", "format", "patch_id", "title", "description",
         "created_at", "runner_version", "baseline_release",
@@ -393,12 +397,27 @@ def parse_scope(repo: Path) -> tuple[set[str], set[str], set[str]]:
         i += 1
         if not status_raw:
             continue
-        status = status_raw.decode("ascii")
+        try:
+            status = status_raw.decode("ascii")
+        except UnicodeDecodeError as exc:
+            raise PackError("malformed Git status") from exc
+        if i >= len(fields) or not fields[i]:
+            raise PackError("truncated Git status record")
         code = status[0]
-        path = normalize_relative(fields[i].decode("utf-8"), "git path")
+        try:
+            path_value = fields[i].decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise PackError("malformed UTF-8 Git path") from exc
+        path = normalize_relative(path_value, "git path")
         i += 1
         if code in {"R", "C"}:
-            new = normalize_relative(fields[i].decode("utf-8"), "git destination")
+            if len(status) < 2 or not status[1:].isdigit() or i >= len(fields) or not fields[i]:
+                raise PackError("truncated or malformed rename/copy record")
+            try:
+                new_value = fields[i].decode("utf-8")
+            except UnicodeDecodeError as exc:
+                raise PackError("malformed UTF-8 Git destination") from exc
+            new = normalize_relative(new_value, "git destination")
             i += 1
             if code == "R":
                 deleted.add(path)
@@ -465,16 +484,25 @@ def staged_tree(repo: Path) -> str:
     return git(repo, "write-tree")
 
 
-def restore_real(repo: Path, base: str, created: list[str]) -> None:
+def restore_real(repo: Path, base: str, created: list[str], absent_before: set[str]) -> None:
     subprocess.run(["git", "reset", "--hard", base], cwd=repo, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    for relative in sorted(created, key=lambda x: len(PurePosixPath(x).parts), reverse=True):
+    for relative in sorted(absent_before, key=lambda x: len(PurePosixPath(x).parts), reverse=True):
         target = repo.joinpath(*PurePosixPath(normalize_relative(relative, "rollback path")).parts)
         if target.is_symlink() or target.is_file():
             target.unlink()
         elif target.is_dir():
             shutil.rmtree(target)
     if git(repo, "rev-parse", "HEAD") != base or git(repo, "status", "--porcelain=v1", "--untracked-files=all"):
-        raise PackError("rollback did not restore exact clean base")
+            raise PackError("rollback did not restore exact clean base")
+
+def require_created_paths_absent(repo: Path, paths: list[str]) -> set[str]:
+    absent = set()
+    for relative in paths:
+        target = repo.joinpath(*PurePosixPath(normalize_relative(relative, "created path")).parts)
+        if os.path.lexists(target):
+            raise PackError(f"declared created path already exists: {relative}")
+        absent.add(relative)
+    return absent
 
 
 def main() -> int:
@@ -546,7 +574,9 @@ def main() -> int:
 
             if git(repo, "rev-parse", "HEAD") != base or git(repo, "status", "--porcelain=v1", "--untracked-files=all"):
                 raise PackError("real checkout changed during isolated validation")
+            absent_before: set[str] = set()
             try:
+                absent_before = require_created_paths_absent(repo, manifest["files_created"])
                 run(["git", "apply", "--check", "--index", "--binary", str(verified_patch)], repo)
                 run(["git", "apply", "--index", "--binary", str(verified_patch)], repo)
                 if git(repo, "write-tree") != tree:
@@ -554,7 +584,7 @@ def main() -> int:
                 verify_scope(repo, manifest)
                 run(["git", "reset"], repo)
             except Exception:
-                restore_real(repo, base, manifest["files_created"])
+                restore_real(repo, base, manifest["files_created"], absent_before)
                 raise
             print(f"GPT_PATCH_PACK_APPLIED pack_id={manifest['patch_id']} target_tree={tree}")
             return 0

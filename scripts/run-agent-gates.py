@@ -31,6 +31,7 @@ def load_plan(path):
             cwd=step.get("cwd")
             if cwd and (os.path.isabs(cwd) or any(part == ".." for part in Path(cwd).parts)): fail("invalid cwd")
             if not isinstance(step.get("argv"), list) or any(not isinstance(x,str) for x in step["argv"]): fail("invalid argv")
+            if step["argv"] and step["argv"][0] in {"true", "false", "echo"}: fail("placeholder gate command")
             if any(any(c in x for c in ";&|<>$") for x in step["argv"]): fail("shell strings are not allowed")
     return data
 
@@ -71,9 +72,12 @@ def main():
                 if code: status="fail"
             except subprocess.TimeoutExpired as exc: stdout=exc.stdout or b""; stderr=exc.stderr or b""; code=124; status="fail"; diagnostic="timeout"
             except ValueError as exc: code=1; status="fail"; diagnostic=str(exc)
-            item={"id":step["id"],"status":status,"exit":code,"duration_ms":round((time.monotonic()-t)*1000),"stdout_sha256":hashlib.sha256(stdout).hexdigest(),"stderr_sha256":hashlib.sha256(stderr).hexdigest()}
+            item={"id":step["id"],"argv":step["argv"],"env":step.get("env",{}),"timeout_seconds":step["timeout_seconds"],"max_output_bytes":step.get("max_output_bytes",16777216),"status":status,"exit":code,"duration_ms":round((time.monotonic()-t)*1000),"stdout_sha256":hashlib.sha256(stdout).hexdigest(),"stderr_sha256":hashlib.sha256(stderr).hexdigest()}
             if diagnostic: item["message"]=diagnostic
             gr["steps"].append(item)
+            if len(gate.get("steps", [])) == 1:
+                for key in ("argv", "env", "timeout_seconds", "max_output_bytes"):
+                    if key in item: gr[key] = item[key]
             (outdir/f"{step['id']}.stdout").write_bytes(stdout); (outdir/f"{step['id']}.stderr").write_bytes(stderr)
             if status != "pass": gr["status"]="fail"; gr["exit"]=code; overall="fail"; break
         results.append(gr)
