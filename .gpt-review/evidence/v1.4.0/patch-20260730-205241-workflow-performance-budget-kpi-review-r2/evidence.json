@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "a8be742f763f3fd8c79093cbe84eadf35a5ebaec",
+  "requirements": [
+    {
+      "id": "REQ-R2-001",
+      "status": "pass",
+      "note": "Canonical verifier binds target_tree to the supplied implementation commit tree.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/verify-agent-evidence.py",
+          "lines": [
+            89,
+            96
+          ],
+          "sha256": "1038a3c1f63300834b3181a757b7f9c0769c6b524c0894a3fe04afe598c8ad77"
+        }
+      ]
+    },
+    {
+      "id": "REQ-R2-002",
+      "status": "pass",
+      "note": "Canonical verifier binds metadata.planner_commit to workflow.commit.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/verify-agent-evidence.py",
+          "lines": [
+            97,
+            100
+          ],
+          "sha256": "5b3163963ca5ffaea61d7168eedeba95f1f87534cfc94678f2d701f028339f11"
+        }
+      ]
+    },
+    {
+      "id": "REQ-R2-003",
+      "status": "pass",
+      "note": "Focused tests independently tamper both canonical identity fields and assert the intended rejection branches.",
+      "proofs": [
+        {
+          "kind": "test",
+          "path": "tests/test_agent_evidence.py",
+          "lines": [
+            232,
+            252
+          ],
+          "sha256": "7a405ab0cc2fe8a82723f027572f82ff9f1449c8ab4c3f0aa1e909389348e800"
+        }
+      ]
+    },
+    {
+      "id": "REQ-R2-004",
+      "status": "pass",
+      "note": "The full required gate set passed with VERSION 1.4.0 and unchanged policy documents.",
+      "proofs": [
+        {
+          "kind": "test",
+          "path": "tests/test_agent_evidence.py",
+          "lines": [
+            221,
+            230
+          ],
+          "sha256": "2dfec9e98b4ea7c23ad0da82a0998becf6362d878ad82ffa7bcad6b74f552b62"
+        },
+        {
+          "kind": "source",
+          "path": "VERSION",
+          "lines": [
+            1,
+            1
+          ],
+          "sha256": "78b591400c56b7b67b8cb3b2b8a8e65e9093897f02ce0878e6b5405c68620fa7"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "focused",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "focused_count": 4
+      }
+    },
+    {
+      "id": "unit",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "unit_count": 160
+      }
+    },
+    {
+      "id": "pytest",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "pytest_count": 162
+      }
+    },
+    {
+      "id": "compile",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "release",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "diff",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    }
+  ],
+  "deviations": [],
+  "compatibility_scope": "none",
+  "compatibility_authorized": false,
+  "compatibility_features_added": [],
+  "legacy_paths_added": [],
+  "fallbacks_added": [],
+  "migration_behavior_added": []
+}

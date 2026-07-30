@@ -1,0 +1,180 @@
+{
+  "schema_version": 2,
+  "format": "gpt-patch-pack-v1",
+  "patch_id": "patch-20260730-205241-workflow-performance-budget-kpi-review-r2",
+  "title": "Workflow performance budget and KPI",
+  "description": "Mandatory ten-minute bounded workflow performance policy and KPI definitions.",
+  "created_at": "2026-07-30T20:52:41Z",
+  "runner_version": "1.0.0",
+  "baseline_release": "v1.4.0",
+  "evidence_directory": ".gpt-review/evidence/v1.4.0/patch-20260730-205241-workflow-performance-budget-kpi-review-r2",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v1.4.0",
+    "commit": "a8be742f763f3fd8c79093cbe84eadf35a5ebaec",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "rceman/gpt-review-planner",
+    "accepted_origin_urls": [
+      "git@github.com:rceman/gpt-review-planner.git"
+    ],
+    "branch": "fix/workflow-performance-budget-kpi-review-r2",
+    "base_revision": "a22fedbebd2875846cede12e2019d875c69622b6",
+    "remote": "origin",
+    "remote_ref": "refs/remotes/origin/fix/workflow-performance-budget-kpi-review-r1"
+  },
+  "payload": {
+    "patch": "payload/changes.patch",
+    "format": "git-binary-full-index"
+  },
+  "files_created": [],
+  "files_modified": [
+    "scripts/verify-agent-evidence.py",
+    "tests/test_agent_evidence.py"
+  ],
+  "files_deleted": [],
+  "target_tree": "a05f6306dfac044de100c70749d0bf96c6ca3b44",
+  "requirements": [
+    {
+      "id": "REQ-R2-001",
+      "summary": "Canonical implementation target-tree integrity",
+      "acceptance": [
+        "The verifier rejects a canonical schema-v2 manifest whose target_tree differs from the implementation commit tree."
+      ]
+    },
+    {
+      "id": "REQ-R2-002",
+      "summary": "Canonical planner/workflow commit identity",
+      "acceptance": [
+        "The verifier rejects a canonical schema-v2 manifest whose metadata planner_commit differs from workflow.commit."
+      ]
+    },
+    {
+      "id": "REQ-R2-003",
+      "summary": "Focused negative regression coverage",
+      "acceptance": [
+        "Focused tests independently tamper target_tree and planner_commit and assert bounded rejection messages."
+      ]
+    },
+    {
+      "id": "REQ-R2-004",
+      "summary": "Required gates and preserved policy",
+      "acceptance": [
+        "All required tests, compilation, release consistency, and diff checks pass without changing VERSION or policy documents."
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "focused",
+      "name": "Focused KPI regression",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "tests.test_workflow_performance_budget",
+        "-v"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "unit",
+      "name": "Repository unit tests",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "pytest",
+      "name": "Pytest suite",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "compile",
+      "name": "Python compilation",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "compileall",
+        "-q",
+        "scripts",
+        "tests",
+        "examples"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "release",
+      "name": "Release consistency",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "scripts/release.py",
+        "check"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "diff",
+      "name": "Diff check",
+      "kind": "command",
+      "argv": [
+        "git",
+        "diff",
+        "--check",
+        "a22fedbebd2875846cede12e2019d875c69622b6..a8be742f763f3fd8c79093cbe84eadf35a5ebaec",
+        "--"
+      ],
+      "env": {},
+      "timeout_seconds": 7200,
+      "max_output_bytes": 16777216
+    }
+  ],
+  "compatibility": {
+    "scope": "none",
+    "authorized": false,
+    "canonical_implementation": "GPT Patch Pack v1",
+    "legacy_behavior": "unsupported and out of scope",
+    "authorization_source": null,
+    "supported_legacy_versions": [],
+    "direction": "none",
+    "removal_condition": null
+  },
+  "metadata": {
+    "planner_commit": "a8be742f763f3fd8c79093cbe84eadf35a5ebaec",
+    "gpt_static_checks_performed": [
+      "Focused normative policy review."
+    ],
+    "gpt_runtime_checks_not_performed": [
+      "Runtime results are captured by the declared local gate plan."
+    ]
+  }
+}
