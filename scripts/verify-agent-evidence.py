@@ -91,6 +91,13 @@ def validate(repo: Path,manifest: dict,evidence: dict,implementation: str) -> No
             validate_shared_manifest(manifest)
         except ValueError as exc:
             raise EvidenceError(f"shared manifest validation failed: {exc}") from exc
+        actual_tree = git(repo, "rev-parse", f"{implementation}^{{tree}}")
+        if manifest.get("target_tree") != actual_tree:
+            raise EvidenceError("manifest target_tree does not match implementation tree")
+        metadata = manifest.get("metadata")
+        workflow = manifest.get("workflow")
+        if not isinstance(metadata, dict) or metadata.get("planner_commit") != workflow.get("commit"):
+            raise EvidenceError("manifest planner_commit does not match workflow.commit")
     base=manifest["target"]["base_revision"]
     expected=(set(manifest["files_created"]),set(manifest["files_modified"]),set(manifest["files_deleted"]))
     if scope(repo,base,implementation)!=expected:

@@ -148,6 +148,76 @@ class AgentEvidenceTests(unittest.TestCase):
             "--implementation-commit", implementation, check=check,
         )
 
+    def make_canonical_case(self) -> tuple[Path, Path, str, Path, dict[str, object]]:
+        repo, pack, implementation, evidence, report = self.make_case()
+        manifest = json.loads((pack / "manifest.json").read_text(encoding="utf-8"))
+        patch_id = "patch-20260730-120000-canonical-integrity"
+        evidence_rel = Path(".gpt-review/evidence/v1.0.0") / patch_id
+        manifest.update({
+            "patch_id": patch_id,
+            "evidence_directory": evidence_rel.as_posix(),
+            "runner_version": "1.0.0",
+            "workflow": {
+                "repository": "https://github.com/rceman/gpt-review-planner",
+                "version": "v1.0.1",
+                "commit": implementation,
+                "document": "GPT_REVIEW_PLANNER.md",
+            },
+            "target": {
+                "repository": "rceman/gpt-review-planner",
+                "accepted_origin_urls": ["git@github.com:rceman/gpt-review-planner.git"],
+                "branch": "feature/test",
+                "base_revision": git(repo, "rev-parse", f"{implementation}^"),
+                "remote": "origin",
+                "remote_ref": "refs/remotes/origin/feature/test",
+            },
+            "payload": {"patch": "payload/changes.patch", "format": "git-binary-full-index"},
+            "target_tree": git(repo, "rev-parse", f"{implementation}^{{tree}}"),
+            "compatibility": {
+                "scope": "none", "authorized": False,
+                "canonical_implementation": "GPT Patch Pack v1",
+                "legacy_behavior": "unsupported and out of scope",
+                "authorization_source": None, "supported_legacy_versions": [],
+                "direction": "none", "removal_condition": None,
+            },
+            "metadata": {
+                "planner_commit": implementation,
+                "gpt_static_checks_performed": ["static review"],
+                "gpt_runtime_checks_not_performed": ["tests"],
+            },
+        })
+        manifest.pop("patch_timestamp", None)
+        manifest.pop("patch_slug", None)
+        for legacy_key in (
+            "gpt_static_checks_performed",
+            "gpt_runtime_checks_not_performed",
+            "known_integration_risks",
+            "forbidden_deviations",
+        ):
+            manifest.pop(legacy_key, None)
+        for item in manifest["requirements"]:
+            item["id"] = f"REQ-{item['id'][1:]}"
+        for item in report["requirements"]:
+            item["id"] = f"REQ-{item['id'][1:]}"
+        for gate in manifest["gates"]:
+            gate.update({
+                "kind": "command",
+                "argv": ["python3", "-m", "unittest"],
+                "env": {}, "timeout_seconds": 7200, "max_output_bytes": 1048576,
+            })
+            gate.pop("command", None)
+            gate.pop("workflow", None)
+            gate.pop("head", None)
+        manifest_raw = json.dumps(manifest, indent=2) + "\n"
+        (pack / "manifest.json").write_text(manifest_raw, encoding="utf-8")
+        shutil.rmtree(evidence)
+        evidence = repo / evidence_rel
+        evidence.mkdir(parents=True)
+        (evidence / "manifest.json").write_text(manifest_raw, encoding="utf-8")
+        (evidence / "evidence.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        git(repo, "add", evidence_rel.as_posix())
+        return repo, pack, implementation, evidence, report
+
     def test_prepare_and_committed_modes_accept_two_file_json_evidence(self) -> None:
         repo, pack, implementation, _, _ = self.make_case()
         self.assertIn("PASS", self.verify_prepare(repo, pack, implementation).stdout)
@@ -158,6 +228,28 @@ class AgentEvidenceTests(unittest.TestCase):
             "--implementation-commit", implementation, "--evidence-commit", evidence_commit,
         )
         self.assertIn("PASS", result.stdout)
+
+    def test_rejects_canonical_target_tree_mismatch(self) -> None:
+        repo, pack, implementation, evidence, _ = self.make_canonical_case()
+        manifest = json.loads((pack / "manifest.json").read_text(encoding="utf-8"))
+        manifest["target_tree"] = "0" * 40
+        manifest_raw = json.dumps(manifest, indent=2) + "\n"
+        (pack / "manifest.json").write_text(manifest_raw, encoding="utf-8")
+        (evidence / "manifest.json").write_text(manifest_raw, encoding="utf-8")
+        result = self.verify_prepare(repo, pack, implementation, check=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("target_tree does not match implementation tree", result.stderr)
+
+    def test_rejects_canonical_planner_commit_mismatch(self) -> None:
+        repo, pack, implementation, evidence, _ = self.make_canonical_case()
+        manifest = json.loads((pack / "manifest.json").read_text(encoding="utf-8"))
+        manifest["metadata"]["planner_commit"] = "0" * 40
+        manifest_raw = json.dumps(manifest, indent=2) + "\n"
+        (pack / "manifest.json").write_text(manifest_raw, encoding="utf-8")
+        (evidence / "manifest.json").write_text(manifest_raw, encoding="utf-8")
+        result = self.verify_prepare(repo, pack, implementation, check=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("planner_commit does not match workflow.commit", result.stderr)
 
     def test_rejects_self_referential_or_redundant_fields(self) -> None:
         repo, pack, implementation, evidence, report = self.make_case()
