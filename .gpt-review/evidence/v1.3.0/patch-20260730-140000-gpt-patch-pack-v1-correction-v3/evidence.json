@@ -1,0 +1,209 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "e3e6af2a54a4584f8137d94fcfdea899cf015a00",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "status": "pass",
+      "note": "Archive boundary and public runner security tests passed.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt-patch-pack-runner-v1.py",
+          "lines": [
+            115,
+            170
+          ],
+          "sha256": "86132686c1e136bd389a9da618e876920555e60f312314f4026307a36bbab8bc"
+        },
+        {
+          "kind": "test",
+          "path": "tests/test_gpt_patch_pack_v1_security.py",
+          "lines": [
+            75,
+            95
+          ],
+          "sha256": "6919ad70632d90f08066fe8d48f3d92f98359e7a5174fc5814aa70ef2e65d922"
+        }
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "status": "pass",
+      "note": "Shared validator and strict rejection tests passed.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt_patch_pack_v1_common.py",
+          "lines": [
+            45,
+            145
+          ],
+          "sha256": "d6612319306e6d1d83ab2f79a81befeb97aaa225a3dea36586bc16b9b2c7906e"
+        },
+        {
+          "kind": "test",
+          "path": "tests/test_gpt_patch_pack_v1_security.py",
+          "lines": [
+            65,
+            78
+          ],
+          "sha256": "04b30328a8afcbd0809e84562cfc50d4c0713377a7eae74684a5e23cdb42b635"
+        }
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "status": "pass",
+      "note": "Bounded execution and apply safety implementation passed local tests.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt-patch-pack-runner-v1.py",
+          "lines": [
+            45,
+            82
+          ],
+          "sha256": "ac7e99fde7a9730fefea1dc395b57a9661d4f45eee06133ccb0521920ae5e2ca"
+        },
+        {
+          "kind": "source",
+          "path": "scripts/gpt-patch-pack-runner-v1.py",
+          "lines": [
+            470,
+            575
+          ],
+          "sha256": "9d4385633d910f9f743dd5a3e372c27523a2a53ba5028f2852f44ec2cbf26a31"
+        }
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "status": "pass",
+      "note": "Compatibility declaration tests passed for both policy modes.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt_patch_pack_v1_common.py",
+          "lines": [
+            45,
+            75
+          ],
+          "sha256": "231f0a6cfc47ea61f9aa0ef461a53017762901b3bf8a68311bd7609ff2f2d60c"
+        },
+        {
+          "kind": "test",
+          "path": "tests/test_gpt_patch_pack_v1_security.py",
+          "lines": [
+            66,
+            78
+          ],
+          "sha256": "b22fc0c7ccfe9a46df21c207c5911de89145c96c535de794859a3f1886673c56"
+        }
+      ]
+    },
+    {
+      "id": "REQ-005",
+      "status": "pass",
+      "note": "Captured local gates passed; remote CI is separately unavailable under auto policy.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/generate-agent-evidence.py",
+          "lines": [
+            45,
+            90
+          ],
+          "sha256": "e113b40cf81d522466b269f70b2836277603ee78a8ce9981c48258a39616cdc7"
+        },
+        {
+          "kind": "source",
+          "path": "scripts/run-agent-gates.py",
+          "lines": [
+            75,
+            105
+          ],
+          "sha256": "edbd429715d4d0bd94e1b807755c06191d509b1b79f301f955af755149b9d7eb"
+        },
+        {
+          "kind": "test",
+          "path": "tests/test_agent_evidence.py",
+          "lines": [
+            150,
+            190
+          ],
+          "sha256": "e69e35a66343525a8e9be5ee07a3d2df5a1c0df33e873d2c54f6c297fd4ff69f"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "unit",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "unit_count": 154
+      }
+    },
+    {
+      "id": "pytest",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "pytest_count": 156
+      }
+    },
+    {
+      "id": "security",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "security_count": 12
+      }
+    },
+    {
+      "id": "compile",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "closure",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "catalog",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "selftest",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "release",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "diff",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    }
+  ],
+  "deviations": [],
+  "compatibility_scope": "none",
+  "compatibility_authorized": false,
+  "compatibility_features_added": [],
+  "legacy_paths_added": [],
+  "fallbacks_added": [],
+  "migration_behavior_added": []
+}
