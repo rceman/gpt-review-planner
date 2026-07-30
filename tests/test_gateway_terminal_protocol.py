@@ -53,13 +53,5 @@ class GatewayTerminalProtocolTests(unittest.TestCase):
             for value in cases:
                 codes={x['code'] for x in self.validator.validate(self.write(root,value),'task_001',None)}
                 self.assertIn('invalid_deviation',codes)
-    def test_patch_validator_requires_terminal_protocol(self):
-        module=load('scripts/validate-patch-pack.py','patch_validator'); self.assertIn('TERMINAL_OUTPUT_PROTOCOL',module.REQUIRED_HANDOFF_HEADINGS)
-        with tempfile.TemporaryDirectory() as d:
-            path=Path(d)/'AGENT_HANDOFF.md'; headings=[h for h in module.REQUIRED_HANDOFF_HEADINGS if h!='TERMINAL_OUTPUT_PROTOCOL']; path.write_text('# AGENT_HANDOFF\n\n'+'\n\n'.join(f'## {h}\n\ncontent' for h in headings)+'\n')
-            findings=[]; warnings=[]; module.validate_handoff(path,None,findings,warnings); self.assertIn('missing_agent_handoff_heading',{x.code for x in findings})
-    def test_template_and_docs_define_protocol(self):
-        template=(ROOT/'templates/executable-patch-pack/AGENT_HANDOFF.md').read_text(); self.assertIn('## TERMINAL_OUTPUT_PROTOCOL',template); self.assertIn('complete-task',template); self.assertIn('agent-result.json',template)
-        docs=(ROOT/'docs/GATEWAY_TASK_PROTOCOL.md').read_text(); self.assertIn('inbox/<task_id>.plan.json',docs); self.assertIn('Interactive Airelay/Codex text',docs)
 
 if __name__=='__main__': unittest.main()

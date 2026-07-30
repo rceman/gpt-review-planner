@@ -163,12 +163,14 @@ Run all required gates before creating the release commit:
 bash -n \
   setup.sh \
   update.sh \
-  scripts/*.sh \
-  templates/executable-patch-pack/scripts/*.sh
+  scripts/*.sh
 
 python3 -m compileall -q scripts tests examples
 
 python3 -m unittest discover -s tests -v
+python3 scripts/selftest-gpt-patch-pack-v1.py
+
+The self-test is a release blocker for runner, builder, schema, template, delivery, or format changes.
 
 python3 -m unittest discover \
   -s examples/rust-domain-feature/reference/python \

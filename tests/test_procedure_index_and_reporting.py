@@ -12,7 +12,7 @@ class ProcedureIndexAndReportingTests(unittest.TestCase):
             text=self.read(p); self.assertLess(text.find('PROCEDURE_INDEX.md'), 1200, p)
     def test_index_covers_contracts(self):
         text=self.read('docs/PROCEDURE_INDEX.md')
-        for value in ('PATCH_PACK_HANDOFF.md','PATCH_PACK_FORMAT.md','AGENT_EVIDENCE.md','POST_MERGE_BRANCH_CLEANUP.md','RELEASE_PROCESS.md','GPT_CREATE_PATCH_PACK.md','AGENT_FINALIZE_MERGE.md','CI_CAPABILITY_POLICY.md'): self.assertIn(value,text)
+        for value in ('PATCH_PACK_HANDOFF.md','GPT_PATCH_PACK_V1.md','AGENT_EVIDENCE.md','POST_MERGE_BRANCH_CLEANUP.md','RELEASE_PROCESS.md','GPT_CREATE_PATCH_PACK.md','AGENT_FINALIZE_MERGE.md','COMPATIBILITY_AUTHORIZATION.md'): self.assertIn(value,text)
     def test_transitions_and_ownership(self):
         text=self.read('docs/PROCEDURE_INDEX.md')
         for value in ('IMPLEMENTATION_COMPLETE','GPT_DELTA_REVIEW','CORRECTION_REQUIRED','MERGE_READY','MERGE_FINALIZED','MERGE_CLEANUP_BLOCKED','GPT owns','local agent owns','separate task'): self.assertIn(value,text)
@@ -47,8 +47,7 @@ class ProcedureIndexAndReportingTests(unittest.TestCase):
         self.assertIn('AGENT_REPORTING.md',self.read('prompts/GPT_CREATE_PATCH_PACK.md'))
     def test_handoff_and_closure_contracts(self):
         handoff=self.read('docs/PATCH_PACK_HANDOFF.md')
-        for value in ('complete inline instructions','preferred compact reference','REPOSITORY','LOCAL_REPOSITORY','SSH_ORIGIN','MAIN_BRANCH','FEATURE_BRANCH','EXPECTED_MAIN_BEFORE','EXPECTED_FEATURE_HEAD','EXPECTED_VERSION','CI_POLICY','CI_WORKFLOW','CI_EVENT','summary must not replace'):
-            self.assertIn(value,handoff)
+        self.assertIn('Canonical invocation', handoff)
         self.assertNotIn('must include the complete post-merge procedure',handoff)
         archive=self.read('prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md')
         self.assertNotIn('Stop after declaring `MERGE_READY`;',archive)

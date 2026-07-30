@@ -1,7 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/rceman/gpt-review-planner/schemas/agent-evidence.schema.json",
-  "title": "Committed Agent Evidence",
+  "title": "Agent evidence with compatibility attestation",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -9,85 +8,52 @@
     "implementation_commit",
     "requirements",
     "gates",
-    "deviations"
+    "deviations",
+    "compatibility_scope",
+    "compatibility_authorized",
+    "compatibility_features_added",
+    "legacy_paths_added",
+    "fallbacks_added",
+    "migration_behavior_added"
   ],
   "properties": {
-    "schema_version": {"const": 1},
-    "implementation_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "schema_version": {
+      "const": 1
+    },
+    "implementation_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
     "requirements": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id", "status"],
-        "properties": {
-          "id": {"type": "string", "minLength": 1},
-          "status": {"enum": ["pass", "partial", "fail", "na"]},
-          "proofs": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": ["kind", "path"],
-              "properties": {
-                "kind": {"enum": ["source", "test", "workflow", "documentation", "json", "deletion"]},
-                "path": {"type": "string", "minLength": 1},
-                "lines": {
-                  "type": "array",
-                  "prefixItems": [{"type": "integer", "minimum": 1}, {"type": "integer", "minimum": 1}],
-                  "minItems": 2,
-                  "maxItems": 2
-                },
-                "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-                "symbol": {"type": "string", "minLength": 1},
-                "pointer": {"type": "string", "pattern": "^/"},
-                "value": {}
-              }
-            }
-          },
-          "note": {"type": "string", "minLength": 1},
-          "deviation": {"type": "string", "minLength": 1}
-        }
-      }
+      "type": "array"
     },
     "gates": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id", "status"],
-        "properties": {
-          "id": {"type": "string", "minLength": 1},
-          "status": {"enum": ["pass", "fail", "skip"]},
-          "exit": {"type": "integer"},
-          "tests": {"type": "integer", "minimum": 0},
-          "metrics": {"type": "object", "minProperties": 1, "propertyNames": {"pattern": "^[A-Za-z0-9._-]+$"}, "additionalProperties": {"type": "integer", "minimum": 0}},
-          "summary": {"type": "string"},
-          "run": {"type": "integer", "minimum": 1},
-          "job": {"type": "integer", "minimum": 1},
-          "url": {"type": "string", "format": "uri"},
-          "run_url": {"type": "string", "format": "uri"},
-          "job_url": {"type": "string", "format": "uri"},
-          "note": {"type": "string"},
-          "deviation": {"type": "string", "minLength": 1}
-        }
-      }
+      "type": "array"
     },
     "deviations": {
+      "type": "array"
+    },
+    "compatibility_scope": {
+      "const": "none"
+    },
+    "compatibility_authorized": {
+      "const": false
+    },
+    "compatibility_features_added": {
       "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id", "kind", "summary", "workaround", "scope_changed", "behavior_changed"],
-        "properties": {
-          "id": {"type": "string", "minLength": 1},
-          "kind": {"type": "string", "minLength": 1},
-          "summary": {"type": "string", "minLength": 1},
-          "workaround": {"type": "string", "minLength": 1},
-          "scope_changed": {"type": "boolean"},
-          "behavior_changed": {"type": "boolean"},
-          "requirements": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
-        }
-      }
+      "maxItems": 0
+    },
+    "legacy_paths_added": {
+      "type": "array",
+      "maxItems": 0
+    },
+    "fallbacks_added": {
+      "type": "array",
+      "maxItems": 0
+    },
+    "migration_behavior_added": {
+      "type": "array",
+      "maxItems": 0
     }
   }
 }

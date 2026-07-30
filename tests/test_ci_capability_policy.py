@@ -70,6 +70,5 @@ class CICapabilityTests(unittest.TestCase):
     def test_event_filter(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'success','event':'pull_request'}]}; self.assertEqual(self.run_data()['state'],'no_run')
     def test_workflow_filter(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'success','event':'push','name':'Other'}]}; self.assertEqual(self.run_data(extra=('--workflow','Validate'))['state'],'no_run')
     def test_malformed_json(self): Handler.payload=[]; p=self.run_tool(); self.assertEqual(p.returncode,5); self.assertTrue(json.loads(p.stdout)['blocking'])
-    def test_existing_manifests_remain_valid(self): self.assertEqual(subprocess.run([sys.executable,str(ROOT/'scripts/validate-patch-pack.py'),'examples/gateway-compatible-patch-pack'],capture_output=True).returncode,0)
 
 if __name__=='__main__': unittest.main()

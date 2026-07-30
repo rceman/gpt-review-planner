@@ -128,10 +128,10 @@ class ReviewClosureIntegrationTests(unittest.TestCase):
 
     def test_patch_pack_prompt_preserves_approved_acceptance_scope(self) -> None:
         text = self.text("prompts/GPT_CREATE_PATCH_PACK.md")
-        self.assertIn("approved acceptance criterion", text)
-        self.assertIn("scope lock", text)
-        self.assertIn("delta review", text)
-        self.assertIn("unapproved hardening", text)
+        self.assertIn("GPT authors architecture", text)
+        self.assertIn("approved scope is locked", text)
+        self.assertIn("static validation", text)
+        self.assertIn("unauthorized shims", text)
 
     def test_archive_guide_documents_normal_round_budget(self) -> None:
         text = self.text("docs/PROJECT_ARCHIVE_REVIEW.md")

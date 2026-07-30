@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Make GPT Patch Pack v1 the only supported executable patch-pack format.
+- Add isolated two-worktree replay, exact target-tree verification, bounded argv
+  gates, relocatable checksums, deterministic archives, and rollback-safe apply.
+- Remove legacy directory packs, overlays, transform runners, instruction aliases,
+  format negotiation, and compatibility readers.
+- Require explicit authorization for every compatibility or migration behavior.
+- Add manifest and evidence compatibility declarations plus CI/release self-tests.
 - Require a durable gateway-hub plan record before every executable task bundle.
 - Replace duplicated gateway terminal Markdown/JSON outputs with one strict `agent-result.json` contract.
 - Add a generated `complete-task` finalizer protocol for every success, revision, or failure outcome.

@@ -60,6 +60,7 @@ class AgentEvidenceTests(unittest.TestCase):
         evidence_rel = Path(".gpt-review/evidence/v1.0.0") / patch_id
         manifest: dict[str, object] = {
             "schema_version": 2,
+            "format": "gpt-patch-pack-v1",
             "patch_id": patch_id,
             "title": "Committed evidence checker",
             "description": "Adds compact committed JSON evidence.",
@@ -101,6 +102,12 @@ class AgentEvidenceTests(unittest.TestCase):
         report = {
             "schema_version": 1,
             "implementation_commit": implementation,
+            "compatibility_scope": "none",
+            "compatibility_authorized": False,
+            "compatibility_features_added": [],
+            "legacy_paths_added": [],
+            "fallbacks_added": [],
+            "migration_behavior_added": [],
             "requirements": [
                 {
                     "id": "R1",
