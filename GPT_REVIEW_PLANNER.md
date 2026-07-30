@@ -2,7 +2,7 @@
 
 Start with the [procedure index](docs/PROCEDURE_INDEX.md) before operational detail. After a terminal status, consult it and emit the handoff required by the next transition; `MERGE_READY` requires a merge handoff and is not merge completion.
 
-**Workflow version:** 1.3.0
+**Workflow version:** 1.4.0
 **Status:** Active  
 **Canonical repository:** `https://github.com/rceman/gpt-review-planner`  
 **Default document:** `GPT_REVIEW_PLANNER.md`  
@@ -981,6 +981,50 @@ For final archives:
 - correcting;
 - verifying;
 - evidence.
+
+### 17.1 Mandatory workflow performance budget and KPI
+
+Workflow performance is a first-class engineering requirement, and workflow
+optimization is product work. Every bounded implementation, review, correction,
+release, merge, or documentation run MUST reach terminal finalization within 10
+minutes of successful dispatch. GPT MUST schedule or perform the first status
+check at dispatch time + 10 minutes; 10 minutes is the canonical default for
+all future bounded agent runs.
+
+If a run is still active at that check, it MUST be classified as a workflow
+performance incident. GPT MUST report the current phase/status and investigate
+the primary cause instead of treating the overrun as normal or merely waiting.
+Primary cause classes include: oversized scope; excessive exploration/token use;
+redundant validation or repeated test/build/CI work; slow or noisy tooling;
+gateway/Airelay latency; model capacity/retry/unsent-prompt behavior;
+dependency/environment bootstrap; finalization/evidence delay; and unavoidable
+external service delay.
+
+Each overrun MUST end with either a concrete documented unavoidable external
+justification or a bounded optimization follow-up with an owner-visible action.
+Repeated occurrences of the same delay class make a dedicated optimization task
+mandatory.
+
+Duration is exactly `terminal_finalized_at - dispatch_succeeded_at`. Failed,
+revision-required, cancelled, and succeeded terminal runs all count. Runs that
+were never successfully dispatched are excluded and reported separately. The
+durable task/run record or project KPI ledger MUST persist: run ID, task ID,
+project ID, dispatch timestamp, terminal timestamp, duration seconds, terminal
+status, ten-minute-check outcome, overrun boolean, and primary delay class when
+applicable.
+
+Rolling KPI reports MUST include sample count, P50 duration, P95 duration,
+overrun count, and overrun rate. Percentiles MUST NOT be published without a
+sample count. Use one deterministic nearest-rank percentile definition; do not
+maintain dual calculation methods. Targets are P50 bounded-run duration <= 5
+minutes and P95 <= 10 minutes. A missed target is a workflow regression
+requiring review, not an accepted new baseline.
+
+During every terminal implementation review, GPT MUST assess correctness and
+workflow efficiency, record the run duration/check outcome, and update or
+reference the durable KPI summary. This budget is an operational target, not
+permission to skip gates, weaken tests, truncate evidence, or falsely
+terminalize runs.
 
 ---
 

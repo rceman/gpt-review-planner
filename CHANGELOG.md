@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add a mandatory 10-minute bounded-run performance budget, first-check incident
+  handling, durable KPI facts, rolling P50/P95 targets, and overrun follow-up.
+- Record workflow efficiency alongside correctness without weakening gates or
+  evidence requirements.
+- Target the workflow policy addition for version 1.4.0.
 - Make GPT Patch Pack v1 the only supported executable patch-pack format.
 - Add isolated two-worktree replay, exact target-tree verification, bounded argv
   gates, relocatable checksums, deterministic archives, and rollback-safe apply.
