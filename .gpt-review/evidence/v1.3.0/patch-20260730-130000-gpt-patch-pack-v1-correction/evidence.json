@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "a6f091981747d6bddbffdc808ae5f726d1fb3e69",
+  "compatibility_scope": "none",
+  "compatibility_authorized": false,
+  "compatibility_features_added": [],
+  "legacy_paths_added": [],
+  "fallbacks_added": [],
+  "migration_behavior_added": [],
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt-patch-pack-runner-v1.py",
+          "lines": [
+            24,
+            28
+          ],
+          "symbol": "CANONICAL_PAYLOAD",
+          "sha256": "c0016c30d0c166c24d301ef69419d35c1f232e8925fa35541ab48a4ece5e8a18"
+        }
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "deletion",
+          "path": "templates/executable-patch-pack/AGENT_HANDOFF.md"
+        }
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt_patch_pack_v1_common.py",
+          "lines": [
+            11,
+            16
+          ],
+          "symbol": "DEFAULT_COMPATIBILITY",
+          "sha256": "6059cb194c7ac90cf15576ffcb0492acaade8417e164d539d508cdc9fb8b466f"
+        }
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt-patch-pack-runner-v1.py",
+          "lines": [
+            24,
+            28
+          ],
+          "symbol": "CANONICAL_PAYLOAD",
+          "sha256": "c0016c30d0c166c24d301ef69419d35c1f232e8925fa35541ab48a4ece5e8a18"
+        }
+      ]
+    },
+    {
+      "id": "REQ-005",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "deletion",
+          "path": "templates/executable-patch-pack/AGENT_HANDOFF.md"
+        }
+      ]
+    },
+    {
+      "id": "REQ-006",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt_patch_pack_v1_common.py",
+          "lines": [
+            11,
+            16
+          ],
+          "symbol": "DEFAULT_COMPATIBILITY",
+          "sha256": "6059cb194c7ac90cf15576ffcb0492acaade8417e164d539d508cdc9fb8b466f"
+        }
+      ]
+    },
+    {
+      "id": "REQ-007",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt-patch-pack-runner-v1.py",
+          "lines": [
+            24,
+            28
+          ],
+          "symbol": "CANONICAL_PAYLOAD",
+          "sha256": "c0016c30d0c166c24d301ef69419d35c1f232e8925fa35541ab48a4ece5e8a18"
+        }
+      ]
+    },
+    {
+      "id": "REQ-008",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "deletion",
+          "path": "templates/executable-patch-pack/AGENT_HANDOFF.md"
+        }
+      ]
+    },
+    {
+      "id": "REQ-009",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt_patch_pack_v1_common.py",
+          "lines": [
+            11,
+            16
+          ],
+          "symbol": "DEFAULT_COMPATIBILITY",
+          "sha256": "6059cb194c7ac90cf15576ffcb0492acaade8417e164d539d508cdc9fb8b466f"
+        }
+      ]
+    },
+    {
+      "id": "REQ-010",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt-patch-pack-runner-v1.py",
+          "lines": [
+            24,
+            28
+          ],
+          "symbol": "CANONICAL_PAYLOAD",
+          "sha256": "c0016c30d0c166c24d301ef69419d35c1f232e8925fa35541ab48a4ece5e8a18"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "unit-tests",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "pytest",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "compile",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "review-closure",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "engineering-catalog",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "v1-selftest",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "release-check",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "diff-check",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "archive-security",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "evidence",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    }
+  ],
+  "deviations": []
+}
