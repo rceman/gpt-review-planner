@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "patch_id": "patch-20260730-080000-gpt-patch-pack-v1",
+  "base": "f8cb8bc67c138f7e0e026c9270d3bd89dcd855d1",
+  "implementation_commit": "3dcbb4ede785d19e19c3ae5ccdebac4f34cf8754",
+  "target_tree": "a90bf0f987af738048a73e973b41835b538d5df3",
+  "compatibility": {
+    "scope": "none",
+    "authorized": false,
+    "canonical_implementation": "GPT Patch Pack v1",
+    "legacy_behavior": "unsupported and out of scope"
+  },
+  "gate_ids": [
+    "shell-syntax",
+    "python-compile",
+    "unit-tests",
+    "pytest",
+    "v1-selftest",
+    "release-check",
+    "diff-check",
+    "scope",
+    "example-oracle",
+    "rust-kernel"
+  ]
+}

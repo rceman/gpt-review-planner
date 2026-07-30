@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "3dcbb4ede785d19e19c3ae5ccdebac4f34cf8754",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "documentation",
+          "path": "docs/GPT_PATCH_PACK_V1.md",
+          "lines": [
+            5,
+            5
+          ],
+          "sha256": "4bb9e62fbf6476c26ff1f9d29c69f7aba4e21215a6a00b89ab7b7c9826a8fb33",
+          "symbol": "only supported executable"
+        }
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt-patch-pack-runner-v1.py",
+          "lines": [
+            17,
+            17
+          ],
+          "sha256": "aceb05ba6c8c9cf25cfcc83b2e7925a0307461c32fc3e87649cf2dc4e198c0ef",
+          "symbol": "RUNNER_VERSION = \"1.0.0\""
+        }
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "documentation",
+          "path": "docs/COMPATIBILITY_AUTHORIZATION.md",
+          "lines": [
+            88,
+            88
+          ],
+          "sha256": "fff3f46408a280a174da371d79bcb5eb386d32daf169668a14184fffa058c3c7",
+          "symbol": "BLOCKED_UNAUTHORIZED_COMPATIBILITY_CHANGE"
+        }
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "documentation",
+          "path": "prompts/GPT_CREATE_PATCH_PACK.md",
+          "lines": [
+            19,
+            19
+          ],
+          "sha256": "43fb301269e4c85797d95458a1b00790e4b0d41ecb74d145a3afda0c2f7f3b4f",
+          "symbol": "Compatibility scope: none"
+        }
+      ]
+    },
+    {
+      "id": "REQ-005",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "schemas/agent-evidence.schema.json",
+          "lines": [
+            13,
+            13
+          ],
+          "sha256": "367c9a3d63827662172cf4104ee6ec4b35d8b0958bb227824380df6e99bb2061",
+          "symbol": "\"compatibility_authorized\""
+        }
+      ]
+    },
+    {
+      "id": "REQ-006",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "workflow",
+          "path": ".github/workflows/validate.yml",
+          "lines": [
+            23,
+            23
+          ],
+          "sha256": "a7c599ca983e135b1505bc107023b7c2025d393a0fdfa2bd7353ff714f628025",
+          "symbol": "GPT Patch Pack v1 self-test"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "shell-syntax",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "python-compile",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "unit-tests",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "pytest",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "v1-selftest",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "release-check",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "diff-check",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "scope",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "example-oracle",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    },
+    {
+      "id": "rust-kernel",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Passed."
+    }
+  ],
+  "deviations": [],
+  "compatibility_scope": "none",
+  "compatibility_authorized": false,
+  "compatibility_features_added": [],
+  "legacy_paths_added": [],
+  "fallbacks_added": [],
+  "migration_behavior_added": []
+}
