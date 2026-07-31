@@ -1,0 +1,383 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "98857ac6b1c5256601d34d6f79b8a486c26a15d9",
+  "requirements": [
+    {
+      "id": "REQ-SOURCE-OUTPUT-001",
+      "status": "pass",
+      "note": "In gpt_tunnel_managed mode, the sole shared GPT Patch Pack v2 validator rejects every forbidden source-repository terminal artifact in files_created, files_modified, or files_deleted.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt_patch_pack_v2_common.py",
+          "lines": [
+            69,
+            101
+          ],
+          "sha256": "cbe5115bf56e397ca39202d3f7e4079dd58107a64855b4338a80b4916eef1e63"
+        }
+      ]
+    },
+    {
+      "id": "REQ-SOURCE-OUTPUT-002",
+      "status": "pass",
+      "note": "Forbidden paths include any `.gpt-review/evidence` path, any basename `AGENT_RESULT.md`, `agent-result.json`, `evidence.json`, or `completion.json`, and any explicit repository evidence directory declaration.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt_patch_pack_v2_common.py",
+          "lines": [
+            75,
+            101
+          ],
+          "sha256": "ade09e9f82923c5d4ae6d658ef060664903a7bf32ca2b3858f01f7a6eb1345fd"
+        },
+        {
+          "kind": "source",
+          "path": "scripts/gpt_patch_pack_v2_common.py",
+          "lines": [
+            157,
+            166
+          ],
+          "sha256": "94cf862690fb2e1f1ced9e74223fddc87532a9b7ee628496842b1909921a8e5c"
+        }
+      ]
+    },
+    {
+      "id": "REQ-SOURCE-OUTPUT-003",
+      "status": "pass",
+      "note": "Historical evidence already present in the immutable base tree remains untouched; the validator evaluates only declared patch operation paths and does not scan/reject historical tree contents.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt_patch_pack_v2_common.py",
+          "lines": [
+            69,
+            74
+          ],
+          "sha256": "6cd3f3333d99be2a06f2e4c9671a9ea55fc3de3d87f5a4050eadd408dbe30d62"
+        },
+        {
+          "kind": "test",
+          "path": "tests/test_gpt_patch_pack_v2.py",
+          "lines": [
+            220,
+            226
+          ],
+          "sha256": "32af8b29e1ee8afa50b02aa89f88b0e6a8665a328e8ac82175bd5c130592d9d2"
+        }
+      ]
+    },
+    {
+      "id": "REQ-SOURCE-OUTPUT-004",
+      "status": "pass",
+      "note": "repository_evidence mode continues to require its canonical evidence_directory and may declare only its exact canonical evidence pair under that directory; unrelated evidence-like paths remain rejected.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt_patch_pack_v2_common.py",
+          "lines": [
+            77,
+            101
+          ],
+          "sha256": "b23b126e78a887f8d906c629b35e0757b05846ea3d8dd3605ac8d753f0a44d04"
+        },
+        {
+          "kind": "test",
+          "path": "tests/test_gpt_patch_pack_v2.py",
+          "lines": [
+            231,
+            244
+          ],
+          "sha256": "836cc6eb9b1ecad036d10e4fa87e95cd2e6a34be59789fb9447c391fae66e90a"
+        }
+      ]
+    },
+    {
+      "id": "REQ-SOURCE-OUTPUT-005",
+      "status": "pass",
+      "note": "Builder, runner, standalone validator, and evidence tools all use the same corrected v2 validator; no duplicate policy implementation is introduced.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt_patch_pack_common.py",
+          "lines": [
+            7,
+            28
+          ],
+          "sha256": "c5048fecb2a4acf7efaf17924b7bf308e80434383048ca3bad6e7169573c8eb2"
+        }
+      ]
+    },
+    {
+      "id": "REQ-SOURCE-OUTPUT-006",
+      "status": "pass",
+      "note": "Focused tests cover created/modified/deleted forbidden paths, nested basenames, case-sensitive exact names, tunnel completion in source, historical base evidence allowance, and repository_evidence canonical pair acceptance.",
+      "proofs": [
+        {
+          "kind": "test",
+          "path": "tests/test_gpt_patch_pack_v2.py",
+          "lines": [
+            207,
+            244
+          ],
+          "sha256": "50b5375a459fcd5557cdb6f32e06f7987b197c18082ef35cee8d4807be36d528"
+        }
+      ]
+    },
+    {
+      "id": "REQ-SOURCE-OUTPUT-007",
+      "status": "pass",
+      "note": "Existing completion schema, task_sha256-only boundary, positional G1..Gn/AC1..ACn semantics, lock schema v2, internal TASK_GATE_CONTRACT_MISMATCH behavior, VERSION 2.0.0, and v2-only tooling remain unchanged.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "schemas/gpt-tunnel-completion.schema.json",
+          "lines": [
+            1,
+            44
+          ],
+          "sha256": "84b183453d2481830cfab9b6b9ed920d213bd675c5e97c5ff25c9aebda354344"
+        },
+        {
+          "kind": "source",
+          "path": "scripts/task_gate_contract.py",
+          "lines": [
+            95,
+            180
+          ],
+          "sha256": "5c2ff23930e80d799f7f13bd4a4c5eef2effd966a6254488522a695dc2847e98"
+        }
+      ]
+    },
+    {
+      "id": "REQ-SOURCE-OUTPUT-008",
+      "status": "pass",
+      "note": "Fresh review-r2 bootstrap evidence is truthful, uses the exact task identity and ordered gates, and preserves all prior evidence directories unchanged.",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/generate-agent-evidence.py",
+          "lines": [
+            54,
+            143
+          ],
+          "sha256": "dde181e75248adc6f20f4c6aa414719c4c36b0b6abe859d4a6ec6b55b658d1a5"
+        }
+      ]
+    },
+    {
+      "id": "REQ-SOURCE-OUTPUT-009",
+      "status": "pass",
+      "note": "All required gates and exact-SHA CI pass; branch is pushed clean and finalized without merge, release, tag, deployment, connector action, branch deletion, or cross-project mutation.",
+      "proofs": [
+        {
+          "kind": "test",
+          "path": "tests/test_gpt_patch_pack_v2.py",
+          "lines": [
+            246,
+            275
+          ],
+          "sha256": "1b092685d868af7335981a42dba9c7c5da691c95604cf9ac9bf7c0af795f686f"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "G1",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "focused_v2_tests": 11
+      }
+    },
+    {
+      "id": "G2",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "unittest_tests": 153
+      }
+    },
+    {
+      "id": "G3",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "pytest_tests": 155
+      }
+    },
+    {
+      "id": "G4",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "G5",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "G6",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "G7",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    }
+  ],
+  "deviations": [],
+  "compatibility_scope": "none",
+  "compatibility_authorized": false,
+  "compatibility_features_added": [],
+  "legacy_paths_added": [],
+  "fallbacks_added": [],
+  "migration_behavior_added": [],
+  "task_gate_contract": {
+    "schema_version": 1,
+    "project_id": "gpt-review-planner",
+    "task_id": "f7cd2bb4-7f31-4a5a-bc70-64b529246102",
+    "task_sha256": "cbf87e73fc001c75ab06671b8aa2a8fa67bd6b881f6290b80449f6e15b72357b",
+    "task_required_gates": [
+      "python3 -m unittest tests.test_gpt_patch_pack_v2 -v",
+      "python3 -m unittest discover -s tests -v",
+      "python3 -m pytest -q",
+      "python3 -m compileall -q scripts tests examples",
+      "python3 scripts/selftest-gpt-patch-pack-v2.py",
+      "python3 scripts/release.py check",
+      "git diff --check"
+    ],
+    "required_gates": [
+      {
+        "id": "G1",
+        "name": "Focused GPT Patch Pack v2 tests",
+        "command": "python3 -m unittest tests.test_gpt_patch_pack_v2 -v",
+        "argv": [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_gpt_patch_pack_v2",
+          "-v"
+        ],
+        "env": {},
+        "cwd": "",
+        "parser": "unittest",
+        "metric": "focused_v2_tests",
+        "timeout_seconds": 1800,
+        "max_output_bytes": 16777216
+      },
+      {
+        "id": "G2",
+        "name": "Repository unit tests",
+        "command": "python3 -m unittest discover -s tests -v",
+        "argv": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ],
+        "env": {},
+        "cwd": "",
+        "parser": "unittest",
+        "metric": "unittest_tests",
+        "timeout_seconds": 1800,
+        "max_output_bytes": 16777216
+      },
+      {
+        "id": "G3",
+        "name": "Pytest suite",
+        "command": "python3 -m pytest -q",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q"
+        ],
+        "env": {},
+        "cwd": "",
+        "parser": "pytest",
+        "metric": "pytest_tests",
+        "timeout_seconds": 1800,
+        "max_output_bytes": 16777216
+      },
+      {
+        "id": "G4",
+        "name": "Python compilation",
+        "command": "python3 -m compileall -q scripts tests examples",
+        "argv": [
+          "python3",
+          "-m",
+          "compileall",
+          "-q",
+          "scripts",
+          "tests",
+          "examples"
+        ],
+        "env": {},
+        "cwd": "",
+        "parser": "exit",
+        "metric": null,
+        "timeout_seconds": 1800,
+        "max_output_bytes": 16777216
+      },
+      {
+        "id": "G5",
+        "name": "GPT Patch Pack v2 self-test",
+        "command": "python3 scripts/selftest-gpt-patch-pack-v2.py",
+        "argv": [
+          "python3",
+          "scripts/selftest-gpt-patch-pack-v2.py"
+        ],
+        "env": {},
+        "cwd": "",
+        "parser": "exit",
+        "metric": null,
+        "timeout_seconds": 1800,
+        "max_output_bytes": 16777216
+      },
+      {
+        "id": "G6",
+        "name": "Release consistency",
+        "command": "python3 scripts/release.py check",
+        "argv": [
+          "python3",
+          "scripts/release.py",
+          "check"
+        ],
+        "env": {},
+        "cwd": "",
+        "parser": "exit",
+        "metric": null,
+        "timeout_seconds": 1800,
+        "max_output_bytes": 16777216
+      },
+      {
+        "id": "G7",
+        "name": "Diff check",
+        "command": "git diff --check",
+        "argv": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "env": {},
+        "cwd": "",
+        "parser": "exit",
+        "metric": null,
+        "timeout_seconds": 1800,
+        "max_output_bytes": 16777216
+      }
+    ],
+    "contract_sha256": "89c0643686085d33dbe6aee86fd93103858e8afd53c96464d17c4345e391889c"
+  }
+}

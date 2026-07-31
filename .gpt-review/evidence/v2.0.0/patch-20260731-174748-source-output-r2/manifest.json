@@ -1,0 +1,254 @@
+{
+  "schema_version": 2,
+  "format": "gpt-patch-pack-v2",
+  "patch_id": "patch-20260731-174748-source-output-r2",
+  "title": "Workflow 2.0 review-r2 source-output policy correction",
+  "description": "Truthful repository-evidence bootstrap for centralized mode-specific source-output validation.",
+  "created_at": "2026-07-31T17:47:48Z",
+  "runner_version": "2.0.0",
+  "baseline_release": "v2.0.0",
+  "execution_mode": "repository_evidence",
+  "evidence_directory": ".gpt-review/evidence/v2.0.0/patch-20260731-174748-source-output-r2",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v2.0.0",
+    "commit": "98857ac6b1c5256601d34d6f79b8a486c26a15d9",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "rceman/gpt-review-planner",
+    "accepted_origin_urls": [
+      "git@github.com:rceman/gpt-review-planner.git"
+    ],
+    "branch": "fix/single-authority-completion-v2-review-r2",
+    "base_revision": "170d25af514a2f6a6036bae495287d1430a22950",
+    "remote": "origin",
+    "remote_ref": "refs/remotes/origin/fix/single-authority-completion-v2-review-r2"
+  },
+  "payload": {
+    "patch": "payload/changes.patch",
+    "format": "git-binary-full-index"
+  },
+  "files_created": [],
+  "files_modified": [
+    "scripts/gpt_patch_pack_common.py",
+    "scripts/gpt_patch_pack_v2_common.py",
+    "tests/test_gpt_patch_pack_v2.py"
+  ],
+  "files_deleted": [],
+  "target_tree": "b815de4e89622e25045f975b1eb097580c674597",
+  "requirements": [
+    {
+      "id": "REQ-SOURCE-OUTPUT-001",
+      "summary": "In gpt_tunnel_managed mode, the sole shared GPT Patch Pack v2 validator rejects every forbidden source-repository terminal artifact in files_created, files_modified, or files_deleted.",
+      "acceptance": [
+        "AC1: In gpt_tunnel_managed mode, the sole shared GPT Patch Pack v2 validator rejects every forbidden source-repository terminal artifact in files_created, files_modified, or files_deleted."
+      ],
+      "acceptance_ids": [
+        "AC1"
+      ]
+    },
+    {
+      "id": "REQ-SOURCE-OUTPUT-002",
+      "summary": "Forbidden paths include any `.gpt-review/evidence` path, any basename `AGENT_RESULT.md`, `agent-result.json`, `evidence.json`, or `completion.json`, and any explicit repository evidence directory declaration.",
+      "acceptance": [
+        "AC2: Forbidden paths include any `.gpt-review/evidence` path, any basename `AGENT_RESULT.md`, `agent-result.json`, `evidence.json`, or `completion.json`, and any explicit repository evidence directory declaration."
+      ],
+      "acceptance_ids": [
+        "AC2"
+      ]
+    },
+    {
+      "id": "REQ-SOURCE-OUTPUT-003",
+      "summary": "Historical evidence already present in the immutable base tree remains untouched; the validator evaluates only declared patch operation paths and does not scan/reject historical tree contents.",
+      "acceptance": [
+        "AC3: Historical evidence already present in the immutable base tree remains untouched; the validator evaluates only declared patch operation paths and does not scan/reject historical tree contents."
+      ],
+      "acceptance_ids": [
+        "AC3"
+      ]
+    },
+    {
+      "id": "REQ-SOURCE-OUTPUT-004",
+      "summary": "repository_evidence mode continues to require its canonical evidence_directory and may declare only its exact canonical evidence pair under that directory; unrelated evidence-like paths remain rejected.",
+      "acceptance": [
+        "AC4: repository_evidence mode continues to require its canonical evidence_directory and may declare only its exact canonical evidence pair under that directory; unrelated evidence-like paths remain rejected."
+      ],
+      "acceptance_ids": [
+        "AC4"
+      ]
+    },
+    {
+      "id": "REQ-SOURCE-OUTPUT-005",
+      "summary": "Builder, runner, standalone validator, and evidence tools all use the same corrected v2 validator; no duplicate policy implementation is introduced.",
+      "acceptance": [
+        "AC5: Builder, runner, standalone validator, and evidence tools all use the same corrected v2 validator; no duplicate policy implementation is introduced."
+      ],
+      "acceptance_ids": [
+        "AC5"
+      ]
+    },
+    {
+      "id": "REQ-SOURCE-OUTPUT-006",
+      "summary": "Focused tests cover created/modified/deleted forbidden paths, nested basenames, case-sensitive exact names, tunnel completion in source, historical base evidence allowance, and repository_evidence canonical pair acceptance.",
+      "acceptance": [
+        "AC6: Focused tests cover created/modified/deleted forbidden paths, nested basenames, case-sensitive exact names, tunnel completion in source, historical base evidence allowance, and repository_evidence canonical pair acceptance."
+      ],
+      "acceptance_ids": [
+        "AC6"
+      ]
+    },
+    {
+      "id": "REQ-SOURCE-OUTPUT-007",
+      "summary": "Existing completion schema, task_sha256-only boundary, positional G1..Gn/AC1..ACn semantics, lock schema v2, internal TASK_GATE_CONTRACT_MISMATCH behavior, VERSION 2.0.0, and v2-only tooling remain unchanged.",
+      "acceptance": [
+        "AC7: Existing completion schema, task_sha256-only boundary, positional G1..Gn/AC1..ACn semantics, lock schema v2, internal TASK_GATE_CONTRACT_MISMATCH behavior, VERSION 2.0.0, and v2-only tooling remain unchanged."
+      ],
+      "acceptance_ids": [
+        "AC7"
+      ]
+    },
+    {
+      "id": "REQ-SOURCE-OUTPUT-008",
+      "summary": "Fresh review-r2 bootstrap evidence is truthful, uses the exact task identity and ordered gates, and preserves all prior evidence directories unchanged.",
+      "acceptance": [
+        "AC8: Fresh review-r2 bootstrap evidence is truthful, uses the exact task identity and ordered gates, and preserves all prior evidence directories unchanged."
+      ],
+      "acceptance_ids": [
+        "AC8"
+      ]
+    },
+    {
+      "id": "REQ-SOURCE-OUTPUT-009",
+      "summary": "All required gates and exact-SHA CI pass; branch is pushed clean and finalized without merge, release, tag, deployment, connector action, branch deletion, or cross-project mutation.",
+      "acceptance": [
+        "AC9: All required gates and exact-SHA CI pass; branch is pushed clean and finalized without merge, release, tag, deployment, connector action, branch deletion, or cross-project mutation."
+      ],
+      "acceptance_ids": [
+        "AC9"
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "G1",
+      "name": "Focused GPT Patch Pack v2 tests",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "tests.test_gpt_patch_pack_v2",
+        "-v"
+      ],
+      "env": {},
+      "timeout_seconds": 1800,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "G2",
+      "name": "Repository unit tests",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "env": {},
+      "timeout_seconds": 1800,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "G3",
+      "name": "Pytest suite",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "env": {},
+      "timeout_seconds": 1800,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "G4",
+      "name": "Python compilation",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "compileall",
+        "-q",
+        "scripts",
+        "tests",
+        "examples"
+      ],
+      "env": {},
+      "timeout_seconds": 1800,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "G5",
+      "name": "GPT Patch Pack v2 self-test",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "scripts/selftest-gpt-patch-pack-v2.py"
+      ],
+      "env": {},
+      "timeout_seconds": 1800,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "G6",
+      "name": "Release consistency",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "scripts/release.py",
+        "check"
+      ],
+      "env": {},
+      "timeout_seconds": 1800,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "G7",
+      "name": "Diff check",
+      "kind": "command",
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "env": {},
+      "timeout_seconds": 1800,
+      "max_output_bytes": 16777216
+    }
+  ],
+  "compatibility": {
+    "scope": "none",
+    "authorized": false,
+    "canonical_implementation": "GPT Patch Pack v2",
+    "legacy_behavior": "unsupported and out of scope",
+    "authorization_source": null,
+    "supported_legacy_versions": [],
+    "direction": "none",
+    "removal_condition": null
+  },
+  "metadata": {
+    "planner_commit": "98857ac6b1c5256601d34d6f79b8a486c26a15d9",
+    "gpt_static_checks_performed": [
+      "Delta review of centralized v2 source-output validation."
+    ],
+    "gpt_runtime_checks_not_performed": [
+      "Runtime gates are executed by the local agent and captured in the gate run."
+    ]
+  }
+}
