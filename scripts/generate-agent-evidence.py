@@ -8,7 +8,13 @@ import subprocess
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gpt_patch_pack_v1_common import load_json as load_strict_json, validate_manifest, validate_compatibility
-from task_gate_contract import contract_identity, load_json as load_contract_json, manifest_gates, validate_contract, validate_gate_run_identity
+from task_gate_contract import (
+    contract_identity,
+    load_json as load_contract_json,
+    manifest_gates,
+    validate_contract,
+    validate_gate_run_binding,
+)
 
 def fail(message: str) -> None:
     print(f"ERROR: {message}", file=sys.stderr)
@@ -67,7 +73,7 @@ def main() -> None:
         fail("TASK_GATE_CONTRACT_MISMATCH: manifest gates diverge from contract")
     expected_identity=contract_identity(contract)
     try:
-        validate_gate_run_identity(gate_run, contract)
+        validate_gate_run_binding(gate_run, contract)
     except ValueError as exc:
         fail(str(exc))
     if gate_run.get("implementation_commit")!=implementation or gate_run.get("status")!="pass":

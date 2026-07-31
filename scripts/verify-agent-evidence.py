@@ -9,7 +9,7 @@ import subprocess
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gpt_patch_pack_v1_common import load_json as load_strict_json, validate_manifest as validate_shared_manifest
-from task_gate_contract import contract_sha256, validate_contract
+from task_gate_contract import contract_sha256, manifest_gates, validate_contract
 
 class EvidenceError(RuntimeError):
     pass
@@ -112,22 +112,10 @@ def validate(repo: Path,manifest: dict,evidence: dict,implementation: str) -> No
                 raise EvidenceError("TASK_GATE_CONTRACT_MISMATCH: evidence contract hash mismatch")
         except ValueError as exc:
             raise EvidenceError(f"TASK_GATE_CONTRACT_MISMATCH: invalid evidence contract: {exc}") from exc
-        expected_contract_gates = [
-            {"id": item["id"], "command": shlex.join(item["argv"]), "argv": item["argv"]}
-            for item in contract_value["required_gates"]
-        ]
-        supplied_contract_gates = [
-            {"id": item["id"], "command": item["command"], "argv": item["argv"]}
-            for item in contract_value["required_gates"]
-        ]
-        if supplied_contract_gates != expected_contract_gates:
-            raise EvidenceError("TASK_GATE_CONTRACT_MISMATCH: contract gate order or command mismatch")
-        manifest_contract_gates = [
-            {"id": item["id"], "command": shlex.join(item["argv"]), "argv": item["argv"]}
-            for item in manifest["gates"]
-        ]
-        if manifest_contract_gates != supplied_contract_gates:
-            raise EvidenceError("TASK_GATE_CONTRACT_MISMATCH: manifest gates do not match evidence contract")
+        if manifest.get("gates") != manifest_gates(contract_value):
+            raise EvidenceError(
+                "TASK_GATE_CONTRACT_MISMATCH: manifest gates do not match task_required_gates"
+            )
     base=manifest["target"]["base_revision"]
     expected=(set(manifest["files_created"]),set(manifest["files_modified"]),set(manifest["files_deleted"]))
     if scope(repo,base,implementation)!=expected:

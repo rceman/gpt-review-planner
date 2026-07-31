@@ -10,7 +10,8 @@ import tempfile
 from pathlib import Path
 
 CONTRACT_FIELDS = {
-    "schema_version", "project_id", "task_id", "task_sha256", "required_gates"
+    "schema_version", "project_id", "task_id", "task_sha256",
+    "task_required_gates", "required_gates",
 }
 GATE_FIELDS = {
     "id", "name", "command", "argv", "env", "cwd", "parser",
@@ -58,7 +59,7 @@ def _canonical_cwd(value: object) -> str:
     return value
 
 
-def validate_contract(value: dict) -> dict:
+def validate_contract(value: dict, authoritative_task_required_gates=None) -> dict:
     if set(value) != CONTRACT_FIELDS:
         raise TaskGateContractError("task gate contract fields invalid")
     if value["schema_version"] != 1:
@@ -69,9 +70,25 @@ def validate_contract(value: dict) -> dict:
         raise TaskGateContractError("invalid lowercase task_id")
     if not isinstance(value["task_sha256"], str) or not SHA256_RE.fullmatch(value["task_sha256"]):
         raise TaskGateContractError("invalid task_sha256")
+    task_required_gates = value["task_required_gates"]
+    if (
+        not isinstance(task_required_gates, list)
+        or not task_required_gates
+        or any(not isinstance(command, str) or not command for command in task_required_gates)
+    ):
+        raise TaskGateContractError("task_required_gates must be a non-empty string array")
+    if authoritative_task_required_gates is not None:
+        if list(task_required_gates) != list(authoritative_task_required_gates):
+            raise TaskGateContractError(
+                "TASK_GATE_CONTRACT_MISMATCH: task_required_gates differ from immutable task gates"
+            )
     gates = value["required_gates"]
     if not isinstance(gates, list) or not gates:
         raise TaskGateContractError("required_gates must be non-empty")
+    if len(gates) != len(task_required_gates):
+        raise TaskGateContractError(
+            "TASK_GATE_CONTRACT_MISMATCH: task gate count differs from task_required_gates"
+        )
     ids: set[str] = set()
     metrics: set[str] = set()
     for index, gate in enumerate(gates):
@@ -94,6 +111,10 @@ def validate_contract(value: dict) -> dict:
             raise TaskGateContractError(f"gate {gate_id} shell operator is forbidden")
         if not isinstance(gate["command"], str) or gate["command"] != shlex.join(argv):
             raise TaskGateContractError(f"gate {gate_id} command does not match argv")
+        if gate["command"] != task_required_gates[index]:
+            raise TaskGateContractError(
+                f"TASK_GATE_CONTRACT_MISMATCH: gate {gate_id} command differs from task_required_gates[{index}]"
+            )
         env = gate["env"]
         if not isinstance(env, dict) or any(
             not isinstance(key, str) or not isinstance(val, str) for key, val in env.items()
@@ -129,13 +150,42 @@ def contract_identity(contract: dict) -> dict:
         "project_id": contract["project_id"],
         "task_id": contract["task_id"],
         "task_sha256": contract["task_sha256"],
+        "task_required_gates": list(contract["task_required_gates"]),
         "contract_sha256": contract_sha256(contract),
     }
 
 
 def validate_gate_run_identity(gate_run: dict, contract: dict) -> None:
+    if set(gate_run) - {"task_gate_contract"} and "task_gate_contract" not in gate_run:
+        raise TaskGateContractError("TASK_GATE_CONTRACT_MISMATCH: gate-run contract identity missing")
     if gate_run.get("task_gate_contract") != contract_identity(contract):
         raise TaskGateContractError("TASK_GATE_CONTRACT_MISMATCH: gate-run contract identity mismatch")
+
+
+def validate_gate_run_binding(gate_run: dict, contract: dict) -> None:
+    """Validate both identity and every captured command against the contract."""
+    validate_gate_run_identity(gate_run, contract)
+    groups = gate_run.get("gates")
+    if not isinstance(groups, list) or len(groups) != len(contract["required_gates"]):
+        raise TaskGateContractError(
+            "TASK_GATE_CONTRACT_MISMATCH: captured gate count or order differs from contract"
+        )
+    for index, (group, expected) in enumerate(zip(groups, contract["required_gates"])):
+        if not isinstance(group, dict) or group.get("id") != expected["id"]:
+            raise TaskGateContractError(
+                f"TASK_GATE_CONTRACT_MISMATCH: captured gate order differs at index {index}"
+            )
+        steps = group.get("steps")
+        if not isinstance(steps, list) or len(steps) != 1:
+            raise TaskGateContractError(
+                f"TASK_GATE_CONTRACT_MISMATCH: captured step count invalid for {expected['id']}"
+            )
+        step = steps[0]
+        for key in ("id", "argv", "env", "cwd", "parser", "metric", "timeout_seconds", "max_output_bytes"):
+            if step.get(key) != expected[key]:
+                raise TaskGateContractError(
+                    f"TASK_GATE_CONTRACT_MISMATCH: captured gate differs: {expected['id']}/{key}"
+                )
 
 
 def manifest_gates(contract: dict) -> list[dict]:

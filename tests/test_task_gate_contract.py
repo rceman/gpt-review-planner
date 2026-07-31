@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import shlex
 import subprocess
 import tempfile
 import unittest
@@ -36,6 +37,7 @@ class TaskGateContractTests(unittest.TestCase):
             "project_id": "gpt-review-planner",
             "task_id": "a5cc93aa-ed68-403b-a6ce-717410719909",
             "task_sha256": "c9fb90624529092bb78663764694a5255072686a40ee17448c61102c75e4704e",
+            "task_required_gates": [shlex.join(argv) for _, _, argv, _, _ in commands],
             "required_gates": [
                 {
                     "id": gate_id,
@@ -69,13 +71,29 @@ class TaskGateContractTests(unittest.TestCase):
 
     def test_rejects_stale_focused_gate(self):
         contract = self.contract()
-        contract["required_gates"][0]["argv"] = ["python3", "-m", "unittest", "tests.test_workflow_performance_budget", "-v"]
-        contract["required_gates"][0]["command"] = "python3 -m unittest tests.test_workflow_performance_budget -v"
-        manifest = {"gates": manifest_gates(self.contract())}
-        plan = gate_plan(self.contract())
-        manifest["gates"][0]["argv"] = contract["required_gates"][0]["argv"]
+        stale = ["python3 -m unittest tests.test_workflow_performance_budget -v"] + contract["task_required_gates"][1:]
+        contract["task_required_gates"] = stale
+        contract["required_gates"][0]["argv"] = shlex.split(stale[0])
+        contract["required_gates"][0]["command"] = stale[0]
         with self.assertRaisesRegex(TaskGateContractError, r"TASK_GATE_CONTRACT_MISMATCH"):
-            validate_generated_outputs(self.contract(), manifest, plan)
+            validate_contract(contract, self.contract()["task_required_gates"])
+
+    def test_rejects_sixth_gate_range_substitution(self):
+        contract = self.contract()
+        contract["required_gates"][5]["argv"] = ["git", "diff", "--check", "base..head", "--"]
+        contract["required_gates"][5]["command"] = shlex.join(contract["required_gates"][5]["argv"])
+        with self.assertRaisesRegex(TaskGateContractError, r"TASK_GATE_CONTRACT_MISMATCH"):
+            validate_contract(contract)
+
+    def test_rejects_task_gate_count_and_order_mismatch(self):
+        contract = self.contract()
+        contract["task_required_gates"] = contract["task_required_gates"][:-1]
+        with self.assertRaisesRegex(TaskGateContractError, r"TASK_GATE_CONTRACT_MISMATCH"):
+            validate_contract(contract)
+        contract = self.contract()
+        contract["required_gates"] = list(reversed(contract["required_gates"]))
+        with self.assertRaisesRegex(TaskGateContractError, r"TASK_GATE_CONTRACT_MISMATCH"):
+            validate_contract(contract)
 
     def test_rejects_missing_extra_and_reordered_gates(self):
         for mutation in (
@@ -103,6 +121,36 @@ class TaskGateContractTests(unittest.TestCase):
             bad = dict(identity); bad[key] = "wrong"
             with self.assertRaisesRegex(TaskGateContractError, r"TASK_GATE_CONTRACT_MISMATCH"):
                 validate_gate_run_identity({"task_gate_contract": bad}, contract)
+
+    def test_runner_requires_task_gate_contract(self):
+        with tempfile.TemporaryDirectory() as raw:
+            result = subprocess.run(
+                ["python3", str(ROOT / "scripts/run-agent-gates.py"), "--repo", raw,
+                 "--plan", str(Path(raw) / "plan.json"), "--implementation-commit", "0" * 40,
+                 "--output-dir", str(Path(raw) / "out")],
+                text=True, capture_output=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("--task-gate-contract", result.stderr)
+
+    def test_workflow_rejects_legacy_gate_plan_input(self):
+        with tempfile.TemporaryDirectory() as raw:
+            task = {
+                "workflow": {},
+                "manifest_seed": {},
+                "evidence_plan": {},
+                "task_gate_contract": self.contract(),
+                "gate_plan": {"schema_version": 1, "gates": []},
+            }
+            task_path = Path(raw) / "task.json"
+            task_path.write_text(json.dumps(task), encoding="utf-8")
+            result = subprocess.run(
+                ["python3", str(ROOT / "scripts/run-agent-evidence-workflow.py"), "run",
+                 "--repo", str(ROOT), "--task", str(task_path)],
+                text=True, capture_output=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("invalid task file", result.stderr + result.stdout)
 
     def test_generation_is_byte_stable_and_rejects_independent_manifest_gates(self):
         contract = self.contract()

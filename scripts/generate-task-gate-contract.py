@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -22,14 +23,22 @@ def main() -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     validate = sub.add_parser("validate")
     validate.add_argument("--contract", required=True, type=Path)
+    validate.add_argument("--task-required-gates", type=Path)
     generate = sub.add_parser("generate")
     generate.add_argument("--contract", required=True, type=Path)
     generate.add_argument("--manifest-seed", required=True, type=Path)
     generate.add_argument("--manifest-output", required=True, type=Path)
     generate.add_argument("--gate-plan-output", required=True, type=Path)
+    generate.add_argument("--task-required-gates", type=Path)
     args = parser.parse_args()
     try:
-        contract = validate_contract(load_json(args.contract))
+        authoritative = None
+        if getattr(args, "task_required_gates", None) is not None:
+            raw = json.loads(args.task_required_gates.read_text(encoding="utf-8"))
+            if not isinstance(raw, list):
+                raise TaskGateContractError("authoritative task gates must be an array")
+            authoritative = raw
+        contract = validate_contract(load_json(args.contract), authoritative)
         if args.command == "validate":
             print("PASS: task gate contract")
             return 0

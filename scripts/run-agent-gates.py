@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from task_gate_contract import (  # noqa: E402
     TaskGateContractError,
-    contract_sha256,
+    contract_identity,
     gate_plan,
     load_json as load_contract_json,
     validate_contract,
@@ -22,7 +22,7 @@ def fail(message):
         print(f"ERROR: {message}", file=sys.stderr)
     raise SystemExit(5)
 
-def load_plan(path, contract_path=None):
+def load_plan(path, contract_path):
     try: data = json.loads(path.read_text(encoding="utf-8"))
     except Exception as exc: fail(f"invalid gate plan: {exc}")
     if data.get("schema_version") != 1 or not isinstance(data.get("gates"), list): fail("invalid gate plan schema")
@@ -45,15 +45,13 @@ def load_plan(path, contract_path=None):
             if not isinstance(step.get("argv"), list) or any(not isinstance(x,str) for x in step["argv"]): fail("invalid argv")
             if step["argv"] and step["argv"][0] in {"true", "false", "echo"}: fail("placeholder gate command")
             if any(any(c in x for c in ";&|<>$") for x in step["argv"]): fail("shell strings are not allowed")
-    if contract_path is not None:
-        try:
-            contract = validate_contract(load_contract_json(Path(contract_path)))
-            if data != gate_plan(contract):
-                fail("TASK_GATE_CONTRACT_MISMATCH: executable gate plan diverges from contract")
-            return data, contract, contract_sha256(contract)
-        except TaskGateContractError as exc:
-            fail(f"TASK_GATE_CONTRACT_MISMATCH: {exc}")
-    return data, None, None
+    try:
+        contract = validate_contract(load_contract_json(Path(contract_path)))
+        if data != gate_plan(contract):
+            fail("TASK_GATE_CONTRACT_MISMATCH: executable gate plan diverges from contract")
+        return data, contract
+    except TaskGateContractError as exc:
+        fail(f"TASK_GATE_CONTRACT_MISMATCH: {exc}")
 
 def count_output(parser, out):
     if parser == "exit": return None
@@ -65,9 +63,9 @@ def count_output(parser, out):
     return int(m.group(1))
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument("--repo",required=True); ap.add_argument("--plan",required=True); ap.add_argument("--task-gate-contract"); ap.add_argument("--implementation-commit",required=True); ap.add_argument("--output-dir",required=True); a=ap.parse_args()
+    ap=argparse.ArgumentParser(); ap.add_argument("--repo",required=True); ap.add_argument("--plan",required=True); ap.add_argument("--task-gate-contract",required=True); ap.add_argument("--implementation-commit",required=True); ap.add_argument("--output-dir",required=True); a=ap.parse_args()
     if not SHA.fullmatch(a.implementation_commit): fail("implementation commit must be a lowercase 40-character SHA")
-    repo=Path(a.repo).resolve(); plan, contract, contract_digest=load_plan(Path(a.plan), a.task_gate_contract)
+    repo=Path(a.repo).resolve(); plan, contract=load_plan(Path(a.plan), a.task_gate_contract)
     if subprocess.run(["git","-C",str(repo),"cat-file","-e",a.implementation_commit+"^{commit}"]).returncode: fail("implementation commit does not exist")
     if subprocess.check_output(["git","-C",str(repo),"rev-parse","HEAD"],text=True).strip()!=a.implementation_commit: fail("HEAD does not equal implementation commit")
     dirty=subprocess.check_output(["git","-C",str(repo),"status","--porcelain"],text=True)
@@ -104,8 +102,7 @@ def main():
         results.append(gr)
         if overall != "pass": break
     result={"schema_version":1,"implementation_commit":a.implementation_commit,"started_at":started,"completed_at":datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),"status":overall,"gates":results}
-    if contract is not None:
-        result["task_gate_contract"]={"project_id":contract["project_id"],"task_id":contract["task_id"],"task_sha256":contract["task_sha256"],"contract_sha256":contract_digest}
+    result["task_gate_contract"]=contract_identity(contract)
     target=outdir/"gate-run.json"; fd,tmp=tempfile.mkstemp(dir=outdir); os.close(fd); Path(tmp).write_text(json.dumps(result,indent=2,sort_keys=True)+"\n",encoding="utf-8"); os.replace(tmp,target)
     print(f"Gate run: {overall} | sha={a.implementation_commit} | gates={len(results)}")
     raise SystemExit(0 if overall=="pass" else 1)
