@@ -9,12 +9,12 @@ static/artifact review and reviews the evidence after execution.
 
 Do not redesign approved behavior or weaken tests. Correct only verified
 integration defects inside the declared file scope, add regression coverage for
-each correction, record genuine deviations structurally in `evidence.json`, run
-the pack scope verifier, and produce exact command and result evidence. Report
-`Written by GPT`, `Executed by agent`, `Result`, and `Evidence or log location`
-separately. Stop before merge when an undeclared path is required.
+each correction, and run the pack scope verifier. Follow the manifest's
+explicit execution mode: `gpt_tunnel_managed` produces only canonical
+`completion.json` and gateway finalization; `repository_evidence` produces the
+repository evidence workflow below. Never create both authorities.
 
-## Required committed JSON evidence
+## Required committed JSON evidence (`repository_evidence` only)
 
 After all runtime gates pass, create the implementation commit. Create the exact directory from `manifest.evidence_directory`, copy `manifest.json` byte-for-byte, and complete compact `evidence.json` with the implementation SHA, every requirement and proof, every gate result, and any structured deviations.
 

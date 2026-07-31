@@ -75,8 +75,8 @@ def main() -> int:
             unknown = sorted(set(data) - required)
             if unknown:
                 errors.append(f"lock has unknown keys: {', '.join(unknown)}")
-            if data.get("schema_version") != 1:
-                errors.append("schema_version must be 1")
+            if data.get("schema_version") != 2:
+                errors.append("schema_version must be 2")
             if data.get("document") != "GPT_REVIEW_PLANNER.md":
                 errors.append("document must be GPT_REVIEW_PLANNER.md")
             if not re.fullmatch(r"[0-9a-fA-F]{40}", str(data.get("commit", ""))):

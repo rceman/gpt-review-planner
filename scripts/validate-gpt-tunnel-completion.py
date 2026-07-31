@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
-RUN_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,79}$")
+RUN_ID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 GATE_ID_RE = re.compile(r"^G([1-9][0-9]*)$")
 AC_ID_RE = re.compile(r"^AC([1-9][0-9]*)$")
 STATUSES = {"succeeded", "failed", "needs_gpt_revision"}
@@ -96,7 +96,7 @@ def validate_value(
             errors.append(f"duplicate gate result: {gate_id}")
         gate_ids.append(gate_id)
         exit_code = item["exit_code"]
-        if isinstance(exit_code, bool) or not isinstance(exit_code, int) or not 0 <= exit_code <= 255:
+        if isinstance(exit_code, bool) or not isinstance(exit_code, int):
             errors.append(f"gate_results[{index}].exit_code is invalid")
 
     coverage = value.get("acceptance_coverage")
@@ -109,7 +109,8 @@ def validate_value(
             errors.append(f"acceptance_coverage[{index}] is invalid")
         elif item in coverage_ids:
             errors.append(f"duplicate acceptance coverage: {item}")
-        coverage_ids.append(item)
+        if isinstance(item, str) and AC_ID_RE.fullmatch(item):
+            coverage_ids.append(item)
 
     _bounded_strings(value.get("deviations"), "deviations", errors)
     _bounded_strings(value.get("remaining_risks"), "remaining_risks", errors)

@@ -12,7 +12,7 @@ class ProcedureIndexAndReportingTests(unittest.TestCase):
             text=self.read(p); self.assertLess(text.find('PROCEDURE_INDEX.md'), 1200, p)
     def test_index_covers_contracts(self):
         text=self.read('docs/PROCEDURE_INDEX.md')
-        for value in ('PATCH_PACK_HANDOFF.md','GPT_PATCH_PACK_V1.md','AGENT_EVIDENCE.md','POST_MERGE_BRANCH_CLEANUP.md','RELEASE_PROCESS.md','GPT_CREATE_PATCH_PACK.md','AGENT_FINALIZE_MERGE.md','COMPATIBILITY_AUTHORIZATION.md'): self.assertIn(value,text)
+        for value in ('PATCH_PACK_HANDOFF.md','AGENT_EVIDENCE.md','POST_MERGE_BRANCH_CLEANUP.md','RELEASE_PROCESS.md','GPT_CREATE_PATCH_PACK.md','AGENT_FINALIZE_MERGE.md','COMPATIBILITY_AUTHORIZATION.md'): self.assertIn(value,text)
     def test_transitions_and_ownership(self):
         text=self.read('docs/PROCEDURE_INDEX.md')
         for value in ('IMPLEMENTATION_COMPLETE','GPT_DELTA_REVIEW','CORRECTION_REQUIRED','MERGE_READY','MERGE_FINALIZED','MERGE_CLEANUP_BLOCKED','GPT owns','local agent owns','separate task'): self.assertIn(value,text)

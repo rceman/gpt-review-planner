@@ -158,8 +158,10 @@ remain in their original language. Follow
 [`AGENT_COMMUNICATION_LANGUAGE.md`](docs/AGENT_COMMUNICATION_LANGUAGE.md);
 bilingual agent instructions are forbidden.
 
-Every new executable implementation pack uses GPT Patch Pack v2 as defined by
-[`docs/GPT_PATCH_PACK_V1.md`](docs/GPT_PATCH_PACK_V1.md).
+Every new executable implementation pack uses only GPT Patch Pack v2 as defined
+by [`templates/gpt-patch-pack-v2/README.md`](templates/gpt-patch-pack-v2/README.md).
+The former v1 format is historical and is not an active reader, builder, or
+fallback path.
 `AGENT_TASK.md` is the only instruction inside the archive. Directory packs,
 `AGENT_PROMPT.md`, overlays, transform runners, compatibility readers, format
 negotiation, and automatic legacy detection are unsupported.
@@ -1169,23 +1171,22 @@ archive or runtime result. Before delivery, run
 `scripts/validate-patch-pack-delivery.py`; bundled scope and evidence tools
 must be byte-identical to the pinned planner tools and pass `--help`.
 
-## Committed JSON evidence and release automation
+## Mode-specific evidence and release automation
 
-Every new patch pack receives an immutable UTC identity:
+The explicit project execution mode owns the terminal artifact. For
+`gpt_tunnel_managed`, the agent writes only canonical `completion.json` and
+invokes gateway finalization; it MUST NOT create repository evidence, an
+`AGENT_RESULT.md`, repository evidence JSON, or an evidence-only commit. For
+`repository_evidence`, the local agent creates one implementation commit and
+one direct evidence-only commit containing exactly `manifest.json` and
+`evidence.json`; the manifest copy is byte-identical to the pack manifest.
 
-```text
-patch-<YYYYMMDD-HHMMSS>-<one-to-three-word-slug>
-```
-
-The manifest records a concise title and description, the last published target baseline tag, exact target base commit, implementation scope, stable requirement IDs, acceptance criteria, required gate definitions, and the evidence directory:
-
-```text
-.gpt-review/evidence/<baseline-release>/<patch-id>/
-```
-
-The local coding agent creates one implementation commit followed by one direct evidence-only commit containing exactly `manifest.json` and `evidence.json`. The manifest copy is byte-identical to the patch-pack manifest. The compact evidence file contains only the validated implementation SHA, requirement statuses and verifiable proofs, compact gate results, and structured deviations. It must not contain its own evidence commit SHA or repeat commands and expected scope already present in the manifest.
-
-Each passing requirement cites implementation-commit proofs using source/test/workflow/documentation line ranges with exact snippet SHA-256, JSON pointer/value proofs, or deletion proofs. Gate commands remain in the manifest; evidence records results by gate ID. Deviations are embedded as compact JSON entries rather than a separate Markdown report.
+Repository-evidence proofs cite the implementation commit using source,
+test, workflow, documentation, JSON pointer/value, or deletion proofs.
+Required gate commands remain in the manifest and captured results are
+validated against those exact commands. Tunnel completion contains only
+positional `G1..Gn` and `AC1..ACn` identities, with no raw commands or
+duplicated repository facts.
 
 Committed gate results are limited to facts knowable before the evidence commit:
 local gates, implementation scope, evidence preparation, and implementation CI.

@@ -94,7 +94,7 @@ def validate_compatibility(value: Any) -> dict[str, Any]:
         raise ValueError("authorized compatibility direction is invalid")
     if not isinstance(value["removal_condition"], str) or not value["removal_condition"].strip():
         raise ValueError("authorized compatibility removal_condition is required")
-    if not isinstance(value["canonical_implementation"], str) or not isinstance(value["legacy_behavior"], str):
+    if not isinstance(value["canonical_implementation"], str) or not value["canonical_implementation"].strip() or not isinstance(value["legacy_behavior"], str) or not value["legacy_behavior"].strip():
         raise ValueError("compatibility descriptions must be strings")
     return value
 
@@ -133,6 +133,8 @@ def validate_manifest(value: dict[str, Any], *, pack_root: Path | None = None) -
         raise ValueError("workflow identity is invalid")
     if not isinstance(workflow["version"], str) or not SEMVER_RE.fullmatch(workflow["version"]):
         raise ValueError("workflow version is invalid")
+    if workflow["version"] != value["baseline_release"]:
+        raise ValueError("workflow.version must equal baseline_release")
     validate_sha(workflow["commit"], "workflow.commit")
     target = _exact(value["target"], {"repository", "accepted_origin_urls", "branch", "base_revision", "remote", "remote_ref"}, "target")
     if not isinstance(target["repository"], str) or not target["repository"].strip() or not isinstance(target["accepted_origin_urls"], list) or not target["accepted_origin_urls"]:
@@ -158,19 +160,26 @@ def validate_manifest(value: dict[str, Any], *, pack_root: Path | None = None) -
     if not isinstance(requirements, list) or not requirements:
         raise ValueError("requirements must be non-empty")
     req_ids: list[str] = []
+    acceptance_ids: list[str] = []
     for item in requirements:
-        item = _exact(item, {"id", "summary", "acceptance"}, "requirement")
+        item = _exact(item, {"id", "summary", "acceptance", "acceptance_ids"}, "requirement")
         if not isinstance(item["id"], str) or not re.fullmatch(r"REQ-[A-Za-z0-9][A-Za-z0-9-]*", item["id"]):
             raise ValueError("requirement ID is invalid")
         if not isinstance(item["summary"], str) or not item["summary"].strip() or not isinstance(item["acceptance"], list) or not item["acceptance"] or any(not isinstance(x, str) or not x.strip() for x in item["acceptance"]):
             raise ValueError("requirement is invalid")
+        ids = item["acceptance_ids"]
+        if ids != [f"AC{i}" for i in range(len(acceptance_ids) + 1, len(acceptance_ids) + len(item["acceptance"]) + 1)]:
+            raise ValueError("acceptance IDs must be the complete positional AC1..ACn sequence")
+        if any(not isinstance(x, str) for x in ids):
+            raise ValueError("acceptance IDs are invalid")
+        acceptance_ids.extend(ids)
         req_ids.append(item["id"])
     if len(req_ids) != len(set(req_ids)):
         raise ValueError("duplicate requirement ID")
     gate_ids: list[str] = []
-    for gate in value["gates"]:
+    for index, gate in enumerate(value["gates"]):
         gate = _exact(gate, {"id", "name", "kind", "argv", "env", "timeout_seconds", "max_output_bytes"}, "gate")
-        if not isinstance(gate["id"], str) or not gate["id"] or gate["id"] in gate_ids:
+        if gate["id"] != f"G{index + 1}" or gate["id"] in gate_ids:
             raise ValueError("gate ID is invalid or duplicate")
         if gate["kind"] != "command" or not isinstance(gate["argv"], list) or not gate["argv"] or any(not isinstance(x, str) or not x for x in gate["argv"]):
             raise ValueError("gate command is invalid")
@@ -186,6 +195,8 @@ def validate_manifest(value: dict[str, Any], *, pack_root: Path | None = None) -
     validate_compatibility(value["compatibility"])
     metadata = _exact(value["metadata"], {"planner_commit", "gpt_static_checks_performed", "gpt_runtime_checks_not_performed"}, "metadata")
     validate_sha(metadata["planner_commit"], "metadata.planner_commit")
+    if metadata["planner_commit"] != workflow["commit"]:
+        raise ValueError("metadata.planner_commit must equal workflow.commit")
     for key in ("gpt_static_checks_performed", "gpt_runtime_checks_not_performed"):
         if not isinstance(metadata[key], list) or any(not isinstance(x, str) or not x.strip() for x in metadata[key]):
             raise ValueError(f"metadata.{key} is invalid")

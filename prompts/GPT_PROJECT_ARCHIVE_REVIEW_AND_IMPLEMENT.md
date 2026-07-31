@@ -167,13 +167,17 @@ reviewer MUST NOT later turn an unapproved stronger contract into a blocker.
 
 Own the approved architecture and behavior, write complete implementation,
 fixtures, regression tests, and documentation, then prepare a canonical
-Executable Patch Pack using `GPT_REVIEW_PLANNER.md`. Use exact file scope,
-schema-v2 manifest, stable requirements and acceptance criteria, pending
-`evidence.json`, pinned scope/evidence tools, local-agent prompt, static results,
-and archive SHA-256. Leave no ordinary TODOs, pseudocode, placeholders, or
-missing routine tests for the local agent. After agent execution, review the
-result in delta mode and issue `CORRECTION_REQUIRED`, `OWNER_DECISION_REQUIRED`,
-or `MERGE_READY` according to the pinned closure protocol.
+GPT Patch Pack v2 using `GPT_REVIEW_PLANNER.md`. Use exact file scope, the
+schema-v2 manifest, stable requirements and positional acceptance IDs, pinned
+tools, local-agent prompt, static results, and archive SHA-256. The explicit
+execution mode is authoritative: a `gpt_tunnel_managed` pack requires only
+`completion.json` and gateway finalization; a `repository_evidence` pack uses
+the separate pending/evidence JSON workflow. Do not put repository-evidence
+instructions in the tunnel branch. Leave no ordinary TODOs, pseudocode,
+placeholders, or missing routine tests for the local agent. After agent
+execution, review the result in delta mode and issue `CORRECTION_REQUIRED`,
+`OWNER_DECISION_REQUIRED`, or `MERGE_READY` according to the pinned closure
+protocol.
 
 ## GPT execution boundary
 

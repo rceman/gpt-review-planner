@@ -30,7 +30,6 @@ class RepositoryTest(unittest.TestCase):
             "docs/FAST_RUSTC_BOOTSTRAP.md",
             "docs/CHATGPT_RUST_SANDBOX_BOOTSTRAP.md",
             "scripts/benchmark-offline-rust.py",
-            "scripts/gpt-patch-pack-runner-v1.py",
             "scripts/gpt-patch-pack-runner-v2.py",
             "scripts/build-gpt-patch-pack-v2.py",
             "scripts/validate-patch-pack-v2.py",
@@ -41,9 +40,7 @@ class RepositoryTest(unittest.TestCase):
             "templates/gpt-patch-pack-v2/AGENT_TASK.md",
             "scripts/verify-agent-evidence.py",
             "benchmarks/chatgpt-sandbox-rust-1.97.1.json",
-            "schemas/patch-manifest.schema.json",
-            "templates/gpt-patch-pack-v1/MANIFEST.example.json",
-            "templates/gpt-patch-pack-v1/AGENT_TASK.md",
+            "schemas/gpt-workflow-lock.schema.json",
         ):
             self.assertTrue((ROOT / relative).is_file(), relative)
 
@@ -1313,14 +1310,11 @@ fi
         self.assertNotIn("historical agent evidence", documentation)
 
     def test_new_patch_pack_includes_scope_verifier_and_json_evidence(self) -> None:
-        manifest = json.loads((ROOT / "templates/gpt-patch-pack-v1/MANIFEST.example.json").read_text(encoding="utf-8"))
-        self.assertEqual(manifest["format"], "gpt-patch-pack-v1")
+        manifest = json.loads((ROOT / "templates/gpt-patch-pack-v2/MANIFEST.example.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["format"], "gpt-patch-pack-v2")
+        self.assertEqual(manifest["execution_mode"], "gpt_tunnel_managed")
         self.assertEqual(manifest["payload"], {"patch": "payload/changes.patch", "format": "git-binary-full-index"})
-        self.assertFalse((ROOT / "templates/gpt-patch-pack-v1/apply.py").exists())
-        v2 = json.loads((ROOT / "templates/gpt-patch-pack-v2/MANIFEST.example.json").read_text(encoding="utf-8"))
-        self.assertEqual(v2["format"], "gpt-patch-pack-v2")
-        self.assertEqual(v2["execution_mode"], "gpt_tunnel_managed")
-        self.assertEqual(v2["payload"], {"patch": "payload/changes.patch", "format": "git-binary-full-index"})
+        self.assertEqual([gate["id"] for gate in manifest["gates"]], ["G1"])
 
     def test_observed_benchmark_fixture_is_valid(self) -> None:
         data = json.loads(
@@ -1335,7 +1329,7 @@ fi
         self.assertGreater(data["median"]["warm_cache_compile_test_seconds"], 0)
 
     def test_template_manifest_is_valid_json(self) -> None:
-        path = ROOT / "templates/gpt-patch-pack-v1/MANIFEST.example.json"
+        path = ROOT / "templates/gpt-patch-pack-v2/MANIFEST.example.json"
         data = json.loads(path.read_text(encoding="utf-8"))
         self.assertEqual(data["workflow"]["document"], "GPT_REVIEW_PLANNER.md")
 
@@ -1350,7 +1344,6 @@ fi
             "docs/CHATGPT_RUST_SANDBOX_BOOTSTRAP.md",
             "prompts/AGENT_APPLY_PATCH_PACK.md",
             "prompts/GPT_CREATE_PATCH_PACK.md",
-            "templates/gpt-patch-pack-v1/AGENT_TASK.md",
             "templates/project/AGENTS.managed-block.md",
             "examples/rust-domain-feature/README.md",
             "examples/rust-domain-feature/README.md",
@@ -1413,21 +1406,21 @@ fi
             self.assertIn(section, workflow)
 
     def test_validation_report_and_manifest_separate_gpt_and_agent_evidence(self) -> None:
-        report = (ROOT / "templates/gpt-patch-pack-v1/README.md").read_text(
+        report = (ROOT / "templates/gpt-patch-pack-v2/README.md").read_text(
             encoding="utf-8"
         )
-        self.assertIn("build-gpt-patch-pack-v1.py", report)
+        self.assertIn("build-gpt-patch-pack-v2.py", report)
 
         manifest = json.loads(
-            (ROOT / "templates/gpt-patch-pack-v1/MANIFEST.example.json").read_text(
+            (ROOT / "templates/gpt-patch-pack-v2/MANIFEST.example.json").read_text(
                 encoding="utf-8"
             )
         )
         for field in ("payload", "compatibility", "requirements", "gates"):
             self.assertIn(field, manifest)
 
-        self.assertEqual(manifest["format"], "gpt-patch-pack-v1")
-        self.assertFalse((ROOT / "templates/gpt-patch-pack-v1/apply.py").exists())
+        self.assertEqual(manifest["format"], "gpt-patch-pack-v2")
+        self.assertFalse((ROOT / "templates/gpt-patch-pack-v2/payload/apply.py").exists())
 
 
 if __name__ == "__main__":

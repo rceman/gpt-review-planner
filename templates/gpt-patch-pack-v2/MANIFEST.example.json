@@ -27,8 +27,8 @@
   "files_modified": [],
   "files_deleted": [],
   "target_tree": "0123456789abcdef0123456789abcdef01234567",
-  "requirements": [{"id": "REQ-001", "summary": "Exact target tree", "acceptance": ["The target tree matches."]}],
-  "gates": [{"id": "GATE-001", "name": "Compile", "kind": "command", "argv": ["python3", "-m", "compileall", "-q", "scripts"], "env": {}, "timeout_seconds": 60, "max_output_bytes": 1048576}],
+  "requirements": [{"id": "REQ-001", "summary": "Exact target tree", "acceptance": ["The target tree matches."], "acceptance_ids": ["AC1"]}],
+  "gates": [{"id": "G1", "name": "Compile", "kind": "command", "argv": ["python3", "-m", "compileall", "-q", "scripts"], "env": {}, "timeout_seconds": 60, "max_output_bytes": 1048576}],
   "compatibility": {"scope": "none", "authorized": false, "canonical_implementation": "GPT Patch Pack v2", "legacy_behavior": "unsupported and out of scope", "authorization_source": null, "supported_legacy_versions": [], "direction": "none", "removal_condition": null},
   "metadata": {"planner_commit": "0123456789abcdef0123456789abcdef01234567", "gpt_static_checks_performed": ["Static review completed."], "gpt_runtime_checks_not_performed": ["Runtime gates are local-agent-owned."]}
 }

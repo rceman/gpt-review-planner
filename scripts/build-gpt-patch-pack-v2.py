@@ -125,7 +125,18 @@ def main(argv: list[str] | None = None) -> int:
         validate_compatibility(compatibility)
     else:
         compatibility = dict(DEFAULT_COMPATIBILITY)
-    requirements = load_json(args.requirements)["requirements"]
+    raw_requirements = load_json(args.requirements)["requirements"]
+    requirements = []
+    next_acceptance = 1
+    for item in raw_requirements:
+        if not isinstance(item, dict) or set(item) != {"id", "summary", "acceptance"}:
+            raise BuildError("requirements input must contain only id, summary, and acceptance")
+        acceptance = item["acceptance"]
+        if not isinstance(acceptance, list) or not acceptance:
+            raise BuildError("requirement acceptance must be non-empty")
+        ids = [f"AC{i}" for i in range(next_acceptance, next_acceptance + len(acceptance))]
+        next_acceptance += len(acceptance)
+        requirements.append({"id": item["id"], "summary": item["summary"], "acceptance": acceptance, "acceptance_ids": ids})
     gates = load_json(args.gates)["gates"]
     epoch = int(os.environ.get("SOURCE_DATE_EPOCH", "0"))
     now = datetime.fromtimestamp(epoch, timezone.utc)

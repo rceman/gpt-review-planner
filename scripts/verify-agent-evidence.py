@@ -84,15 +84,11 @@ def validate(repo: Path,manifest: dict,evidence: dict,implementation: str) -> No
     unknown = set(evidence) - allowed_evidence
     if unknown:
         raise EvidenceError(f"unknown top-level fields: {sorted(unknown)}")
-    is_v2 = manifest.get("format") == "gpt-patch-pack-v2"
-    if manifest.get("format") not in {"gpt-patch-pack-v1", "gpt-patch-pack-v2"}:
-        raise EvidenceError("manifest is not a supported GPT Patch Pack format")
-    # Canonical v1 packs carry the complete manifest contract.  The small
-    # evidence-only fixtures used by legacy verifier tests intentionally omit
-    # pack transport fields and are validated by the evidence contract below.
+    if manifest.get("format") != "gpt-patch-pack-v2":
+        raise EvidenceError("manifest must be GPT Patch Pack v2")
     if "payload" in manifest:
         try:
-            validate_shared_manifest(manifest, allow_historical=True)
+            validate_shared_manifest(manifest)
         except ValueError as exc:
             raise EvidenceError(f"shared manifest validation failed: {exc}") from exc
         actual_tree = git(repo, "rev-parse", f"{implementation}^{{tree}}")
@@ -114,7 +110,7 @@ def validate(repo: Path,manifest: dict,evidence: dict,implementation: str) -> No
                 raise EvidenceError("TASK_GATE_CONTRACT_MISMATCH: evidence contract hash mismatch")
         except ValueError as exc:
             raise EvidenceError(f"TASK_GATE_CONTRACT_MISMATCH: invalid evidence contract: {exc}") from exc
-        if not is_v2 and manifest.get("gates") != manifest_gates(contract_value):
+        if manifest.get("gates") != manifest_gates(contract_value):
             raise EvidenceError(
                 "TASK_GATE_CONTRACT_MISMATCH: manifest gates do not match task_required_gates"
             )
@@ -159,8 +155,6 @@ def validate(repo: Path,manifest: dict,evidence: dict,implementation: str) -> No
     gate_kinds = {item["id"]: item.get("kind") for item in manifest["gates"]}
     gate_heads = {item["id"]: item.get("head") for item in manifest["gates"]}
     for gate in evidence["gates"]:
-        if not is_v2 and gate_heads.get(gate.get("id")) == "evidence":
-            raise EvidenceError("evidence-head CI is external metadata")
         if gate.get("status")!="pass":
             raise EvidenceError(f"gate did not pass: {gate.get('id')}")
         if gate_kinds.get(gate.get("id")) == "command" and gate.get("exit") != 0:
@@ -205,7 +199,7 @@ def main() -> int:
             raise EvidenceError("committed manifest is not byte-identical")
         evidence=json.loads(git_file(repo,evidence_commit,f"{evidence_dir}/evidence.json").decode())
         validate(repo,manifest,evidence,args.implementation_commit)
-    print(f"PASS: {args.mode} GPT Patch Pack v1 evidence")
+    print(f"PASS: {args.mode} GPT Patch Pack v2 evidence")
     return 0
 
 if __name__=="__main__":

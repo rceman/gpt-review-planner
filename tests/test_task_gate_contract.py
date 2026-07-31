@@ -25,12 +25,12 @@ ROOT = Path(__file__).resolve().parents[1]
 class TaskGateContractTests(unittest.TestCase):
     def contract(self):
         commands = [
-            ("focused", "Focused task-gate contract tests", ["python3", "-m", "unittest", "tests.test_task_gate_contract", "-v"], "unittest", "focused_count"),
-            ("unit", "Repository unit tests", ["python3", "-m", "unittest", "discover", "-s", "tests", "-v"], "unittest", "unit_count"),
-            ("pytest", "Pytest suite", ["python3", "-m", "pytest", "-q"], "pytest", "pytest_count"),
-            ("compile", "Python compilation", ["python3", "-m", "compileall", "-q", "scripts", "tests", "examples"], "exit", None),
-            ("release", "Release consistency", ["python3", "scripts/release.py", "check"], "exit", None),
-            ("diff", "Diff check", ["git", "diff", "--check"], "exit", None),
+            ("G1", "Focused task-gate contract tests", ["python3", "-m", "unittest", "tests.test_task_gate_contract", "-v"], "unittest", "focused_count"),
+            ("G2", "Repository unit tests", ["python3", "-m", "unittest", "discover", "-s", "tests", "-v"], "unittest", "unit_count"),
+            ("G3", "Pytest suite", ["python3", "-m", "pytest", "-q"], "pytest", "pytest_count"),
+            ("G4", "Python compilation", ["python3", "-m", "compileall", "-q", "scripts", "tests", "examples"], "exit", None),
+            ("G5", "Release consistency", ["python3", "scripts/release.py", "check"], "exit", None),
+            ("G6", "Diff check", ["git", "diff", "--check"], "exit", None),
         ]
         return {
             "schema_version": 1,
@@ -59,7 +59,7 @@ class TaskGateContractTests(unittest.TestCase):
         contract = self.contract()
         validate_contract(contract)
         self.assertEqual(contract["required_gates"][0]["command"], "python3 -m unittest tests.test_task_gate_contract -v")
-        self.assertEqual([gate["id"] for gate in contract["required_gates"]], ["focused", "unit", "pytest", "compile", "release", "diff"])
+        self.assertEqual([gate["id"] for gate in contract["required_gates"]], ["G1", "G2", "G3", "G4", "G5", "G6"])
 
     def assert_plan_mismatch(self, mutate):
         contract = self.contract()

@@ -119,8 +119,10 @@ def validate_contract(value: dict, authoritative_task_required_gates=None) -> di
         if not isinstance(gate, dict) or set(gate) != GATE_FIELDS:
             raise TaskGateContractError(f"gate {index} fields invalid")
         gate_id = gate["id"]
-        if not isinstance(gate_id, str) or not ID_RE.fullmatch(gate_id) or gate_id in ids:
-            raise TaskGateContractError(f"gate {index} id invalid or duplicated")
+        if not isinstance(gate_id, str) or gate_id != positional_gate_id(index) or gate_id in ids:
+            raise TaskGateContractError(
+                f"TASK_GATE_CONTRACT_MISMATCH: gate {index} id must be {positional_gate_id(index)} and unique"
+            )
         ids.add(gate_id)
         if not isinstance(gate["name"], str) or not gate["name"].strip():
             raise TaskGateContractError(f"gate {gate_id} name invalid")

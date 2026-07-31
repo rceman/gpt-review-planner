@@ -19,12 +19,12 @@ class GatewayTerminalProtocolTests(unittest.TestCase):
     def test_completion_is_the_only_tunnel_contract(self):
         validator = load()
         value = {
-            "schema_version": 1, "run_id": "run-1", "task_sha256": "a" * 64,
+            "schema_version": 1, "run_id": "01234567-89ab-cdef-0123-456789abcdef", "task_sha256": "a" * 64,
             "status": "succeeded", "summary": "done",
             "gate_results": [{"id": "G1", "exit_code": 0}],
             "acceptance_coverage": ["AC1"], "deviations": [], "remaining_risks": [],
         }
-        self.assertEqual(validator.validate_value(value, expected_run_id="run-1", expected_task_sha256="a" * 64, gate_count=1, acceptance_count=1), [])
+        self.assertEqual(validator.validate_value(value, expected_run_id="01234567-89ab-cdef-0123-456789abcdef", expected_task_sha256="a" * 64, gate_count=1, acceptance_count=1), [])
 
     def test_old_gateway_result_schema_is_not_supported(self):
         self.assertFalse((ROOT / "schemas/gateway-agent-result-v2.schema.json").exists())

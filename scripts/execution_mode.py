@@ -23,6 +23,8 @@ def project_execution_mode(repo: Path) -> str:
         raise ValueError(f"invalid .gpt-workflow.lock: {exc}") from exc
     if not isinstance(data, dict) or set(data) != {"schema_version", "repository", "version", "commit", "document", "execution_mode", "installed_at"}:
         raise ValueError(".gpt-workflow.lock must declare exactly one execution_mode")
+    if data.get("schema_version") != 2:
+        raise ValueError(".gpt-workflow.lock schema_version must be 2")
     mode = data.get("execution_mode")
     if mode not in {"gpt_tunnel_managed", "repository_evidence"}:
         raise ValueError("execution_mode must be explicit")

@@ -68,14 +68,13 @@ def main() -> None:
     if subprocess.check_output(["git","-C",str(repo),"rev-parse","HEAD"],text=True).strip()!=implementation:
         fail("HEAD mismatch")
     try:
-        validate_manifest(manifest, allow_historical=True)
+        validate_manifest(manifest)
         validate_compatibility(manifest["compatibility"])
         validate_contract(contract)
     except ValueError as exc:
         fail(f"manifest validation failed: {exc}")
-    is_v2 = manifest.get("format") == "gpt-patch-pack-v2"
     expected_manifest_gates=manifest_gates(contract)
-    if not is_v2 and manifest.get("gates") != expected_manifest_gates:
+    if manifest.get("gates") != expected_manifest_gates:
         fail("TASK_GATE_CONTRACT_MISMATCH: manifest gates diverge from contract")
     expected_identity=contract_identity(contract)
     try:
@@ -93,20 +92,13 @@ def main() -> None:
         fail("gate order mismatch")
     captured={group.get("id"):group for group in gates}
     captured.update({step.get("id"):step for group in gates for step in group.get("steps",[])})
-    contract_by_id={item["id"]:item for item in contract["required_gates"]}
     for gate in manifest["gates"]:
         step=captured.get(gate["id"])
         if step is None or step.get("status")!="pass" or step.get("exit")!=0:
             fail(f"gate was not captured successfully: {gate['id']}")
-        contract_gate=contract_by_id[gate["id"]]
-        if is_v2:
-            expected_step={key: gate[key] for key in ("argv","env","timeout_seconds","max_output_bytes")}
-            expected_step["env"]=dict(expected_step["env"])
-            expected_step["argv"]=list(expected_step["argv"])
-        else:
-            expected_step={key:contract_gate[key] for key in ("argv","env","cwd","parser","metric","timeout_seconds","max_output_bytes")}
-            expected_step["env"]=dict(expected_step["env"])
-            expected_step["argv"]=list(expected_step["argv"])
+        expected_step={key: gate[key] for key in ("argv","env","timeout_seconds","max_output_bytes")}
+        expected_step["env"]=dict(expected_step["env"])
+        expected_step["argv"]=list(expected_step["argv"])
         for key, expected in expected_step.items():
             if step.get(key)!=expected: fail(f"TASK_GATE_CONTRACT_MISMATCH: captured gate differs: {gate['id']}/{key}")
     declaration=manifest.get("compatibility",{})

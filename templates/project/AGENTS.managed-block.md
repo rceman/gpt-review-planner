@@ -26,7 +26,7 @@
 > - Before any executable gateway task is dispatched, GPT commits its durable plan record to the relevant gateway-hub project branch.
 > - A tunnel-managed task is terminal only after strict `completion.json` is validated through the canonical completion validator; interactive session text is not completion.
 > - The local agent must finalize success, revision blockers, and failures through the gateway and must not ask the owner to continue the task interactively.
-> - GPT authors the principal patch and tests; the local agent applies them, executes runtime gates, produces evidence, and makes only narrow verified repairs.
+> - GPT authors the principal patch and tests; the local agent applies them and executes runtime gates. In `gpt_tunnel_managed` mode it writes only `completion.json` and finalizes through the gateway. In `repository_evidence` mode it produces the one canonical repository evidence pair and evidence-only commit.
 > - GPT reviews agent-reported runtime evidence without rerunning tests.
 >
 > Engineering baseline: when `engineering-profile.json` is present, validate
@@ -39,7 +39,7 @@
 > to tools/tests; a valid legacy Python exception does not demand rewrite.
 <!-- END GPT-REVIEW-PLANNER -->
 
-- For executable patch packs, create a direct two-file JSON evidence commit after the implementation commit and validate it with the pinned `verify-agent-evidence.py`; never embed the evidence commit SHA inside its own evidence.
+- For `repository_evidence` executable patch packs, create a direct two-file JSON evidence commit after the implementation commit and validate it with the pinned `verify-agent-evidence.py`; never embed the evidence commit SHA inside its own evidence. For `gpt_tunnel_managed`, do not create repository evidence or an evidence-only commit.
 - Use the repository release script for version changes, release commits, and tags. Do not manually synchronize version-bearing files.
 - Keep committed evidence limited to pre-evidence facts and implementation CI; report final evidence-head and PR-head CI externally after pushing evidence, without amending the evidence commit.
 

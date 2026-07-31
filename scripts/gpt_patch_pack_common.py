@@ -16,10 +16,12 @@ from gpt_patch_pack_v2_common import (  # re-export current contract primitives
 from gpt_patch_pack_v2_common import validate_manifest as validate_v2_manifest
 
 
-def validate_manifest(value: dict[str, Any], *, pack_root: Path | None = None, allow_historical: bool = False) -> dict[str, Any]:
-    if value.get("format") == "gpt-patch-pack-v2":
-        return validate_v2_manifest(value, pack_root=pack_root)
-    if allow_historical and value.get("format") == "gpt-patch-pack-v1":
-        from gpt_patch_pack_v1_common import validate_manifest as validate_v1_manifest
-        return validate_v1_manifest(value, pack_root=pack_root)
-    raise ValueError("only GPT Patch Pack v2 is supported for new tasks")
+def validate_manifest(value: dict[str, Any], *, pack_root: Path | None = None) -> dict[str, Any]:
+    """Validate the sole active GPT Patch Pack contract.
+
+    Historical v1 records remain readable as Git history, but no active tool
+    accepts them as input or exposes a compatibility switch.
+    """
+    if value.get("format") != "gpt-patch-pack-v2":
+        raise ValueError("only GPT Patch Pack v2 is supported")
+    return validate_v2_manifest(value, pack_root=pack_root)

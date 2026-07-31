@@ -98,7 +98,7 @@ class EngineeringBaselineTests(unittest.TestCase):
     def _project(self, root: Path, declaration: object | None = None) -> Path:
         project = root / f"project-{len(list(root.iterdir()))}"
         project.mkdir()
-        lock = {"schema_version": 1, "repository": "https://github.com/rceman/gpt-review-planner", "version": "v1.1.1", "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), "document": "GPT_REVIEW_PLANNER.md", "execution_mode": "repository_evidence", "installed_at": "2026-07-25T00:00:00Z"}
+        lock = {"schema_version": 2, "repository": "https://github.com/rceman/gpt-review-planner", "version": "v1.1.1", "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), "document": "GPT_REVIEW_PLANNER.md", "execution_mode": "repository_evidence", "installed_at": "2026-07-25T00:00:00Z"}
         (project / ".gpt-workflow.lock").write_text(json.dumps(lock))
         if declaration is not None:
             (project / "engineering-profile.json").write_text(json.dumps(declaration))

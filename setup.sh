@@ -268,7 +268,7 @@ mv "$tmp_agents" "$agents_path"
 generated_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 cat > "$lock_file" <<EOF
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "repository": "${repository}",
   "version": "${version}",
   "commit": "${commit}",

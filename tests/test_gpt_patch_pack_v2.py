@@ -71,8 +71,8 @@ class PatchPackV2Tests(unittest.TestCase):
             "payload": {"patch": "payload/changes.patch", "format": "git-binary-full-index"},
             "files_created": [], "files_modified": [], "files_deleted": [],
             "target_tree": tree,
-            "requirements": [{"id": "REQ-001", "summary": "Exact tree", "acceptance": ["The tree is exact."]}],
-            "gates": [{"id": "GATE-001", "name": "Compile", "kind": "command", "argv": ["python3", "-m", "compileall", "-q", "scripts"], "env": {}, "timeout_seconds": 60, "max_output_bytes": 1048576}],
+            "requirements": [{"id": "REQ-001", "summary": "Exact tree", "acceptance": ["The tree is exact."], "acceptance_ids": ["AC1"]}],
+            "gates": [{"id": "G1", "name": "Compile", "kind": "command", "argv": ["python3", "-m", "compileall", "-q", "scripts"], "env": {}, "timeout_seconds": 60, "max_output_bytes": 1048576}],
             "compatibility": dict(common.DEFAULT_COMPATIBILITY),
             "metadata": {"planner_commit": "0" * 40, "gpt_static_checks_performed": ["static"], "gpt_runtime_checks_not_performed": ["runtime is agent-owned"]},
         }

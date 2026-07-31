@@ -105,7 +105,7 @@ def validate(declaration_path: Path, project_root: Path, planner_root: Path, all
         raise ProfileError("exceptions must be an array")
     lock = load(lock_file)
     required_lock = {"schema_version", "repository", "version", "commit", "document", "execution_mode", "installed_at"}
-    if not isinstance(lock, dict) or set(lock) != required_lock or lock.get("schema_version") != 1:
+    if not isinstance(lock, dict) or set(lock) != required_lock or lock.get("schema_version") != 2:
         raise ProfileError("workflow lock schema or fields invalid")
     for key in ("repository", "version", "document"):
         strict_text(lock[key], f"lock.{key}")
