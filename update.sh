@@ -9,6 +9,7 @@ Usage:
 Options:
   --project PATH       Target project repository. Required.
   --version REF        New workflow tag or ref. Required.
+  --execution-mode MODE  gpt_tunnel_managed or repository_evidence. Required.
   --repository URL     Override repository from existing lock file.
   --commit SHA         Exact commit. Otherwise resolved with git ls-remote.
   --agents-file PATH   AGENTS.md path relative to project. Default: AGENTS.md
@@ -25,6 +26,7 @@ project=""
 version=""
 repository=""
 commit=""
+execution_mode=""
 agents_file="AGENTS.md"
 
 while [[ $# -gt 0 ]]; do
@@ -49,6 +51,11 @@ while [[ $# -gt 0 ]]; do
       commit="$2"
       shift 2
       ;;
+    --execution-mode)
+      [[ $# -ge 2 ]] || die "--execution-mode requires a value"
+      execution_mode="$2"
+      shift 2
+      ;;
     --agents-file)
       [[ $# -ge 2 ]] || die "--agents-file requires a value"
       agents_file="$2"
@@ -66,6 +73,8 @@ done
 
 [[ -n "$project" ]] || die "--project is required"
 [[ -n "$version" ]] || die "--version is required"
+[[ "$execution_mode" == "gpt_tunnel_managed" || "$execution_mode" == "repository_evidence" ]] ||
+  die "--execution-mode must be gpt_tunnel_managed or repository_evidence"
 [[ -d "$project" ]] || die "project directory does not exist: $project"
 
 project="$(cd "$project" && pwd)"
@@ -86,6 +95,7 @@ args=(
   --project "$project"
   --version "$version"
   --repository "$repository"
+  --execution-mode "$execution_mode"
   --agents-file "$agents_file"
   --force
 )

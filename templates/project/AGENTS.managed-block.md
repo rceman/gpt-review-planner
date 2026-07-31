@@ -1,6 +1,9 @@
 <!-- BEGIN GPT-REVIEW-PLANNER -->
 [Procedure index](../docs/PROCEDURE_INDEX.md) is the primary discovery entry point. After a terminal status, consult it and emit the next-transition handoff.
 > [!IMPORTANT]
+> Declare exactly one execution mode in `.gpt-workflow.lock`: `gpt_tunnel_managed` or `repository_evidence`.
+> Never infer, default, negotiate, or combine modes. Tunnel mode has one compact
+> `completion.json` authority and forbids repository evidence and evidence-only commits.
 > Before substantial planning, implementation, review, or correction work,
 > load the external workflow pinned by [`.gpt-workflow.lock`](./.gpt-workflow.lock).
 >
@@ -21,7 +24,7 @@
 > - Read the pinned `docs/AGENT_COMMUNICATION_LANGUAGE.md` contract and do not duplicate instructions bilingually.
 > - The local agent must not redesign approved behavior or weaken tests and acceptance criteria.
 > - Before any executable gateway task is dispatched, GPT commits its durable plan record to the relevant gateway-hub project branch.
-> - A gateway-managed task is terminal only after strict `agent-result.json` is validated through the generated `complete-task` command; interactive session text is not completion.
+> - A tunnel-managed task is terminal only after strict `completion.json` is validated through the canonical completion validator; interactive session text is not completion.
 > - The local agent must finalize success, revision blockers, and failures through the gateway and must not ask the owner to continue the task interactively.
 > - GPT authors the principal patch and tests; the local agent applies them, executes runtime gates, produces evidence, and makes only narrow verified repairs.
 > - GPT reviews agent-reported runtime evidence without rerunning tests.

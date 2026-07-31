@@ -1,0 +1,34 @@
+{
+  "schema_version": 2,
+  "format": "gpt-patch-pack-v2",
+  "patch_id": "patch-20260731-000000-example",
+  "title": "Example GPT Patch Pack v2",
+  "description": "Canonical data-only example",
+  "created_at": "2026-07-31T00:00:00Z",
+  "runner_version": "2.0.0",
+  "baseline_release": "v2.0.0",
+  "execution_mode": "gpt_tunnel_managed",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v2.0.0",
+    "commit": "0123456789abcdef0123456789abcdef01234567",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "owner/repo",
+    "accepted_origin_urls": ["git@github.com:owner/repo.git"],
+    "branch": "feature/example",
+    "base_revision": "0123456789abcdef0123456789abcdef01234567",
+    "remote": "origin",
+    "remote_ref": "refs/remotes/origin/feature/example"
+  },
+  "payload": {"patch": "payload/changes.patch", "format": "git-binary-full-index"},
+  "files_created": [],
+  "files_modified": [],
+  "files_deleted": [],
+  "target_tree": "0123456789abcdef0123456789abcdef01234567",
+  "requirements": [{"id": "REQ-001", "summary": "Exact target tree", "acceptance": ["The target tree matches."]}],
+  "gates": [{"id": "GATE-001", "name": "Compile", "kind": "command", "argv": ["python3", "-m", "compileall", "-q", "scripts"], "env": {}, "timeout_seconds": 60, "max_output_bytes": 1048576}],
+  "compatibility": {"scope": "none", "authorized": false, "canonical_implementation": "GPT Patch Pack v2", "legacy_behavior": "unsupported and out of scope", "authorization_source": null, "supported_legacy_versions": [], "direction": "none", "removal_condition": null},
+  "metadata": {"planner_commit": "0123456789abcdef0123456789abcdef01234567", "gpt_static_checks_performed": ["Static review completed."], "gpt_runtime_checks_not_performed": ["Runtime gates are local-agent-owned."]}
+}

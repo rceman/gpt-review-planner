@@ -186,3 +186,10 @@ or claim runtime validation. Runtime gates belong to the local coding agent.
 
 This reusable prompt intentionally contains no concrete version, workflow tag,
 40-character SHA, CI run/job ID, machine path, or framework assumption.
+# Workflow 2.0.0 execution-mode handoff
+
+The produced project integration must require an explicit
+`gpt_tunnel_managed` or `repository_evidence` mode. Do not infer mode from
+gateway availability. Tunnel mode ends with one compact completion and gateway
+finalization; repository mode ends with the one canonical repository evidence
+authority. Do not create a dual result or evidence path.

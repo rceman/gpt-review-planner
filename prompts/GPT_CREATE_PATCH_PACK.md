@@ -1,6 +1,6 @@
-# GPT: Create GPT Patch Pack v1
+# GPT: Create GPT Patch Pack v2
 
-Read `docs/GPT_PATCH_PACK_V1.md`, `docs/AGENT_REPORTING.md`,
+Read `docs/PATCH_PACK_FORMAT.md`, `docs/AGENT_REPORTING.md`,
 `docs/PATCH_PACK_HANDOFF.md`, and
 `docs/COMPATIBILITY_AUTHORIZATION.md`.
 
@@ -27,6 +27,15 @@ Remove unauthorized shims, fallbacks, old schemas, adapters, migration code,
 aliases, negotiation, dual paths, and speculative extension points before
 building.
 
-Create only GPT Patch Pack v1 with
-`scripts/build-gpt-patch-pack-v1.py`. Do not manually assemble archives, ship
+Create only GPT Patch Pack v2 with
+`scripts/build-gpt-patch-pack-v2.py`. Do not manually assemble archives, ship
 overlays or anchor transforms, create reader scripts, or retain legacy formats.
+# Workflow 2.0.0 generated handoff rules
+
+Generated packs must declare one explicit execution mode. Tunnel handoffs must
+require only implementation commits, the compact canonical `completion.json`,
+and gateway finalization. They must forbid `.gpt-review/evidence`, repository
+evidence JSON, `AGENT_RESULT.md`, evidence-only commits, raw command duplication,
+and full acceptance-text duplication. Repository-evidence handoffs use the
+existing evidence workflow as the single authority. Do not expose v1 as a new
+task creation path.

@@ -144,7 +144,7 @@ python scripts/validate-project-integration.py /path/to/project
 
 ## Create a patch pack
 
-GPT Patch Pack v1 is the only executable format. Read the [patch-pack handoff contract](docs/PATCH_PACK_HANDOFF.md) and the
+GPT Patch Pack v2 is the only new-task executable format. Read the [patch-pack handoff contract](docs/PATCH_PACK_HANDOFF.md) and the
 [reusable creation prompt](prompts/GPT_CREATE_PATCH_PACK.md) for canonical
 `AGENT_HANDOFF.md`, archive names, semantic JSON validation, delivery modes,
 and final handoff syntax. `AGENT_PROMPT.md` is not a second instruction source;
@@ -160,8 +160,8 @@ format, and YAML is not accepted as a wire artifact; see
 Gateway task continuity and terminal completion are defined by
 [`docs/GATEWAY_TASK_PROTOCOL.md`](docs/GATEWAY_TASK_PROTOCOL.md). GPT commits a
 durable plan record before an executable task bundle. New gateway-managed agents
-write one strict `agent-result.json` and invoke one generated `complete-task`
-command; interactive session text is never the terminal result.
+write one strict `completion.json` and invoke gateway finalization; interactive
+session text is never the terminal result.
 
 ```bash
 bash scripts/new-patch-pack.sh \
@@ -173,6 +173,7 @@ bash scripts/new-patch-pack.sh \
   --remote origin \
   --remote-ref refs/remotes/origin/feature/example \
   --baseline-release vX.Y.Z \
+  --execution-mode gpt_tunnel_managed \
   --slug evidence-checker \
   --title "Committed evidence checker" \
   --description "Adds committed JSON evidence verification." \
@@ -202,7 +203,7 @@ See [`docs/PATCH_PACK_FORMAT.md`](docs/PATCH_PACK_FORMAT.md) and [`docs/AGENT_EV
 Verify or explicitly apply:
 
 ```bash
-python3 scripts/gpt-patch-pack-runner-v1.py \
+python3 scripts/gpt-patch-pack-runner-v2.py \
   --archive /path/to/<patch_id>.tar.gz \
   --archive-sha256 <sha256> \
   --repo /path/to/target \
@@ -233,3 +234,11 @@ bash scripts/bootstrap-rustc.sh
 
 See [`docs/FAST_RUSTC_BOOTSTRAP.md`](docs/FAST_RUSTC_BOOTSTRAP.md).
 Remote CI is a capability-dependent gate, not a universal repository requirement. Repository visibility alone MUST NOT decide whether remote CI is required. When remote CI is unavailable or intentionally disabled, mandatory local runtime gates remain authoritative.
+# Workflow 2 execution modes
+
+Setup requires one explicit mode: `gpt_tunnel_managed` for gateway-owned
+completion, or `repository_evidence` for repository-owned evidence. There is
+no default, autodetection, fallback, alias, or dual authority. Tunnel mode
+uses only the compact canonical `completion.json`; repository evidence and
+evidence-only commits are forbidden there. The v2 data-only patch-pack runner
+never executes archive members.

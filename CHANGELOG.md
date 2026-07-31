@@ -2,8 +2,15 @@
 
 ## Unreleased
 
-- Pending the 1.5.0 immutable task-to-gate contract and fail-closed generated
-  gate-plan/evidence identity checks.
+## 2.0.0 — 2026-07-31
+
+- Replaced dual gateway/repository completion paths with one explicit execution
+  mode and a single authority per task.
+- Added the compact GPT Tunnel completion contract with positional gate and
+  acceptance identities.
+- Added the data-only GPT Patch Pack v2 boundary; archive-controlled code is
+  never executed.
+- This incompatible redesign is prepared but not released or tagged.
 
 ## 1.5.0 — 2026-07-31
 

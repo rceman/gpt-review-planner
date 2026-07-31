@@ -24,3 +24,10 @@ Only pre-evidence facts may be committed as gate results. Implementation CI may
 be recorded. Evidence-head and later PR-head CI are external metadata: wait for
 them after pushing the evidence commit and report their run/job/URL without
 amending `evidence.json`.
+# GPT Patch Pack v2 execution
+
+Apply only a data-only v2 archive. The runner performs the fixed
+`git apply --check --index --binary` and `git apply --index --binary` operations;
+never execute archive-controlled scripts, Python, binaries, hooks, or commands.
+Honor the manifest's explicit `execution_mode`: tunnel mode produces only
+canonical completion, while repository mode uses only repository evidence.

@@ -10,6 +10,7 @@ from task_gate_contract import (  # noqa: E402
     load_json as load_contract_json,
     validate_contract,
 )
+from execution_mode import require_repository_evidence  # noqa: E402
 
 PHASES = ['INITIALIZED','IDENTITY_VERIFIED','IMPLEMENTATION_CI_VERIFIED','WORKTREE_CREATED','TASK_GATE_CONTRACT_VERIFIED','GATES_COMPLETED','EVIDENCE_INPUTS_PREPARED','EVIDENCE_GENERATED','PREPARE_VERIFIED','EVIDENCE_COMMITTED','COMMITTED_VERIFIED','EVIDENCE_PUSHED','EVIDENCE_CI_VERIFIED','REPORT_RENDERED','COMPLETE']
 SHA = __import__('re').compile(r'^[0-9a-f]{40}$')
@@ -74,6 +75,10 @@ def main():
     if a.command=='run':
         task=load_contract_json(Path(a.task)); required={'workflow','manifest_seed','evidence_plan','task_gate_contract'}
         if set(task)!=required: raise SystemExit('invalid task file')
+        try:
+            require_repository_evidence(repo)
+        except ValueError as exc:
+            raise SystemExit(f"ERROR: {exc}")
         (root/'runs').mkdir(parents=True,exist_ok=True)
         inputs=Path(tempfile.mkdtemp(prefix='evidence-inputs-',dir=root/'runs'))
         write_json(inputs/'workflow.json',task['workflow'])
@@ -92,6 +97,10 @@ def main():
         state={'repo':str(repo),'inputs':str(inputs),'run_id':run_id,'implementation_sha':head,'phase':'INITIALIZED','state_file':str(state_dir/'state.json'),'task_gate_contract':str(inputs/'task-gate-contract.json')}
         write_json(state_dir/'state.json',state); write_json(root/'active-evidence-run.json',{'run_id':run_id,'state_file':str(state_dir/'state.json')})
     else:
+        try:
+            require_repository_evidence(repo)
+        except ValueError as exc:
+            raise SystemExit(f"ERROR: {exc}")
         pointer=load(root/'active-evidence-run.json')
         if a.run_id and a.run_id != pointer.get('run_id'): raise SystemExit('run-id does not match active run')
         state=load(Path(pointer['state_file'])); state_dir=Path(state['state_file']).parent; inputs=Path(state['inputs']); workflow=load(inputs/'workflow.json'); validate_workflow(workflow)

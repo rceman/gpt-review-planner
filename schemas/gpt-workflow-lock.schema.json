@@ -10,6 +10,7 @@
     "version",
     "commit",
     "document",
+    "execution_mode",
     "installed_at"
   ],
   "properties": {
@@ -30,6 +31,9 @@
     },
     "document": {
       "const": "GPT_REVIEW_PLANNER.md"
+    },
+    "execution_mode": {
+      "enum": ["gpt_tunnel_managed", "repository_evidence"]
     },
     "installed_at": {
       "type": "string",

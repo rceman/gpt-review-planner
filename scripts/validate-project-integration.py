@@ -12,6 +12,15 @@ BEGIN = "<!-- BEGIN GPT-REVIEW-PLANNER -->"
 END = "<!-- END GPT-REVIEW-PLANNER -->"
 
 
+def _unique_pairs(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate lock key: {key}")
+        result[key] = value
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("project")
@@ -47,8 +56,8 @@ def main() -> int:
         errors.append("missing .gpt-workflow.lock")
     else:
         try:
-            data = json.loads(lock.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as exc:
+            data = json.loads(lock.read_text(encoding="utf-8"), object_pairs_hook=lambda pairs: _unique_pairs(pairs))
+        except (json.JSONDecodeError, ValueError) as exc:
             errors.append(f"invalid lock JSON: {exc}")
         else:
             required = {
@@ -58,16 +67,22 @@ def main() -> int:
                 "commit",
                 "document",
                 "installed_at",
+                "execution_mode",
             }
             missing = sorted(required - data.keys())
             if missing:
                 errors.append(f"lock missing keys: {', '.join(missing)}")
+            unknown = sorted(set(data) - required)
+            if unknown:
+                errors.append(f"lock has unknown keys: {', '.join(unknown)}")
             if data.get("schema_version") != 1:
                 errors.append("schema_version must be 1")
             if data.get("document") != "GPT_REVIEW_PLANNER.md":
                 errors.append("document must be GPT_REVIEW_PLANNER.md")
             if not re.fullmatch(r"[0-9a-fA-F]{40}", str(data.get("commit", ""))):
                 errors.append("commit must be a 40-character Git SHA")
+            if data.get("execution_mode") not in {"gpt_tunnel_managed", "repository_evidence"}:
+                errors.append("execution_mode must be explicitly gpt_tunnel_managed or repository_evidence")
 
     if errors:
         for error in errors:

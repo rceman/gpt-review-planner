@@ -90,7 +90,7 @@ class PostMergeBranchCleanupContractTests(unittest.TestCase):
 
     def test_merge_prompt_and_reports_include_cleanup(self):
         self.assertIn("Canonical invocation", self.handoff)
-        self.assertIn("gpt-patch-pack-runner-v1.py", self.handoff)
+        self.assertIn("gpt-patch-pack-runner-v2.py", self.handoff)
         for text in ("git fetch origin --prune", "git merge-base --is-ancestor", "git push origin --delete", "final inventory", "MERGE_FINALIZED", "MERGE_CLEANUP_BLOCKED"):
             self.assertIn(text, self.runbook)
         self.assertIn("AGENT_FINALIZE_MERGE.md", self.prompt)

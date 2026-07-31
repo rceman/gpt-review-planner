@@ -2,7 +2,7 @@
 
 Start with the [procedure index](docs/PROCEDURE_INDEX.md) before operational detail. After a terminal status, consult it and emit the handoff required by the next transition; `MERGE_READY` requires a merge handoff and is not merge completion.
 
-**Workflow version:** 1.5.0
+**Workflow version:** 2.0.0
 **Status:** Active  
 **Canonical repository:** `https://github.com/rceman/gpt-review-planner`  
 **Default document:** `GPT_REVIEW_PLANNER.md`  
@@ -158,7 +158,7 @@ remain in their original language. Follow
 [`AGENT_COMMUNICATION_LANGUAGE.md`](docs/AGENT_COMMUNICATION_LANGUAGE.md);
 bilingual agent instructions are forbidden.
 
-Every executable implementation pack uses GPT Patch Pack v1 as defined by
+Every new executable implementation pack uses GPT Patch Pack v2 as defined by
 [`docs/GPT_PATCH_PACK_V1.md`](docs/GPT_PATCH_PACK_V1.md).
 `AGENT_TASK.md` is the only instruction inside the archive. Directory packs,
 `AGENT_PROMPT.md`, overlays, transform runners, compatibility readers, format
@@ -181,7 +181,8 @@ This durable record is the cross-chat continuation source and is written before
 the local agent receives executable instructions.
 
 For gateway-managed tasks, the local agent authors one terminal artifact only:
-strict `agent-result.json`. `AGENT_RESPONSE.md` is not part of the new protocol.
+strict `completion.json`. `agent-result.json`, `AGENT_RESPONSE.md`, repository
+evidence JSON, and evidence-only commits are not part of the 2.0.0 tunnel path.
 The gateway appends the authoritative result path and one generated
 `complete-task` command to `AGENT_HANDOFF.md`. Before ending for any reason, the
 agent writes the JSON and runs that command. The command, not interactive
@@ -191,8 +192,8 @@ Every terminal status uses the same path:
 
 ```text
 succeeded | needs_gpt_revision | failed
-→ write agent-result.json
-→ invoke complete-task
+→ write completion.json
+→ invoke gateway finalize
 → gateway validates and atomically publishes the bus result/checkpoint
 ```
 
@@ -1192,7 +1193,7 @@ Evidence-head/final-head CI is external GitHub/PR metadata. The local agent
 waits for and reports that result after pushing evidence, but never amends
 evidence to insert its own CI run or commit SHA.
 
-For version 1.5.0, every required gate is declared once in the immutable task
+For workflow 2.0.0, every required gate is declared once in the immutable task
 gate contract and executed exactly from its generated argv, environment, working
 directory, parser, metric, timeout, and output limit. Agents must not supply a
 second gate list or manually synchronize gate commands, identities, counts, or
@@ -1202,3 +1203,18 @@ summaries.
 
 Repository versions are controlled by `VERSION`, `release-config.json`, and `scripts/release.py`. Concrete current versions are prohibited in README. The local agent prepares synchronized version files, executes quality gates, creates the release commit, waits for CI on that commit, and only then creates and explicitly pushes the immutable tag.
 Remote CI is a capability-dependent gate, not a universal repository requirement. Repository visibility alone MUST NOT decide whether remote CI is required. See `docs/CI_CAPABILITY_POLICY.md` for policy resolution.
+# Workflow 2.0.0 single-authority execution
+
+Every integrated project must declare exactly one explicit execution mode in
+`.gpt-workflow.lock`: `gpt_tunnel_managed` or `repository_evidence`. The mode is
+never inferred, defaulted, negotiated, or combined. Tunnel tasks write one
+compact `completion.json` and use the gateway report as the sole authority;
+they never create repository evidence or evidence-only commits. Repository
+evidence tasks use the existing evidence contract as their sole authority and
+must not write tunnel completion.
+
+The canonical tunnel completion schema is
+`schemas/gpt-tunnel-completion.schema.json`. Gate IDs and acceptance IDs are
+derived positionally as `G1..Gn` and `AC1..ACn`; `task_sha256` is the only
+tunnel task-contract digest. Raw commands and repository facts remain internal
+gate/evidence data and are not copied into completion.

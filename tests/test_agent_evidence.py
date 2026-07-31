@@ -44,6 +44,15 @@ class AgentEvidenceTests(unittest.TestCase):
         git(repo, "config", "user.email", "test@example.com")
         (repo / "file.txt").write_text("base\n", encoding="utf-8")
         (repo / "delete.txt").write_text("legacy\n", encoding="utf-8")
+        (repo / ".gpt-workflow.lock").write_text(json.dumps({
+            "schema_version": 1,
+            "repository": "https://github.com/rceman/gpt-review-planner",
+            "version": "v2.0.0",
+            "commit": "0" * 40,
+            "document": "GPT_REVIEW_PLANNER.md",
+            "execution_mode": "repository_evidence",
+            "installed_at": "2026-07-31T00:00:00Z",
+        }) + "\n", encoding="utf-8")
         git(repo, "add", ".")
         git(repo, "commit", "-qm", "base")
         base = git(repo, "rev-parse", "HEAD")

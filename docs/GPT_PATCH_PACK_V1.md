@@ -1,4 +1,8 @@
-# GPT Patch Pack v1
+# Historical GPT Patch Pack v1
+
+> Historical record only. Workflow 2.0.0 does not expose v1 as a creation,
+> execution, compatibility, or negotiation path. New tasks use the data-only
+> GPT Patch Pack v2 contract.
 
 ## Status
 

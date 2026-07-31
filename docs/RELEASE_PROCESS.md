@@ -168,7 +168,7 @@ bash -n \
 python3 -m compileall -q scripts tests examples
 
 python3 -m unittest discover -s tests -v
-python3 scripts/selftest-gpt-patch-pack-v1.py
+python3 scripts/selftest-gpt-patch-pack-v2.py
 
 The self-test is a release blocker for runner, builder, schema, template, delivery, or format changes.
 

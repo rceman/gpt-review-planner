@@ -98,7 +98,7 @@ class EngineeringBaselineTests(unittest.TestCase):
     def _project(self, root: Path, declaration: object | None = None) -> Path:
         project = root / f"project-{len(list(root.iterdir()))}"
         project.mkdir()
-        lock = {"schema_version": 1, "repository": "https://github.com/rceman/gpt-review-planner", "version": "v1.1.1", "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), "document": "GPT_REVIEW_PLANNER.md", "installed_at": "2026-07-25T00:00:00Z"}
+        lock = {"schema_version": 1, "repository": "https://github.com/rceman/gpt-review-planner", "version": "v1.1.1", "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), "document": "GPT_REVIEW_PLANNER.md", "execution_mode": "repository_evidence", "installed_at": "2026-07-25T00:00:00Z"}
         (project / ".gpt-workflow.lock").write_text(json.dumps(lock))
         if declaration is not None:
             (project / "engineering-profile.json").write_text(json.dumps(declaration))
@@ -256,7 +256,7 @@ class EngineeringBaselineTests(unittest.TestCase):
             for name, version in (("tagged", "v1.1.1"), ("exact", commit)):
                 project = root / name
                 project.mkdir()
-                subprocess.run(["bash", str(ROOT / "setup.sh"), "--project", str(project), "--version", version, "--commit", commit], check=True, capture_output=True, text=True)
+                subprocess.run(["bash", str(ROOT / "setup.sh"), "--project", str(project), "--version", version, "--execution-mode", "repository_evidence", "--commit", commit], check=True, capture_output=True, text=True)
                 lock = json.loads((project / ".gpt-workflow.lock").read_text())
                 self.assertIn("installed_at", lock)
                 self.assertNotIn("generated_at", lock)

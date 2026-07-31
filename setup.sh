@@ -19,6 +19,7 @@ Usage:
 Options:
   --project PATH       Target project repository. Required.
   --version REF        Workflow tag or ref. Required.
+  --execution-mode MODE  gpt_tunnel_managed or repository_evidence. Required.
   --repository URL     Canonical repository URL.
   --commit SHA         Exact commit. Otherwise resolved with git ls-remote.
   --agents-file PATH   AGENTS.md path relative to project. Default: AGENTS.md
@@ -87,6 +88,7 @@ render_block() {
   local version="$2"
   local commit="$3"
   local lock_link="$4"
+  local execution_mode="$5"
   local browser_repository="${repository%.git}"
 
   cat <<EOF
@@ -101,6 +103,7 @@ ${BLOCK_BEGIN}
 > [\`${DOCUMENT_PATH}\`](${browser_repository}/blob/${commit}/${DOCUMENT_PATH})
 >
 > Pinned workflow: \`${version}\` at commit \`${commit}\`
+> Execution mode: \`${execution_mode}\` (explicit; no autodetection or fallback)
 >
 > Attached code-project reviews default to:
 > [\`${ARCHIVE_REVIEW_PROMPT_PATH}\`](${browser_repository}/blob/${commit}/${ARCHIVE_REVIEW_PROMPT_PATH})
@@ -111,7 +114,7 @@ ${BLOCK_BEGIN}
 > Archive guide: [\`${ARCHIVE_GUIDE_PATH}\`](${browser_repository}/blob/${commit}/${ARCHIVE_GUIDE_PATH})
 > Release process: [\`${RELEASE_PROCESS_PATH}\`](${browser_repository}/blob/${commit}/${RELEASE_PROCESS_PATH})
 >
-> If `engineering-profile.json` is present, validate it with the exact pinned
+> If \`engineering-profile.json\` is present, validate it with the exact pinned
 > planner checkout and follow the selected profile and relevant documents.
 > Owner instructions win; apply exceptions narrowly and report policy conflicts
 > instead of silently selecting another stack. Prefer Rust/Axum for new backend
@@ -141,6 +144,7 @@ project=""
 version=""
 repository="$CANONICAL_REPOSITORY"
 commit=""
+execution_mode=""
 agents_file="AGENTS.md"
 force=0
 
@@ -166,6 +170,11 @@ while [[ $# -gt 0 ]]; do
       commit="$2"
       shift 2
       ;;
+    --execution-mode)
+      [[ $# -ge 2 ]] || die "--execution-mode requires a value"
+      execution_mode="$2"
+      shift 2
+      ;;
     --agents-file)
       [[ $# -ge 2 ]] || die "--agents-file requires a value"
       agents_file="$2"
@@ -186,6 +195,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -n "$version" ]] || die "--version is required"
+[[ "$execution_mode" == "gpt_tunnel_managed" || "$execution_mode" == "repository_evidence" ]] ||
+  die "--execution-mode must be gpt_tunnel_managed or repository_evidence"
 
 [[ -n "$project" ]] || die "--project is required"
 [[ -d "$project" ]] || die "project directory does not exist: $project"
@@ -240,7 +251,7 @@ else
 fi
 
 {
-  render_block "$repository" "$version" "$commit" "$lock_link"
+  render_block "$repository" "$version" "$commit" "$lock_link" "$execution_mode"
   printf '\n'
   awk '
     BEGIN { started = 0 }
@@ -262,6 +273,7 @@ cat > "$lock_file" <<EOF
   "version": "${version}",
   "commit": "${commit}",
   "document": "${DOCUMENT_PATH}",
+  "execution_mode": "${execution_mode}",
   "installed_at": "${generated_at}"
 }
 EOF

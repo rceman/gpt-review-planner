@@ -5,7 +5,8 @@
 | Artifact or responsibility | Owner |
 |---|---|
 | `manifest.json` | `gpt-review-planner` |
-| `evidence.json` | `gpt-review-planner` |
+| `evidence.json` | `gpt-review-planner`, repository-evidence mode only |
+| `completion.json` | gateway-managed task, planner schema and validator |
 | `AGENT_HANDOFF.md` | `gpt-review-planner` |
 | `patch_pack_scope.py` | `gpt-review-planner` |
 | `verify-agent-evidence.py` | `gpt-review-planner` |
@@ -34,9 +35,9 @@ continuity state and is not discovered as executable input.
 
 Planner-owned terminal semantics are:
 
-- one strict agent-authored `agent-result.json`;
+- one strict agent-authored `completion.json` in `gpt_tunnel_managed` mode;
 - statuses `succeeded`, `needs_gpt_revision`, and `failed`;
-- mandatory finalization through a gateway-generated `complete-task` command;
+- mandatory finalization through the gateway's finalize command;
 - no interactive owner dialogue from a gateway execution turn;
 - a required `TERMINAL_OUTPUT_PROTOCOL` handoff section.
 
@@ -50,4 +51,5 @@ Gateway-owned mechanics are:
 
 See [`GATEWAY_TASK_PROTOCOL.md`](GATEWAY_TASK_PROTOCOL.md).
 
-Protocol-v1 records remain gateway read compatibility and do not alter planner pack semantics.
+Historical protocol-v1 records remain immutable history and are not read as a
+workflow 2.0.0 tunnel completion.

@@ -31,9 +31,9 @@ class WorkflowPerformanceBudgetTests(unittest.TestCase):
         return " ".join(section.split())
 
     def test_version_synchronization(self):
-        self.assertEqual(self.version, "1.5.0")
-        self.assertIn("**Workflow version:** 1.5.0", self.planner)
-        self.assertIn("1.5.0", self.changelog)
+        self.assertEqual(self.version, "2.0.0")
+        self.assertIn("**Workflow version:** 2.0.0", self.planner)
+        self.assertIn("2.0.0", self.changelog)
 
     def test_mandatory_budget_and_incident(self):
         section = self.workflow_budget_section()

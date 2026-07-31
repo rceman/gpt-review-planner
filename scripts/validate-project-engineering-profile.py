@@ -104,7 +104,7 @@ def validate(declaration_path: Path, project_root: Path, planner_root: Path, all
     if not isinstance(exceptions, list):
         raise ProfileError("exceptions must be an array")
     lock = load(lock_file)
-    required_lock = {"schema_version", "repository", "version", "commit", "document", "installed_at"}
+    required_lock = {"schema_version", "repository", "version", "commit", "document", "execution_mode", "installed_at"}
     if not isinstance(lock, dict) or set(lock) != required_lock or lock.get("schema_version") != 1:
         raise ProfileError("workflow lock schema or fields invalid")
     for key in ("repository", "version", "document"):
@@ -114,6 +114,8 @@ def validate(declaration_path: Path, project_root: Path, planner_root: Path, all
         raise ProfileError("lock.repository identity is invalid")
     if not WORKFLOW_VERSION_RE.fullmatch(lock["version"]):
         raise ProfileError("lock.version must be a version tag or exact 40-character commit")
+    if lock["execution_mode"] not in {"gpt_tunnel_managed", "repository_evidence"}:
+        raise ProfileError("lock.execution_mode is invalid")
     if not COMMIT_RE.fullmatch(lock["commit"]):
         raise ProfileError("lock.commit must be a 40-character lowercase commit")
     planner_document = safe_relative_path(lock["document"], "lock.document", planner_root)

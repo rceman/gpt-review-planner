@@ -29,6 +29,30 @@ class TaskGateContractError(ValueError):
     pass
 
 
+def positional_gate_id(index: int) -> str:
+    if index < 0:
+        raise TaskGateContractError("gate index must be non-negative")
+    return f"G{index + 1}"
+
+
+def positional_acceptance_id(index: int) -> str:
+    if index < 0:
+        raise TaskGateContractError("acceptance index must be non-negative")
+    return f"AC{index + 1}"
+
+
+def positional_gate_ids(count: int) -> list[str]:
+    if count < 0:
+        raise TaskGateContractError("gate count must be non-negative")
+    return [positional_gate_id(index) for index in range(count)]
+
+
+def positional_acceptance_ids(count: int) -> list[str]:
+    if count < 0:
+        raise TaskGateContractError("acceptance count must be non-negative")
+    return [positional_acceptance_id(index) for index in range(count)]
+
+
 def _unique_pairs(pairs):
     result = {}
     for key, value in pairs:

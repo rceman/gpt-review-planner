@@ -32,14 +32,13 @@ not manually orchestrate deterministic shell pipelines.
 
 For a gateway-managed GPT task, the interactive Airelay/Codex response is only
 an execution log. It is never the terminal report. The agent writes one strict
-`agent-result.json` to the gateway-authoritative path and invokes the generated
-`complete-task` command for `succeeded`, `needs_gpt_revision`, or `failed`.
+`completion.json` to the gateway-authoritative path and invokes gateway
+finalization for `succeeded`, `needs_gpt_revision`, or `failed`.
 
 Do not manually repeat repository, project, branch, timestamps, bundle digest,
 worktree checks, remote-head checks, or bus publication metadata. The finalizer
-derives and validates those facts. The agent records only status, concise
-summary/details, declared gate outcomes, deviations, required commit identities,
-and the next GPT action when revision is required.
+derives and validates those facts. The agent records only the canonical
+completion fields and positional gate/acceptance identities.
 
 Do not ask the owner for approval or clarification. Finalize the blocker through
 the gateway. If a model turn ends without finalization, the gateway may issue one
@@ -72,3 +71,17 @@ Merge CI: failed | blocking=true | sha=<SHA> | run=<RUN_OR_NULL> | job=<JOB_OR_N
 Raw JSON is included once only for blocking, invalid, internally inconsistent, diagnostically important unavailable results, or explicit owner request. Permitted absence is reported as `Implementation CI: no_run | blocking=false | policy=auto | sha=<SHA> | message=<SUMMARY>` and is never called success.
 
 Final reports normally contain terminal status, identity, changed scope, grouped gates, one CI record per observed SHA, evidence identity, final Git/ref/worktree state, and prohibited-operation confirmation. Machine evidence must retain all required fields in manifests, evidence, schemas, and helper output.
+# Workflow 2.0.0 completion projection
+
+For `gpt_tunnel_managed`, write exactly one completion object with
+`schema_version`, `run_id`, `task_sha256`, `status`, `summary`, ordered
+`gate_results`, ordered `acceptance_coverage`, `deviations`, and
+`remaining_risks`. Use `G1..Gn` and `AC1..ACn` positionally. Do not paste raw
+commands, full acceptance text, branch/HEAD facts, evidence paths, or a second
+agent-result/evidence object. The gateway hub report is the only second-side
+authority, and it is gateway-owned rather than agent-authored.
+
+For `repository_evidence`, use the existing two-file repository evidence
+contract and do not produce tunnel completion. Agents invoke workflows; scripts
+execute phases; structured state carries progress; models do not manually
+orchestrate deterministic shell pipelines.

@@ -16,12 +16,17 @@ GPT inspects repository state and authors the behavior contract, fixtures, produ
 
 ## Single agent-authored result
 
-The only agent-authored terminal artifact is `agent-result.json`, validated by `schemas/gateway-agent-result-v2.schema.json` and `scripts/validate-gateway-agent-result.py`.
+Workflow 2.0.0 has one exact tunnel completion artifact: `completion.json`,
+validated by `schemas/gpt-tunnel-completion.schema.json` and
+`scripts/validate-gpt-tunnel-completion.py`. It contains only task digest,
+status, summary, positional `G1..Gn` gate results, positional `AC1..ACn`
+coverage, deviations, and remaining risks. It does not duplicate project,
+branch, HEAD, commands, evidence, or repository facts.
 
 The gateway appends two authoritative runtime values to the handoff:
 
-- result JSON path;
-- executable `complete-task` command path.
+- completion JSON path;
+- executable gateway finalize command path.
 
 The agent writes the JSON and invokes the command for every terminal status:
 
@@ -39,8 +44,8 @@ For non-success statuses, commits are optional but a bounded summary is mandator
 
 ## Missing finalization
 
-When the agent session becomes promptable/free without a finalized result, the gateway issues one bounded corrective prompt instructing the agent to write `agent-result.json` and run `complete-task`. If it still does not finalize, the gateway publishes a synthetic `failed` result and clears project activity.
+When the agent session becomes promptable/free without a finalized result, the gateway issues one bounded corrective prompt instructing the agent to write `completion.json` and run the gateway finalize command. If it still does not finalize, the gateway publishes a synthetic `failed` result and clears project activity.
 
 ## Compatibility
 
-A deployed gateway predating this protocol may temporarily require both `agent-result.json` and `AGENT_RESPONSE.md`. That compatibility path is bootstrap-only. Newly generated planner packs use the JSON-only protocol once the matching gateway implementation is installed.
+There is no legacy tunnel completion reader, alias, fallback, or format negotiation in workflow 2.0.0. Historical 1.5.0 artifacts remain immutable history only.

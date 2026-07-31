@@ -77,3 +77,8 @@ test -z "$(git status --porcelain)"
 The exact merge-SHA CI phase is mandatory before cleanup. The cleanup command must delete only the remote feature branch; do not rerun or dispatch workflows, and do not delete the local feature branch.
 Use the compact report contract. Return `MERGE_FINALIZED`,
 `MERGE_CLEANUP_BLOCKED`, or pre-merge `MERGE_BLOCKED`.
+# Execution-mode guard
+
+This merge prompt is not a tunnel completion path. Follow the project's
+explicit execution mode and never create a second evidence authority while
+finalizing a merge.

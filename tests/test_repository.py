@@ -31,6 +31,14 @@ class RepositoryTest(unittest.TestCase):
             "docs/CHATGPT_RUST_SANDBOX_BOOTSTRAP.md",
             "scripts/benchmark-offline-rust.py",
             "scripts/gpt-patch-pack-runner-v1.py",
+            "scripts/gpt-patch-pack-runner-v2.py",
+            "scripts/build-gpt-patch-pack-v2.py",
+            "scripts/validate-patch-pack-v2.py",
+            "scripts/gpt_patch_pack_common.py",
+            "schemas/gpt-patch-pack-v2.schema.json",
+            "schemas/gpt-tunnel-completion.schema.json",
+            "templates/gpt-patch-pack-v2/MANIFEST.example.json",
+            "templates/gpt-patch-pack-v2/AGENT_TASK.md",
             "scripts/verify-agent-evidence.py",
             "benchmarks/chatgpt-sandbox-rust-1.97.1.json",
             "schemas/patch-manifest.schema.json",
@@ -196,6 +204,8 @@ class RepositoryTest(unittest.TestCase):
                 "https://example.invalid/workflow.git",
                 "--version",
                 "vX.Y.Z",
+                "--execution-mode",
+                "repository_evidence",
                 "--commit",
                 FAKE_COMMIT,
             ]
@@ -248,7 +258,7 @@ class RepositoryTest(unittest.TestCase):
             missing_project = Path(temp_dir) / "missing-project"
             missing_project.mkdir()
             missing_version = subprocess.run(
-                ["bash", str(ROOT / "setup.sh"), "--project", str(missing_project), "--commit", FAKE_COMMIT],
+                ["bash", str(ROOT / "setup.sh"), "--project", str(missing_project), "--commit", FAKE_COMMIT, "--execution-mode", "repository_evidence"],
                 capture_output=True,
                 text=True,
             )
@@ -456,6 +466,8 @@ class RepositoryTest(unittest.TestCase):
                 str(project),
                 "--version",
                 "v1.0.0",
+                "--execution-mode",
+                "repository_evidence",
                 "--commit",
                 FAKE_COMMIT,
             ]
@@ -487,6 +499,8 @@ class RepositoryTest(unittest.TestCase):
                     str(project),
                     "--version",
                     "v1.0.0",
+                    "--execution-mode",
+                    "repository_evidence",
                     "--commit",
                     first_commit,
                 ],
@@ -502,6 +516,8 @@ class RepositoryTest(unittest.TestCase):
                     str(project),
                     "--version",
                     "v1.1.0",
+                    "--execution-mode",
+                    "repository_evidence",
                     "--commit",
                     second_commit,
                 ],
@@ -534,6 +550,8 @@ class RepositoryTest(unittest.TestCase):
                     "vX.Y.Z",
                     "--agents-file",
                     "docs/AGENTS.md",
+                    "--execution-mode",
+                    "repository_evidence",
                     "--commit",
                     FAKE_COMMIT,
                 ],
@@ -561,6 +579,8 @@ class RepositoryTest(unittest.TestCase):
                     str(project),
                     "--version",
                     "vX.Y.Z",
+                    "--execution-mode",
+                    "repository_evidence",
                     "--commit",
                     FAKE_COMMIT,
                 ],
@@ -1297,6 +1317,10 @@ fi
         self.assertEqual(manifest["format"], "gpt-patch-pack-v1")
         self.assertEqual(manifest["payload"], {"patch": "payload/changes.patch", "format": "git-binary-full-index"})
         self.assertFalse((ROOT / "templates/gpt-patch-pack-v1/apply.py").exists())
+        v2 = json.loads((ROOT / "templates/gpt-patch-pack-v2/MANIFEST.example.json").read_text(encoding="utf-8"))
+        self.assertEqual(v2["format"], "gpt-patch-pack-v2")
+        self.assertEqual(v2["execution_mode"], "gpt_tunnel_managed")
+        self.assertEqual(v2["payload"], {"patch": "payload/changes.patch", "format": "git-binary-full-index"})
 
     def test_observed_benchmark_fixture_is_valid(self) -> None:
         data = json.loads(
