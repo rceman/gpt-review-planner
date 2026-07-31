@@ -59,8 +59,12 @@ def main():
     target=seed.get('target',{}); branch=subprocess.check_output(['git','-C',str(repo),'branch','--show-current'],text=True).strip()
     if branch!=target.get('branch') or not target.get('repository'): die('repository identity mismatch')
     ev=safe_rel(a.evidence_directory); evpath=(repo/ev).resolve(); out=Path(a.manifest_output).resolve(); resolved=Path(a.resolved_plan_output).resolve()
+    common_raw=subprocess.check_output(['git','-C',str(repo),'rev-parse','--git-common-dir'],text=True).strip()
+    common=(repo/Path(common_raw)).resolve() if not Path(common_raw).is_absolute() else Path(common_raw).resolve()
     if repo not in evpath.parents or not evpath.name.startswith('patch-') or not PATCH_RE.fullmatch(evpath.name): die('invalid evidence directory identity')
-    if out != evpath/'manifest.json' or repo in resolved.parents or resolved==repo: die('invalid output binding')
+    resolved_in_worktree=(resolved==repo or repo in resolved.parents)
+    resolved_in_common=(resolved==common or common in resolved.parents)
+    if out != evpath/'manifest.json' or (resolved_in_worktree and not resolved_in_common): die('invalid output binding')
     if out.exists() or resolved.exists() or evpath.exists(): die('output or evidence directory already exists')
     statuses=subprocess.check_output(['git','-C',str(repo),'diff','--name-status','-z','-M','-C','--find-copies-harder',a.base_revision+'..'+sha,'--'])
     created=[]; modified=[]; deleted=[]; tokens=statuses.decode('utf-8').split('\0'); i=0
