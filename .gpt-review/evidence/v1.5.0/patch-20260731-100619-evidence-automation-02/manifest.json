@@ -1,0 +1,195 @@
+{
+  "baseline_release": "v1.5.0",
+  "compatibility": {
+    "authorization_source": null,
+    "authorized": false,
+    "canonical_implementation": "GPT Patch Pack v1",
+    "direction": "none",
+    "legacy_behavior": "unsupported and out of scope",
+    "removal_condition": null,
+    "scope": "none",
+    "supported_legacy_versions": []
+  },
+  "created_at": "2026-07-31T10:06:19Z",
+  "description": "Single-source task gate contract with fail-closed generated execution and evidence identity.",
+  "evidence_directory": ".gpt-review/evidence/v1.5.0/patch-20260731-100619-evidence-automation-02",
+  "files_created": [],
+  "files_deleted": [],
+  "files_modified": [
+    "GPT_REVIEW_PLANNER.md",
+    "schemas/agent-evidence.schema.json",
+    "schemas/gate-run.schema.json",
+    "schemas/task-gate-contract.schema.json",
+    "scripts/generate-agent-evidence.py",
+    "scripts/generate-task-gate-contract.py",
+    "scripts/run-agent-gates.py",
+    "scripts/task_gate_contract.py",
+    "scripts/verify-agent-evidence.py",
+    "tests/test_task_gate_contract.py"
+  ],
+  "format": "gpt-patch-pack-v1",
+  "gates": [
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "tests.test_task_gate_contract",
+        "-v"
+      ],
+      "env": {},
+      "id": "focused",
+      "kind": "command",
+      "max_output_bytes": 16777216,
+      "name": "Focused task-gate contract tests",
+      "timeout_seconds": 7200
+    },
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "env": {},
+      "id": "unit",
+      "kind": "command",
+      "max_output_bytes": 16777216,
+      "name": "Repository unit tests",
+      "timeout_seconds": 7200
+    },
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "env": {},
+      "id": "pytest",
+      "kind": "command",
+      "max_output_bytes": 16777216,
+      "name": "Pytest suite",
+      "timeout_seconds": 7200
+    },
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "compileall",
+        "-q",
+        "scripts",
+        "tests",
+        "examples"
+      ],
+      "env": {},
+      "id": "compile",
+      "kind": "command",
+      "max_output_bytes": 16777216,
+      "name": "Python compilation",
+      "timeout_seconds": 7200
+    },
+    {
+      "argv": [
+        "python3",
+        "scripts/release.py",
+        "check"
+      ],
+      "env": {},
+      "id": "release",
+      "kind": "command",
+      "max_output_bytes": 16777216,
+      "name": "Release consistency",
+      "timeout_seconds": 7200
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "env": {},
+      "id": "diff",
+      "kind": "command",
+      "max_output_bytes": 16777216,
+      "name": "Diff check",
+      "timeout_seconds": 7200
+    }
+  ],
+  "metadata": {
+    "gpt_runtime_checks_not_performed": [
+      "Runtime results are captured by the immutable declared gate plan."
+    ],
+    "gpt_static_checks_performed": [
+      "Task-to-gate contract review."
+    ],
+    "planner_commit": "06c9ed6d4194a94009bb1930fe548ec347343615"
+  },
+  "patch_id": "patch-20260731-100619-evidence-automation-02",
+  "patch_slug": "evidence-automation",
+  "patch_timestamp": "20260731-100619",
+  "payload": {
+    "format": "git-binary-full-index",
+    "patch": "payload/changes.patch"
+  },
+  "requirements": [
+    {
+      "acceptance": [
+        "Raw task gates, structured gates, command rendering, and order are validated fail-closed."
+      ],
+      "id": "REQ-TASK-GATE-001",
+      "summary": "The immutable task gate contract binds raw task commands to structured execution gates."
+    },
+    {
+      "acceptance": [
+        "The runner rejects unbound execution and captures exact contract identity and argv."
+      ],
+      "id": "REQ-TASK-GATE-002",
+      "summary": "Gate execution requires and records the immutable task gate contract."
+    },
+    {
+      "acceptance": [
+        "Stale or substituted manifest, captured, or evidence gate data is rejected."
+      ],
+      "id": "REQ-TASK-GATE-003",
+      "summary": "Evidence generation and verification bind captured gates to the immutable task contract."
+    },
+    {
+      "acceptance": [
+        "The canonical workflow task shape is enforced and legacy top-level gate_plan is rejected."
+      ],
+      "id": "REQ-TASK-GATE-004",
+      "summary": "The workflow accepts one strict task specification without legacy gate-plan input."
+    },
+    {
+      "acceptance": [
+        "Version 1.5.0 and all declared runtime gates pass."
+      ],
+      "id": "REQ-TASK-GATE-005",
+      "summary": "Workflow version and repository quality gates remain valid."
+    }
+  ],
+  "runner_version": "1.0.0",
+  "schema_version": 2,
+  "target": {
+    "accepted_origin_urls": [
+      "git@github.com:rceman/gpt-review-planner.git"
+    ],
+    "base_revision": "ac6c38f63fce2dc94a7b4b858bb560060629e5b4",
+    "branch": "fix/immutable-task-gate-contract-review-r1",
+    "remote": "origin",
+    "remote_ref": "refs/remotes/origin/fix/immutable-task-gate-contract-review-r1",
+    "repository": "rceman/gpt-review-planner"
+  },
+  "target_tree": "bd5d2116a9289f4fa0cfb0774b45b19fe18c42d6",
+  "title": "Immutable task-to-gate contract",
+  "workflow": {
+    "commit": "06c9ed6d4194a94009bb1930fe548ec347343615",
+    "document": "GPT_REVIEW_PLANNER.md",
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v1.5.0"
+  }
+}
