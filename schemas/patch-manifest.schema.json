@@ -47,6 +47,14 @@
     "created_at": {
       "type": "string"
     },
+    "patch_timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{8}-[0-9]{6}$"
+    },
+    "patch_slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+){0,2}$"
+    },
     "runner_version": {
       "const": "1.0.0"
     },

@@ -19,6 +19,8 @@ DEFAULT_COMPATIBILITY = {
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 PATCH_ID_RE = re.compile(r"^patch-[0-9]{8}-[0-9]{6}-[a-z0-9](?:[a-z0-9-]{0,63})$")
 SEMVER_RE = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
+PATCH_TIMESTAMP_RE = re.compile(r"^[0-9]{8}-[0-9]{6}$")
+PATCH_SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+){0,2}$")
 
 def load_json(path):
     return json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=_unique)
@@ -74,12 +76,17 @@ def validate_manifest(value, *, pack_root=None):
                 "runner_version","baseline_release","evidence_directory","workflow","target",
                 "payload","files_created","files_modified","files_deleted","target_tree",
                 "requirements","gates","compatibility","metadata"}
-    if set(value) != required:
+    optional = {"patch_timestamp", "patch_slug"}
+    if set(value) not in (required, required | optional):
         raise ValueError("manifest keys invalid")
     if value["schema_version"] != 2 or value["format"] != FORMAT or value["runner_version"] != RUNNER_VERSION:
         raise ValueError("manifest version or format invalid")
     if not isinstance(value["patch_id"], str) or not PATCH_ID_RE.fullmatch(value["patch_id"]):
         raise ValueError("invalid patch_id")
+    if "patch_timestamp" in value and (not isinstance(value["patch_timestamp"], str) or not PATCH_TIMESTAMP_RE.fullmatch(value["patch_timestamp"])):
+        raise ValueError("invalid patch timestamp")
+    if "patch_slug" in value and (not isinstance(value["patch_slug"], str) or not PATCH_SLUG_RE.fullmatch(value["patch_slug"])):
+        raise ValueError("invalid patch slug")
     if not isinstance(value["baseline_release"], str) or not SEMVER_RE.fullmatch(value["baseline_release"]):
         raise ValueError("invalid baseline release")
     expected_evidence = f".gpt-review/evidence/{value['baseline_release']}/{value['patch_id']}"
