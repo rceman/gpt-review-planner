@@ -8,6 +8,7 @@ import subprocess
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gpt_patch_pack_v1_common import load_json as load_strict_json, validate_manifest, validate_compatibility
+from task_gate_contract import contract_identity, load_json as load_contract_json, manifest_gates, validate_contract, validate_gate_run_identity
 
 def fail(message: str) -> None:
     print(f"ERROR: {message}", file=sys.stderr)
@@ -43,6 +44,7 @@ def main() -> None:
     parser.add_argument("--manifest",required=True,type=Path)
     parser.add_argument("--evidence-plan",required=True,type=Path)
     parser.add_argument("--gate-run",required=True,type=Path)
+    parser.add_argument("--task-gate-contract",required=True,type=Path)
     parser.add_argument("--implementation-commit",required=True)
     parser.add_argument("--output",required=True,type=Path)
     args=parser.parse_args()
@@ -50,14 +52,24 @@ def main() -> None:
     manifest=load(args.manifest)
     plan=load(args.evidence_plan)
     gate_run=load(args.gate_run)
+    contract=load_contract_json(args.task_gate_contract)
     implementation=args.implementation_commit
     if subprocess.check_output(["git","-C",str(repo),"rev-parse","HEAD"],text=True).strip()!=implementation:
         fail("HEAD mismatch")
     try:
         validate_manifest(manifest)
         validate_compatibility(manifest["compatibility"])
+        validate_contract(contract)
     except ValueError as exc:
         fail(f"manifest validation failed: {exc}")
+    expected_manifest_gates=manifest_gates(contract)
+    if manifest.get("gates") != expected_manifest_gates:
+        fail("TASK_GATE_CONTRACT_MISMATCH: manifest gates diverge from contract")
+    expected_identity=contract_identity(contract)
+    try:
+        validate_gate_run_identity(gate_run, contract)
+    except ValueError as exc:
+        fail(str(exc))
     if gate_run.get("implementation_commit")!=implementation or gate_run.get("status")!="pass":
         fail("gate run identity or status mismatch")
     manifest_ids=[item["id"] for item in manifest.get("requirements",[])]
@@ -69,12 +81,17 @@ def main() -> None:
         fail("gate order mismatch")
     captured={group.get("id"):group for group in gates}
     captured.update({step.get("id"):step for group in gates for step in group.get("steps",[])})
+    contract_by_id={item["id"]:item for item in contract["required_gates"]}
     for gate in manifest["gates"]:
         step=captured.get(gate["id"])
         if step is None or step.get("status")!="pass" or step.get("exit")!=0:
             fail(f"gate was not captured successfully: {gate['id']}")
-        for key in ("argv","env","timeout_seconds","max_output_bytes"):
-            if step.get(key)!=gate.get(key): fail(f"captured gate does not match manifest: {gate['id']}/{key}")
+        contract_gate=contract_by_id[gate["id"]]
+        expected_step={key:contract_gate[key] for key in ("argv","env","cwd","parser","metric","timeout_seconds","max_output_bytes")}
+        expected_step["env"]=dict(expected_step["env"])
+        expected_step["argv"]=list(expected_step["argv"])
+        for key, expected in expected_step.items():
+            if step.get(key)!=expected: fail(f"TASK_GATE_CONTRACT_MISMATCH: captured gate differs: {gate['id']}/{key}")
     declaration=manifest.get("compatibility",{})
     if declaration.get("authorized") is False:
         for key in ("compatibility_features_added","legacy_paths_added","fallbacks_added","migration_behavior_added"):
@@ -100,6 +117,7 @@ def main() -> None:
         "legacy_paths_added":plan.get("legacy_paths_added",[]),
         "fallbacks_added":plan.get("fallbacks_added",[]),
         "migration_behavior_added":plan.get("migration_behavior_added",[]),
+        "task_gate_contract": {**contract, "contract_sha256": expected_identity["contract_sha256"]},
     }
     args.output.parent.mkdir(parents=True,exist_ok=True)
     if args.output.exists():

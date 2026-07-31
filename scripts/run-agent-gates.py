@@ -3,14 +3,26 @@
 import argparse, hashlib, json, os, re, subprocess, sys, tempfile, time
 from datetime import datetime, timezone
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from task_gate_contract import (  # noqa: E402
+    TaskGateContractError,
+    contract_sha256,
+    gate_plan,
+    load_json as load_contract_json,
+    validate_contract,
+)
 
 PARSERS = {"exit", "unittest", "pytest"}
 SHA = re.compile(r"^[0-9a-f]{40}$")
 
 def fail(message):
-    print(f"ERROR: {message}", file=sys.stderr); raise SystemExit(5)
+    if str(message).startswith("TASK_GATE_CONTRACT_MISMATCH:"):
+        print(message, file=sys.stderr)
+    else:
+        print(f"ERROR: {message}", file=sys.stderr)
+    raise SystemExit(5)
 
-def load_plan(path):
+def load_plan(path, contract_path=None):
     try: data = json.loads(path.read_text(encoding="utf-8"))
     except Exception as exc: fail(f"invalid gate plan: {exc}")
     if data.get("schema_version") != 1 or not isinstance(data.get("gates"), list): fail("invalid gate plan schema")
@@ -33,7 +45,15 @@ def load_plan(path):
             if not isinstance(step.get("argv"), list) or any(not isinstance(x,str) for x in step["argv"]): fail("invalid argv")
             if step["argv"] and step["argv"][0] in {"true", "false", "echo"}: fail("placeholder gate command")
             if any(any(c in x for c in ";&|<>$") for x in step["argv"]): fail("shell strings are not allowed")
-    return data
+    if contract_path is not None:
+        try:
+            contract = validate_contract(load_contract_json(Path(contract_path)))
+            if data != gate_plan(contract):
+                fail("TASK_GATE_CONTRACT_MISMATCH: executable gate plan diverges from contract")
+            return data, contract, contract_sha256(contract)
+        except TaskGateContractError as exc:
+            fail(f"TASK_GATE_CONTRACT_MISMATCH: {exc}")
+    return data, None, None
 
 def count_output(parser, out):
     if parser == "exit": return None
@@ -45,9 +65,9 @@ def count_output(parser, out):
     return int(m.group(1))
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument("--repo",required=True); ap.add_argument("--plan",required=True); ap.add_argument("--implementation-commit",required=True); ap.add_argument("--output-dir",required=True); a=ap.parse_args()
+    ap=argparse.ArgumentParser(); ap.add_argument("--repo",required=True); ap.add_argument("--plan",required=True); ap.add_argument("--task-gate-contract"); ap.add_argument("--implementation-commit",required=True); ap.add_argument("--output-dir",required=True); a=ap.parse_args()
     if not SHA.fullmatch(a.implementation_commit): fail("implementation commit must be a lowercase 40-character SHA")
-    repo=Path(a.repo).resolve(); plan=load_plan(Path(a.plan))
+    repo=Path(a.repo).resolve(); plan, contract, contract_digest=load_plan(Path(a.plan), a.task_gate_contract)
     if subprocess.run(["git","-C",str(repo),"cat-file","-e",a.implementation_commit+"^{commit}"]).returncode: fail("implementation commit does not exist")
     if subprocess.check_output(["git","-C",str(repo),"rev-parse","HEAD"],text=True).strip()!=a.implementation_commit: fail("HEAD does not equal implementation commit")
     dirty=subprocess.check_output(["git","-C",str(repo),"status","--porcelain"],text=True)
@@ -65,14 +85,15 @@ def main():
         for step in gate["steps"]:
             t=time.monotonic(); stdout=b""; stderr=b""; code=0; status="pass"; diagnostic=""
             try:
-                p=subprocess.run(step["argv"],cwd=repo/step.get("cwd", ""),capture_output=True,timeout=step["timeout_seconds"])
+                env=os.environ.copy(); env.update(step.get("env", {}))
+                p=subprocess.run(step["argv"],cwd=repo/step.get("cwd", ""),env=env,capture_output=True,timeout=step["timeout_seconds"])
                 stdout,stderr,code=p.stdout,p.stderr,p.returncode
                 count=count_output(step["parser"],stdout.decode(errors="replace")+stderr.decode(errors="replace"))
                 if count is not None: gr["metrics"][step["metric"]]=count
                 if code: status="fail"
             except subprocess.TimeoutExpired as exc: stdout=exc.stdout or b""; stderr=exc.stderr or b""; code=124; status="fail"; diagnostic="timeout"
             except ValueError as exc: code=1; status="fail"; diagnostic=str(exc)
-            item={"id":step["id"],"argv":step["argv"],"env":step.get("env",{}),"timeout_seconds":step["timeout_seconds"],"max_output_bytes":step.get("max_output_bytes",16777216),"status":status,"exit":code,"duration_ms":round((time.monotonic()-t)*1000),"stdout_sha256":hashlib.sha256(stdout).hexdigest(),"stderr_sha256":hashlib.sha256(stderr).hexdigest()}
+            item={"id":step["id"],"argv":step["argv"],"env":step.get("env",{}),"cwd":step.get("cwd", ""),"parser":step["parser"],"metric":step.get("metric"),"timeout_seconds":step["timeout_seconds"],"max_output_bytes":step.get("max_output_bytes",16777216),"status":status,"exit":code,"duration_ms":round((time.monotonic()-t)*1000),"stdout_sha256":hashlib.sha256(stdout).hexdigest(),"stderr_sha256":hashlib.sha256(stderr).hexdigest()}
             if diagnostic: item["message"]=diagnostic
             gr["steps"].append(item)
             if len(gate.get("steps", [])) == 1:
@@ -83,6 +104,8 @@ def main():
         results.append(gr)
         if overall != "pass": break
     result={"schema_version":1,"implementation_commit":a.implementation_commit,"started_at":started,"completed_at":datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),"status":overall,"gates":results}
+    if contract is not None:
+        result["task_gate_contract"]={"project_id":contract["project_id"],"task_id":contract["task_id"],"task_sha256":contract["task_sha256"],"contract_sha256":contract_digest}
     target=outdir/"gate-run.json"; fd,tmp=tempfile.mkstemp(dir=outdir); os.close(fd); Path(tmp).write_text(json.dumps(result,indent=2,sort_keys=True)+"\n",encoding="utf-8"); os.replace(tmp,target)
     print(f"Gate run: {overall} | sha={a.implementation_commit} | gates={len(results)}")
     raise SystemExit(0 if overall=="pass" else 1)

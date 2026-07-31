@@ -3,11 +3,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import shlex
 from pathlib import Path
 import subprocess
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gpt_patch_pack_v1_common import load_json as load_strict_json, validate_manifest as validate_shared_manifest
+from task_gate_contract import contract_sha256, validate_contract
 
 class EvidenceError(RuntimeError):
     pass
@@ -77,7 +79,7 @@ def validate_proof(repo: Path,base: str,implementation: str,proof: dict) -> None
         raise EvidenceError(f"unsupported proof kind: {kind}")
 
 def validate(repo: Path,manifest: dict,evidence: dict,implementation: str) -> None:
-    allowed_evidence = {"schema_version", "implementation_commit", "compatibility_scope", "compatibility_authorized", "compatibility_features_added", "legacy_paths_added", "fallbacks_added", "migration_behavior_added", "requirements", "gates", "deviations"}
+    allowed_evidence = {"schema_version", "implementation_commit", "compatibility_scope", "compatibility_authorized", "compatibility_features_added", "legacy_paths_added", "fallbacks_added", "migration_behavior_added", "requirements", "gates", "deviations", "task_gate_contract"}
     unknown = set(evidence) - allowed_evidence
     if unknown:
         raise EvidenceError(f"unknown top-level fields: {sorted(unknown)}")
@@ -98,6 +100,34 @@ def validate(repo: Path,manifest: dict,evidence: dict,implementation: str) -> No
         workflow = manifest.get("workflow")
         if not isinstance(metadata, dict) or metadata.get("planner_commit") != workflow.get("commit"):
             raise EvidenceError("manifest planner_commit does not match workflow.commit")
+        evidence_contract = evidence.get("task_gate_contract")
+        if not isinstance(evidence_contract, dict):
+            raise EvidenceError("TASK_GATE_CONTRACT_MISMATCH: evidence task gate contract is missing")
+        supplied_digest = evidence_contract.get("contract_sha256")
+        contract_value = dict(evidence_contract)
+        contract_value.pop("contract_sha256", None)
+        try:
+            validate_contract(contract_value)
+            if supplied_digest != contract_sha256(contract_value):
+                raise EvidenceError("TASK_GATE_CONTRACT_MISMATCH: evidence contract hash mismatch")
+        except ValueError as exc:
+            raise EvidenceError(f"TASK_GATE_CONTRACT_MISMATCH: invalid evidence contract: {exc}") from exc
+        expected_contract_gates = [
+            {"id": item["id"], "command": shlex.join(item["argv"]), "argv": item["argv"]}
+            for item in contract_value["required_gates"]
+        ]
+        supplied_contract_gates = [
+            {"id": item["id"], "command": item["command"], "argv": item["argv"]}
+            for item in contract_value["required_gates"]
+        ]
+        if supplied_contract_gates != expected_contract_gates:
+            raise EvidenceError("TASK_GATE_CONTRACT_MISMATCH: contract gate order or command mismatch")
+        manifest_contract_gates = [
+            {"id": item["id"], "command": shlex.join(item["argv"]), "argv": item["argv"]}
+            for item in manifest["gates"]
+        ]
+        if manifest_contract_gates != supplied_contract_gates:
+            raise EvidenceError("TASK_GATE_CONTRACT_MISMATCH: manifest gates do not match evidence contract")
     base=manifest["target"]["base_revision"]
     expected=(set(manifest["files_created"]),set(manifest["files_modified"]),set(manifest["files_deleted"]))
     if scope(repo,base,implementation)!=expected:

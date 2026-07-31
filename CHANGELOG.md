@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Pending the 1.5.0 immutable task-to-gate contract and fail-closed generated
+  gate-plan/evidence identity checks.
+
+## 1.5.0 — 2026-07-31
+
+- Added immutable task gate contracts that mechanically generate manifest gates
+  and executable gate plans, with captured gate-run identity verification.
+- Added strict mismatch handling across workflow, gate, manifest, evidence, and
+  verifier stages.
+
 - Add a mandatory 10-minute bounded-run performance budget, first-check incident
   handling, durable KPI facts, rolling P50/P95 targets, and overrun follow-up.
 - Record workflow efficiency alongside correctness without weakening gates or

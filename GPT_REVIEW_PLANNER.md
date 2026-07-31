@@ -2,7 +2,7 @@
 
 Start with the [procedure index](docs/PROCEDURE_INDEX.md) before operational detail. After a terminal status, consult it and emit the handoff required by the next transition; `MERGE_READY` requires a merge handoff and is not merge completion.
 
-**Workflow version:** 1.4.0
+**Workflow version:** 1.5.0
 **Status:** Active  
 **Canonical repository:** `https://github.com/rceman/gpt-review-planner`  
 **Default document:** `GPT_REVIEW_PLANNER.md`  
@@ -23,6 +23,10 @@ and invokes only run or resume; it must
 not invoke underlying CI, gate, preparation, evidence, verification, commit,
 or reporting helpers manually. Use `scripts/run-agent-evidence-workflow.py` for the complete
 evidence lifecycle rather than manually orchestrating its phases.
+The task specification's immutable `task_gate_contract` is the sole source for
+manifest gates and executable gate plans. The runner generates both from that
+contract, records its identity in gate-run output and evidence, and fails closed
+on any manifest, plan, or captured-result mismatch.
 
 This workflow combines two models with deliberately different responsibilities:
 
@@ -1184,6 +1188,12 @@ local gates, implementation scope, evidence preparation, and implementation CI.
 Evidence-head/final-head CI is external GitHub/PR metadata. The local agent
 waits for and reports that result after pushing evidence, but never amends
 evidence to insert its own CI run or commit SHA.
+
+For version 1.5.0, every required gate is declared once in the immutable task
+gate contract and executed exactly from its generated argv, environment, working
+directory, parser, metric, timeout, and output limit. Agents must not supply a
+second gate list or manually synchronize gate commands, identities, counts, or
+summaries.
 
 `scripts/verify-agent-evidence.py` validates the implementation diff, proof hashes, requirement and gate completeness, direct commit ancestry, byte-identical manifest preservation, and exact two-file evidence diff without rerunning project tests.
 
