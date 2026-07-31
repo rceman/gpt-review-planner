@@ -1,0 +1,391 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "9e74eb444e1aaaa550ea433573378876566c544f",
+  "requirements": [
+    {
+      "id": "REQ-LOCK-001",
+      "status": "pass",
+      "note": "Strict schema-v2 project lock",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "schemas/gpt-workflow-lock.schema.json",
+          "lines": [
+            7,
+            41
+          ],
+          "sha256": "bac31a6b2cc1c8eb2fca925f5c237cd8b2486da4de984f0d7be5ac2952f65f0f"
+        }
+      ]
+    },
+    {
+      "id": "REQ-COMPLETION-001",
+      "status": "pass",
+      "note": "Single-authority completion contract",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/validate-gpt-tunnel-completion.py",
+          "lines": [
+            12,
+            147
+          ],
+          "sha256": "19c6b680df054f4fd00b823b5a91c8b85c7b456c86abcc72472f32cdc7e5a716"
+        }
+      ]
+    },
+    {
+      "id": "REQ-POSITION-001",
+      "status": "pass",
+      "note": "Positional gate and acceptance identities",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/task_gate_contract.py",
+          "lines": [
+            91,
+            180
+          ],
+          "sha256": "34d0d30ae2fa3f54d838c22415209abb6e71f564f8b31316812037b938ff4c98"
+        }
+      ]
+    },
+    {
+      "id": "REQ-V2-ONLY-001",
+      "status": "pass",
+      "note": "GPT Patch Pack v2 only",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/gpt_patch_pack_common.py",
+          "lines": [
+            1,
+            25
+          ],
+          "sha256": "1469303c9ad92cc86ed9e89614991cf28a8aae05918daae9ba1e10bb9df66a60"
+        },
+        {
+          "kind": "deletion",
+          "path": "scripts/build-gpt-patch-pack-v1.py"
+        },
+        {
+          "kind": "deletion",
+          "path": "scripts/gpt-patch-pack-runner-v1.py"
+        }
+      ]
+    },
+    {
+      "id": "REQ-MODE-001",
+      "status": "pass",
+      "note": "Mode-specific evidence ownership",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "GPT_REVIEW_PLANNER.md",
+          "lines": [
+            1176,
+            1224
+          ],
+          "sha256": "b58f3c6bf2029d3609d811cafb3e27003069dd040a2b7b22f6d10e268863d7ff"
+        }
+      ]
+    },
+    {
+      "id": "REQ-OUTPUT-001",
+      "status": "pass",
+      "note": "Tunnel source-output boundary",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/execution_mode.py",
+          "lines": [
+            18,
+            35
+          ],
+          "sha256": "c32ca58d6097840f2cd4e410a324d2942e30fd747102f43e23a9a2bb4e3cbd1a"
+        },
+        {
+          "kind": "documentation",
+          "path": "docs/AGENT_EVIDENCE.md",
+          "lines": [
+            42,
+            55
+          ],
+          "sha256": "69b438aadfc74cafb24011c3206dfeeb31e5955db2c43ed858d009fc177de4a9"
+        }
+      ]
+    },
+    {
+      "id": "REQ-GATES-001",
+      "status": "pass",
+      "note": "Captured required runtime gates",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/task_gate_contract.py",
+          "lines": [
+            181,
+            236
+          ],
+          "sha256": "5dd8b6bc2a031164253f010a98f959570821189b68dd412d6f088e043559cbad"
+        }
+      ]
+    },
+    {
+      "id": "REQ-VERSION-001",
+      "status": "pass",
+      "note": "Incompatible v2 cutover documentation",
+      "proofs": [
+        {
+          "kind": "documentation",
+          "path": "docs/VERSIONING.md",
+          "lines": [
+            15,
+            24
+          ],
+          "sha256": "0a044d3c591b2774d58d687ff59b540124281259e1a637d940362d2aadc88bf0"
+        }
+      ]
+    },
+    {
+      "id": "REQ-REGRESSION-001",
+      "status": "pass",
+      "note": "Security and deterministic regression coverage",
+      "proofs": [
+        {
+          "kind": "test",
+          "path": "tests/test_gpt_patch_pack_v2.py",
+          "lines": [
+            116,
+            214
+          ],
+          "sha256": "7f63667179688f5398b5338269abac1e3d06534ccd825fad6fea7ddfa32f4234"
+        }
+      ]
+    },
+    {
+      "id": "REQ-EVIDENCE-001",
+      "status": "pass",
+      "note": "Truthful bootstrap evidence inputs",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/generate-agent-evidence.py",
+          "lines": [
+            54,
+            143
+          ],
+          "sha256": "dde181e75248adc6f20f4c6aa414719c4c36b0b6abe859d4a6ec6b55b658d1a5"
+        },
+        {
+          "kind": "test",
+          "path": "tests/test_gpt_tunnel_completion.py",
+          "lines": [
+            47,
+            91
+          ],
+          "sha256": "b442700351e9037ed1a7bafb42c29cc6ed11d2dfec234dbd99a9107184246ed6"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "G1",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "focused_tests": 20
+      }
+    },
+    {
+      "id": "G2",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "unittest_tests": 151
+      }
+    },
+    {
+      "id": "G3",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "pytest_tests": 153
+      }
+    },
+    {
+      "id": "G4",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "G5",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "G6",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "G7",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    }
+  ],
+  "deviations": [],
+  "compatibility_scope": "none",
+  "compatibility_authorized": false,
+  "compatibility_features_added": [],
+  "legacy_paths_added": [],
+  "fallbacks_added": [],
+  "migration_behavior_added": [],
+  "task_gate_contract": {
+    "schema_version": 1,
+    "project_id": "gpt-review-planner",
+    "task_id": "6b898fa4-5ec8-4ec9-b718-1feec4f80baf",
+    "task_sha256": "3f80d9499b1425be11cf422a56916484a8032e1c9961a475b976df15818b7111",
+    "task_required_gates": [
+      "python3 -m unittest tests.test_gpt_tunnel_completion tests.test_execution_modes tests.test_gpt_patch_pack_v2 -v",
+      "python3 -m unittest discover -s tests -v",
+      "python3 -m pytest -q",
+      "python3 -m compileall -q scripts tests examples",
+      "python3 scripts/selftest-gpt-patch-pack-v2.py",
+      "python3 scripts/release.py check",
+      "git diff --check"
+    ],
+    "required_gates": [
+      {
+        "id": "G1",
+        "name": "Focused workflow and Patch Pack v2 tests",
+        "command": "python3 -m unittest tests.test_gpt_tunnel_completion tests.test_execution_modes tests.test_gpt_patch_pack_v2 -v",
+        "argv": [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_gpt_tunnel_completion",
+          "tests.test_execution_modes",
+          "tests.test_gpt_patch_pack_v2",
+          "-v"
+        ],
+        "env": {},
+        "cwd": "",
+        "parser": "unittest",
+        "metric": "focused_tests",
+        "timeout_seconds": 1800,
+        "max_output_bytes": 16777216
+      },
+      {
+        "id": "G2",
+        "name": "Repository unit tests",
+        "command": "python3 -m unittest discover -s tests -v",
+        "argv": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ],
+        "env": {},
+        "cwd": "",
+        "parser": "unittest",
+        "metric": "unittest_tests",
+        "timeout_seconds": 1800,
+        "max_output_bytes": 16777216
+      },
+      {
+        "id": "G3",
+        "name": "Pytest suite",
+        "command": "python3 -m pytest -q",
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q"
+        ],
+        "env": {},
+        "cwd": "",
+        "parser": "pytest",
+        "metric": "pytest_tests",
+        "timeout_seconds": 1800,
+        "max_output_bytes": 16777216
+      },
+      {
+        "id": "G4",
+        "name": "Python compilation",
+        "command": "python3 -m compileall -q scripts tests examples",
+        "argv": [
+          "python3",
+          "-m",
+          "compileall",
+          "-q",
+          "scripts",
+          "tests",
+          "examples"
+        ],
+        "env": {},
+        "cwd": "",
+        "parser": "exit",
+        "metric": null,
+        "timeout_seconds": 1800,
+        "max_output_bytes": 16777216
+      },
+      {
+        "id": "G5",
+        "name": "GPT Patch Pack v2 self-test",
+        "command": "python3 scripts/selftest-gpt-patch-pack-v2.py",
+        "argv": [
+          "python3",
+          "scripts/selftest-gpt-patch-pack-v2.py"
+        ],
+        "env": {},
+        "cwd": "",
+        "parser": "exit",
+        "metric": null,
+        "timeout_seconds": 1800,
+        "max_output_bytes": 16777216
+      },
+      {
+        "id": "G6",
+        "name": "Release consistency",
+        "command": "python3 scripts/release.py check",
+        "argv": [
+          "python3",
+          "scripts/release.py",
+          "check"
+        ],
+        "env": {},
+        "cwd": "",
+        "parser": "exit",
+        "metric": null,
+        "timeout_seconds": 1800,
+        "max_output_bytes": 16777216
+      },
+      {
+        "id": "G7",
+        "name": "Diff check",
+        "command": "git diff --check",
+        "argv": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "env": {},
+        "cwd": "",
+        "parser": "exit",
+        "metric": null,
+        "timeout_seconds": 1800,
+        "max_output_bytes": 16777216
+      }
+    ],
+    "contract_sha256": "9a3f409a91606857d56b1ce84d2d9c5fd592bd258063d978e8cc6c7ff4bcf2c5"
+  }
+}

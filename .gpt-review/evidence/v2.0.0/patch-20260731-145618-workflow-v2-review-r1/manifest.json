@@ -1,0 +1,309 @@
+{
+  "schema_version": 2,
+  "format": "gpt-patch-pack-v2",
+  "patch_id": "patch-20260731-145618-workflow-v2-review-r1",
+  "title": "Workflow 2.0.0 review-r1 correction bootstrap evidence",
+  "description": "Truthful repository-evidence bootstrap for the workflow 2.0.0 contract correction.",
+  "created_at": "2026-07-31T14:56:18Z",
+  "runner_version": "2.0.0",
+  "baseline_release": "v2.0.0",
+  "execution_mode": "repository_evidence",
+  "evidence_directory": ".gpt-review/evidence/v2.0.0/patch-20260731-145618-workflow-v2-review-r1",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v2.0.0",
+    "commit": "9e74eb444e1aaaa550ea433573378876566c544f",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "rceman/gpt-review-planner",
+    "accepted_origin_urls": [
+      "git@github.com:rceman/gpt-review-planner.git"
+    ],
+    "branch": "fix/single-authority-completion-v2-review-r1",
+    "base_revision": "98b18880e7934a3dfd3f53ccda3d1dea34826bbd",
+    "remote": "origin",
+    "remote_ref": "refs/remotes/origin/fix/single-authority-completion-v2-review-r1"
+  },
+  "payload": {
+    "patch": "payload/changes.patch",
+    "format": "git-binary-full-index"
+  },
+  "files_created": [],
+  "files_modified": [
+    "GPT_REVIEW_PLANNER.md",
+    "docs/GPT_PATCH_PACK_V1.md",
+    "docs/PROCEDURE_INDEX.md",
+    "docs/VERSIONING.md",
+    "prompts/AGENT_APPLY_PATCH_PACK.md",
+    "prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md",
+    "prompts/GPT_REVIEW_AGENT_RESULT.md",
+    "schemas/gpt-patch-pack-v2.schema.json",
+    "schemas/gpt-tunnel-completion.schema.json",
+    "schemas/gpt-workflow-lock.schema.json",
+    "schemas/task-gate-contract.schema.json",
+    "scripts/build-gpt-patch-pack-v2.py",
+    "scripts/execution_mode.py",
+    "scripts/generate-agent-evidence.py",
+    "scripts/gpt_patch_pack_common.py",
+    "scripts/gpt_patch_pack_v2_common.py",
+    "scripts/task_gate_contract.py",
+    "scripts/validate-gpt-tunnel-completion.py",
+    "scripts/validate-project-engineering-profile.py",
+    "scripts/validate-project-integration.py",
+    "scripts/verify-agent-evidence.py",
+    "setup.sh",
+    "templates/gpt-patch-pack-v2/MANIFEST.example.json",
+    "templates/project/.gpt-workflow.lock.template",
+    "templates/project/AGENTS.managed-block.md",
+    "tests/test_engineering.py",
+    "tests/test_gateway_terminal_protocol.py",
+    "tests/test_gpt_patch_pack_v2.py",
+    "tests/test_gpt_tunnel_completion.py",
+    "tests/test_procedure_index_and_reporting.py",
+    "tests/test_repository.py",
+    "tests/test_task_gate_contract.py"
+  ],
+  "files_deleted": [
+    ".gpt-workflow.lock",
+    "AGENTS.md",
+    "schemas/patch-manifest.schema.json",
+    "scripts/build-gpt-patch-pack-v1.py",
+    "scripts/gpt-patch-pack-runner-v1.py",
+    "scripts/gpt_patch_pack_v1_common.py",
+    "scripts/selftest-gpt-patch-pack-v1.py",
+    "templates/gpt-patch-pack-v1/AGENT_TASK.md",
+    "templates/gpt-patch-pack-v1/MANIFEST.example.json",
+    "templates/gpt-patch-pack-v1/README.md",
+    "tests/test_agent_evidence.py",
+    "tests/test_gpt_patch_pack_v1.py",
+    "tests/test_gpt_patch_pack_v1_security.py"
+  ],
+  "target_tree": "191a9d6207b38183ec765172e151223d5ea9f151",
+  "requirements": [
+    {
+      "id": "REQ-LOCK-001",
+      "summary": "Strict schema-v2 project lock",
+      "acceptance": [
+        "Project locks require schema version 2 and an explicit execution mode."
+      ],
+      "acceptance_ids": [
+        "AC1"
+      ]
+    },
+    {
+      "id": "REQ-COMPLETION-001",
+      "summary": "Single-authority completion contract",
+      "acceptance": [
+        "Tunnel completion uses canonical UUID identity, one task digest, and positional gate and acceptance rules."
+      ],
+      "acceptance_ids": [
+        "AC2"
+      ]
+    },
+    {
+      "id": "REQ-POSITION-001",
+      "summary": "Positional gate and acceptance identities",
+      "acceptance": [
+        "Internal and v2 pack contracts use ordered G1..Gn and AC1..ACn identities."
+      ],
+      "acceptance_ids": [
+        "AC3"
+      ]
+    },
+    {
+      "id": "REQ-V2-ONLY-001",
+      "summary": "GPT Patch Pack v2 only",
+      "acceptance": [
+        "Active tooling exposes only the current GPT Patch Pack v2 validator and removes active v1 readers and builders."
+      ],
+      "acceptance_ids": [
+        "AC4"
+      ]
+    },
+    {
+      "id": "REQ-MODE-001",
+      "summary": "Mode-specific evidence ownership",
+      "acceptance": [
+        "Tunnel and repository-evidence workflows have mutually exclusive terminal artifact responsibilities."
+      ],
+      "acceptance_ids": [
+        "AC5"
+      ]
+    },
+    {
+      "id": "REQ-OUTPUT-001",
+      "summary": "Tunnel source-output boundary",
+      "acceptance": [
+        "Tunnel mode forbids newly created repository evidence artifacts while preserving completion as its sole authority."
+      ],
+      "acceptance_ids": [
+        "AC6"
+      ]
+    },
+    {
+      "id": "REQ-GATES-001",
+      "summary": "Captured required runtime gates",
+      "acceptance": [
+        "The required gates are declared in exact order and captured successfully from the implementation tree."
+      ],
+      "acceptance_ids": [
+        "AC7"
+      ]
+    },
+    {
+      "id": "REQ-VERSION-001",
+      "summary": "Incompatible v2 cutover documentation",
+      "acceptance": [
+        "Versioning documentation records the v2-only incompatible cutover without changing the current version."
+      ],
+      "acceptance_ids": [
+        "AC8"
+      ]
+    },
+    {
+      "id": "REQ-REGRESSION-001",
+      "summary": "Security and deterministic regression coverage",
+      "acceptance": [
+        "Focused v2 tests cover archive safety, compatibility declarations, verify-only behavior, and deterministic self-test."
+      ],
+      "acceptance_ids": [
+        "AC9"
+      ]
+    },
+    {
+      "id": "REQ-EVIDENCE-001",
+      "summary": "Truthful bootstrap evidence inputs",
+      "acceptance": [
+        "The current task evidence is tied to the exact implementation tree, task identity, and captured gate contract."
+      ],
+      "acceptance_ids": [
+        "AC10"
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "G1",
+      "name": "Focused workflow and Patch Pack v2 tests",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "tests.test_gpt_tunnel_completion",
+        "tests.test_execution_modes",
+        "tests.test_gpt_patch_pack_v2",
+        "-v"
+      ],
+      "env": {},
+      "timeout_seconds": 1800,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "G2",
+      "name": "Repository unit tests",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "env": {},
+      "timeout_seconds": 1800,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "G3",
+      "name": "Pytest suite",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "env": {},
+      "timeout_seconds": 1800,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "G4",
+      "name": "Python compilation",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "-m",
+        "compileall",
+        "-q",
+        "scripts",
+        "tests",
+        "examples"
+      ],
+      "env": {},
+      "timeout_seconds": 1800,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "G5",
+      "name": "GPT Patch Pack v2 self-test",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "scripts/selftest-gpt-patch-pack-v2.py"
+      ],
+      "env": {},
+      "timeout_seconds": 1800,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "G6",
+      "name": "Release consistency",
+      "kind": "command",
+      "argv": [
+        "python3",
+        "scripts/release.py",
+        "check"
+      ],
+      "env": {},
+      "timeout_seconds": 1800,
+      "max_output_bytes": 16777216
+    },
+    {
+      "id": "G7",
+      "name": "Diff check",
+      "kind": "command",
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "env": {},
+      "timeout_seconds": 1800,
+      "max_output_bytes": 16777216
+    }
+  ],
+  "compatibility": {
+    "scope": "none",
+    "authorized": false,
+    "canonical_implementation": "GPT Patch Pack v2",
+    "legacy_behavior": "unsupported and out of scope",
+    "authorization_source": null,
+    "supported_legacy_versions": [],
+    "direction": "none",
+    "removal_condition": null
+  },
+  "metadata": {
+    "planner_commit": "9e74eb444e1aaaa550ea433573378876566c544f",
+    "gpt_static_checks_performed": [
+      "Delta review of workflow 2.0.0 contracts and active v2 tooling."
+    ],
+    "gpt_runtime_checks_not_performed": [
+      "Runtime gates are executed by the local agent and captured in the gate run."
+    ]
+  }
+}
