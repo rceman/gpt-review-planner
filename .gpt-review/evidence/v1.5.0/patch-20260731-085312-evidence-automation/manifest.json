@@ -1,0 +1,205 @@
+{
+  "baseline_release": "v1.5.0",
+  "compatibility": {
+    "authorization_source": null,
+    "authorized": false,
+    "canonical_implementation": "GPT Patch Pack v1",
+    "direction": "none",
+    "legacy_behavior": "unsupported and out of scope",
+    "removal_condition": null,
+    "scope": "none",
+    "supported_legacy_versions": []
+  },
+  "created_at": "2026-07-31T08:53:12Z",
+  "description": "Single-source task gate contract with fail-closed generated execution and evidence identity.",
+  "evidence_directory": ".gpt-review/evidence/v1.5.0/patch-20260731-085312-evidence-automation",
+  "files_created": [
+    "schemas/task-gate-contract.schema.json",
+    "scripts/generate-task-gate-contract.py",
+    "scripts/task_gate_contract.py",
+    "tests/test_task_gate_contract.py"
+  ],
+  "files_deleted": [],
+  "files_modified": [
+    "CHANGELOG.md",
+    "GPT_REVIEW_PLANNER.md",
+    "VERSION",
+    "schemas/agent-evidence.schema.json",
+    "schemas/gate-run.schema.json",
+    "schemas/patch-manifest.schema.json",
+    "scripts/generate-agent-evidence.py",
+    "scripts/gpt_patch_pack_v1_common.py",
+    "scripts/prepare-agent-evidence.py",
+    "scripts/run-agent-evidence-workflow.py",
+    "scripts/run-agent-gates.py",
+    "scripts/verify-agent-evidence.py",
+    "tests/test_workflow_performance_budget.py"
+  ],
+  "format": "gpt-patch-pack-v1",
+  "gates": [
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "tests.test_task_gate_contract",
+        "-v"
+      ],
+      "env": {},
+      "id": "focused",
+      "kind": "command",
+      "max_output_bytes": 16777216,
+      "name": "Task gate contract tests",
+      "timeout_seconds": 7200
+    },
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "env": {},
+      "id": "unit",
+      "kind": "command",
+      "max_output_bytes": 16777216,
+      "name": "Repository unit tests",
+      "timeout_seconds": 7200
+    },
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "env": {},
+      "id": "pytest",
+      "kind": "command",
+      "max_output_bytes": 16777216,
+      "name": "Pytest suite",
+      "timeout_seconds": 7200
+    },
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "compileall",
+        "-q",
+        "scripts",
+        "tests",
+        "examples"
+      ],
+      "env": {},
+      "id": "compile",
+      "kind": "command",
+      "max_output_bytes": 16777216,
+      "name": "Python compilation",
+      "timeout_seconds": 7200
+    },
+    {
+      "argv": [
+        "python3",
+        "scripts/release.py",
+        "check"
+      ],
+      "env": {},
+      "id": "release",
+      "kind": "command",
+      "max_output_bytes": 16777216,
+      "name": "Release consistency",
+      "timeout_seconds": 7200
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--check",
+        "75779355cb6dda0bcc72d016ec7a39243ff32924..ed7197ded99b12d47f53f964f4a0c6af3093040c",
+        "--"
+      ],
+      "env": {},
+      "id": "diff",
+      "kind": "command",
+      "max_output_bytes": 16777216,
+      "name": "Implementation diff check",
+      "timeout_seconds": 7200
+    }
+  ],
+  "metadata": {
+    "gpt_runtime_checks_not_performed": [
+      "Runtime results are captured by the immutable declared gate plan."
+    ],
+    "gpt_static_checks_performed": [
+      "Task-to-gate contract review."
+    ],
+    "planner_commit": "ed7197ded99b12d47f53f964f4a0c6af3093040c"
+  },
+  "patch_id": "patch-20260731-085312-evidence-automation",
+  "patch_slug": "evidence-automation",
+  "patch_timestamp": "20260731-085312",
+  "payload": {
+    "format": "git-binary-full-index",
+    "patch": "payload/changes.patch"
+  },
+  "requirements": [
+    {
+      "acceptance": [
+        "The contract is strict, identity-bound, and generates both outputs without accepting an independent manifest gate list."
+      ],
+      "id": "REQ-TASK-GATE-001",
+      "summary": "One immutable task contract is the sole source for generated manifest gates and executable gate plans."
+    },
+    {
+      "acceptance": [
+        "Gate-run identity and every captured command execution match the contract before evidence is generated."
+      ],
+      "id": "REQ-TASK-GATE-002",
+      "summary": "Captured gate execution is bound to the immutable contract."
+    },
+    {
+      "acceptance": [
+        "Evidence carries the contract identity and verification rejects missing or divergent task-gate contract data."
+      ],
+      "id": "REQ-TASK-GATE-003",
+      "summary": "Evidence verification fails closed on gate contract mismatch."
+    },
+    {
+      "acceptance": [
+        "Run mode requires workflow, manifest seed, evidence plan, and task gate contract and materializes generated gates before execution."
+      ],
+      "id": "REQ-TASK-GATE-004",
+      "summary": "The resumable workflow accepts one strict task specification and persists contract-driven progress."
+    },
+    {
+      "acceptance": [
+        "Version 1.5.0 and all declared local test, compilation, release, and diff gates pass."
+      ],
+      "id": "REQ-TASK-GATE-005",
+      "summary": "Version and repository quality gates pass for the implementation."
+    }
+  ],
+  "runner_version": "1.0.0",
+  "schema_version": 2,
+  "target": {
+    "accepted_origin_urls": [
+      "git@github.com:rceman/gpt-review-planner.git"
+    ],
+    "base_revision": "75779355cb6dda0bcc72d016ec7a39243ff32924",
+    "branch": "feature/immutable-task-gate-contract",
+    "remote": "origin",
+    "remote_ref": "refs/remotes/origin/feature/immutable-task-gate-contract",
+    "repository": "rceman/gpt-review-planner"
+  },
+  "target_tree": "afa9101155e0329e9641ed44e6585b85ee3fb652",
+  "title": "Immutable task-to-gate contract",
+  "workflow": {
+    "commit": "ed7197ded99b12d47f53f964f4a0c6af3093040c",
+    "document": "GPT_REVIEW_PLANNER.md",
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v1.5.0"
+  }
+}

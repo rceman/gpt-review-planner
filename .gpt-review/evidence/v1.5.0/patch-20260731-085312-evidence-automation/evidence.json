@@ -1,0 +1,336 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "ed7197ded99b12d47f53f964f4a0c6af3093040c",
+  "requirements": [
+    {
+      "id": "REQ-TASK-GATE-001",
+      "status": "pass",
+      "note": "The strict contract schema and shared validator define the single source for generated gates.",
+      "proofs": [
+        {
+          "kind": "source",
+          "lines": [
+            12,
+            12
+          ],
+          "path": "scripts/task_gate_contract.py",
+          "sha256": "cbca13c87276e34d3990ee3c00104a4670e806fe08d5e54197252b3fc35f5eeb"
+        },
+        {
+          "kind": "source",
+          "lines": [
+            37,
+            37
+          ],
+          "path": "scripts/generate-task-gate-contract.py",
+          "sha256": "514ee84bc21a84b97249653e863ce7afcfef5a482a17c7fafcb19a725082a885"
+        },
+        {
+          "kind": "test",
+          "lines": [
+            107,
+            107
+          ],
+          "path": "tests/test_task_gate_contract.py",
+          "sha256": "eb7615aac101347f600608727c28f97beeb489cbf18ecbd510a2b588e7ddc098"
+        }
+      ]
+    },
+    {
+      "id": "REQ-TASK-GATE-002",
+      "status": "pass",
+      "note": "Gate execution validates the generated plan and records contract identity plus exact execution fields.",
+      "proofs": [
+        {
+          "kind": "source",
+          "lines": [
+            51,
+            51
+          ],
+          "path": "scripts/run-agent-gates.py",
+          "sha256": "851f0e5d85753661ab1558db46dba1955d6703b2bf8dcacc05e24b01e503c2da"
+        },
+        {
+          "kind": "source",
+          "lines": [
+            70,
+            70
+          ],
+          "path": "scripts/generate-agent-evidence.py",
+          "sha256": "62292d88978d0a7a098552359201a0245d6c575deb4ceab7133c9a4453f40c60"
+        },
+        {
+          "kind": "test",
+          "lines": [
+            99,
+            99
+          ],
+          "path": "tests/test_task_gate_contract.py",
+          "sha256": "dabd8cd842e46d657e02fdeb9c9db859fe8786e26e434435fc6ba9754bb1d611"
+        }
+      ]
+    },
+    {
+      "id": "REQ-TASK-GATE-003",
+      "status": "pass",
+      "note": "The verifier requires and hashes the evidence task-gate contract and compares it with manifest gates.",
+      "proofs": [
+        {
+          "kind": "source",
+          "lines": [
+            103,
+            103
+          ],
+          "path": "scripts/verify-agent-evidence.py",
+          "sha256": "ea8f37c1a4b3a4c096ed28aeef44b587a297ca972d1b87fce0f0dc0d7e66e836"
+        },
+        {
+          "kind": "source",
+          "lines": [
+            130,
+            130
+          ],
+          "path": "scripts/verify-agent-evidence.py",
+          "sha256": "451999424eafaab7d205471abd6102050e9d64d58746e2c8293d69ccefc07d4b"
+        }
+      ]
+    },
+    {
+      "id": "REQ-TASK-GATE-004",
+      "status": "pass",
+      "note": "The workflow accepts one task specification and creates the generated manifest seed and gate plan phase.",
+      "proofs": [
+        {
+          "kind": "source",
+          "lines": [
+            75,
+            75
+          ],
+          "path": "scripts/run-agent-evidence-workflow.py",
+          "sha256": "1f7d88f68e6d47607b9da6d33869f5096909519fb6a4106ea3960d21bbe61b50"
+        },
+        {
+          "kind": "source",
+          "lines": [
+            122,
+            122
+          ],
+          "path": "scripts/run-agent-evidence-workflow.py",
+          "sha256": "65fd3e7af0725300cfa22567d60641c1a50531afd97f1f0bcaec60f25e0e69cf"
+        },
+        {
+          "kind": "test",
+          "lines": [
+            56,
+            56
+          ],
+          "path": "tests/test_task_gate_contract.py",
+          "sha256": "68d80cb1cfc5bc7d123615485d942391614b0dd4f399176d6ef036563bb55800"
+        }
+      ]
+    },
+    {
+      "id": "REQ-TASK-GATE-005",
+      "status": "pass",
+      "note": "The implementation advances the workflow version to 1.5.0 and the repository gate suite passes.",
+      "proofs": [
+        {
+          "kind": "source",
+          "lines": [
+            1,
+            1
+          ],
+          "path": "VERSION",
+          "sha256": "acb57a7135b2d7d6e665f67f056e21353023b93835f54def1ae523bf76f1bfb3"
+        },
+        {
+          "kind": "test",
+          "lines": [
+            34,
+            34
+          ],
+          "path": "tests/test_workflow_performance_budget.py",
+          "sha256": "7f85bf0da1c80fa63e15e035994a1dcbefee21e3e0a45553f051cb4730bf5261"
+        },
+        {
+          "kind": "source",
+          "lines": [
+            5,
+            5
+          ],
+          "path": "GPT_REVIEW_PLANNER.md",
+          "sha256": "20759849527245c4bb6bc83ff6dd96390341feada6c941c47b6672c1a9316f51"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "focused",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "focused_count": 6
+      }
+    },
+    {
+      "id": "unit",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "unit_count": 166
+      }
+    },
+    {
+      "id": "pytest",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {
+        "pytest_count": 168
+      }
+    },
+    {
+      "id": "compile",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "release",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    },
+    {
+      "id": "diff",
+      "status": "pass",
+      "exit": 0,
+      "metrics": {}
+    }
+  ],
+  "deviations": [],
+  "compatibility_scope": "none",
+  "compatibility_authorized": false,
+  "compatibility_features_added": [],
+  "legacy_paths_added": [],
+  "fallbacks_added": [],
+  "migration_behavior_added": [],
+  "task_gate_contract": {
+    "project_id": "gpt-review-planner",
+    "required_gates": [
+      {
+        "argv": [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_task_gate_contract",
+          "-v"
+        ],
+        "command": "python3 -m unittest tests.test_task_gate_contract -v",
+        "cwd": "",
+        "env": {},
+        "id": "focused",
+        "max_output_bytes": 16777216,
+        "metric": "focused_count",
+        "name": "Task gate contract tests",
+        "parser": "unittest",
+        "timeout_seconds": 7200
+      },
+      {
+        "argv": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ],
+        "command": "python3 -m unittest discover -s tests -v",
+        "cwd": "",
+        "env": {},
+        "id": "unit",
+        "max_output_bytes": 16777216,
+        "metric": "unit_count",
+        "name": "Repository unit tests",
+        "parser": "unittest",
+        "timeout_seconds": 7200
+      },
+      {
+        "argv": [
+          "python3",
+          "-m",
+          "pytest",
+          "-q"
+        ],
+        "command": "python3 -m pytest -q",
+        "cwd": "",
+        "env": {},
+        "id": "pytest",
+        "max_output_bytes": 16777216,
+        "metric": "pytest_count",
+        "name": "Pytest suite",
+        "parser": "pytest",
+        "timeout_seconds": 7200
+      },
+      {
+        "argv": [
+          "python3",
+          "-m",
+          "compileall",
+          "-q",
+          "scripts",
+          "tests",
+          "examples"
+        ],
+        "command": "python3 -m compileall -q scripts tests examples",
+        "cwd": "",
+        "env": {},
+        "id": "compile",
+        "max_output_bytes": 16777216,
+        "metric": null,
+        "name": "Python compilation",
+        "parser": "exit",
+        "timeout_seconds": 7200
+      },
+      {
+        "argv": [
+          "python3",
+          "scripts/release.py",
+          "check"
+        ],
+        "command": "python3 scripts/release.py check",
+        "cwd": "",
+        "env": {},
+        "id": "release",
+        "max_output_bytes": 16777216,
+        "metric": null,
+        "name": "Release consistency",
+        "parser": "exit",
+        "timeout_seconds": 7200
+      },
+      {
+        "argv": [
+          "git",
+          "diff",
+          "--check",
+          "75779355cb6dda0bcc72d016ec7a39243ff32924..ed7197ded99b12d47f53f964f4a0c6af3093040c",
+          "--"
+        ],
+        "command": "git diff --check 75779355cb6dda0bcc72d016ec7a39243ff32924..ed7197ded99b12d47f53f964f4a0c6af3093040c --",
+        "cwd": "",
+        "env": {},
+        "id": "diff",
+        "max_output_bytes": 16777216,
+        "metric": null,
+        "name": "Implementation diff check",
+        "parser": "exit",
+        "timeout_seconds": 7200
+      }
+    ],
+    "schema_version": 1,
+    "task_id": "a5cc93aa-ed68-403b-a6ce-717410719909",
+    "task_sha256": "c9fb90624529092bb78663764694a5255072686a40ee17448c61102c75e4704e",
+    "contract_sha256": "3fbdbf4a827bf973035e5ad846bc9582001f29d93952ba3e4deaeaf644a55d09"
+  }
+}
