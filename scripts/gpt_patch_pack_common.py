@@ -12,6 +12,7 @@ from gpt_patch_pack_v2_common import (  # re-export current contract primitives
     sha256,
     validate_compatibility,
     validate_sha,
+    validate_source_output_policy,
 )
 from gpt_patch_pack_v2_common import validate_manifest as validate_v2_manifest
 

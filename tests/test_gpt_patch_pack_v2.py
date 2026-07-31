@@ -43,8 +43,8 @@ class PatchPackV2Tests(unittest.TestCase):
         subprocess.run(["git", "-C", str(repo), "commit", "-m", "base"], check=True, stdout=subprocess.DEVNULL)
         return repo, self.git(repo, "rev-parse", "HEAD"), self.git(repo, "rev-parse", "HEAD^{tree}")
 
-    def manifest(self, base: str, tree: str) -> dict:
-        return {
+    def manifest(self, base: str, tree: str, *, mode: str = "gpt_tunnel_managed", evidence_paths: list[str] | None = None) -> dict:
+        value = {
             "schema_version": 2,
             "format": "gpt-patch-pack-v2",
             "patch_id": "patch-20260731-000000-v2-test",
@@ -53,7 +53,7 @@ class PatchPackV2Tests(unittest.TestCase):
             "created_at": "2026-07-31T00:00:00Z",
             "runner_version": "2.0.0",
             "baseline_release": "v2.0.0",
-            "execution_mode": "gpt_tunnel_managed",
+            "execution_mode": mode,
             "workflow": {
                 "repository": "https://github.com/rceman/gpt-review-planner",
                 "version": "v2.0.0",
@@ -69,13 +69,16 @@ class PatchPackV2Tests(unittest.TestCase):
                 "remote_ref": "refs/remotes/origin/main",
             },
             "payload": {"patch": "payload/changes.patch", "format": "git-binary-full-index"},
-            "files_created": [], "files_modified": [], "files_deleted": [],
+            "files_created": list(evidence_paths or []), "files_modified": [], "files_deleted": [],
             "target_tree": tree,
             "requirements": [{"id": "REQ-001", "summary": "Exact tree", "acceptance": ["The tree is exact."], "acceptance_ids": ["AC1"]}],
             "gates": [{"id": "G1", "name": "Compile", "kind": "command", "argv": ["python3", "-m", "compileall", "-q", "scripts"], "env": {}, "timeout_seconds": 60, "max_output_bytes": 1048576}],
             "compatibility": dict(common.DEFAULT_COMPATIBILITY),
             "metadata": {"planner_commit": "0" * 40, "gpt_static_checks_performed": ["static"], "gpt_runtime_checks_not_performed": ["runtime is agent-owned"]},
         }
+        if mode == "repository_evidence":
+            value["evidence_directory"] = ".gpt-review/evidence/v2.0.0/patch-20260731-000000-v2-test"
+        return value
 
     def archive(self, members: list[tuple[str, bytes, str]]):
         raw = io.BytesIO()
@@ -197,6 +200,79 @@ class PatchPackV2Tests(unittest.TestCase):
             unauthorized = json.loads(json.dumps(value))
             unauthorized["compatibility"]["supported_legacy_versions"] = ["v1"]
             with self.assertRaises(ValueError): common.validate_manifest(unauthorized)
+
+    def test_source_output_policy_is_shared_and_mode_specific(self):
+        with tempfile.TemporaryDirectory() as raw:
+            repo, base, tree = self.make_repo(Path(raw))
+            forbidden = [
+                ".gpt-review/evidence/other/evidence.json",
+                "nested/AGENT_RESULT.md",
+                "nested/agent-result.json",
+                "nested/evidence.json",
+                "nested/completion.json",
+            ]
+            for path in forbidden:
+                for operation in ("files_created", "files_modified", "files_deleted"):
+                    value = self.manifest(base, tree)
+                    value[operation] = [path]
+                    with self.assertRaisesRegex(ValueError, "forbidden tunnel source-output path"):
+                        common.validate_manifest(value)
+            value = self.manifest(base, tree, evidence_paths=["nested/Completion.json"])
+            common.validate_manifest(value)
+            historical = self.manifest(base, tree)
+            common.validate_manifest(historical)
+            historical["files_modified"] = [".gpt-review/evidence/v2.0.0/old/evidence.json"]
+            with self.assertRaises(ValueError):
+                common.validate_manifest(historical)
+            tunnel_directory = self.manifest(base, tree)
+            tunnel_directory["evidence_directory"] = ".gpt-review/evidence/v2.0.0/declared"
+            with self.assertRaises(ValueError):
+                common.validate_manifest(tunnel_directory)
+            evidence_dir = ".gpt-review/evidence/v2.0.0/patch-20260731-000000-v2-test"
+            accepted = self.manifest(base, tree, mode="repository_evidence", evidence_paths=[
+                f"{evidence_dir}/evidence.json", f"{evidence_dir}/manifest.json"
+            ])
+            common.validate_manifest(accepted)
+            for path in (f"{evidence_dir}/extra.json", "nested/evidence.json", "nested/completion.json"):
+                rejected = self.manifest(base, tree, mode="repository_evidence", evidence_paths=[path])
+                with self.assertRaises(ValueError):
+                    common.validate_manifest(rejected)
+            rejected = self.manifest(base, tree, mode="repository_evidence", evidence_paths=[
+                f"{evidence_dir}/evidence.json", f"{evidence_dir}/extra.json", f"{evidence_dir}/manifest.json"
+            ])
+            with self.assertRaises(ValueError):
+                common.validate_manifest(rejected)
+
+    def test_public_validator_and_runner_reject_tunnel_terminal_artifacts(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            repo, base, tree = self.make_repo(root)
+            value = self.manifest(base, tree, evidence_paths=["completion.json"])
+            members = self.canonical_members(value)
+            manifest_bytes = (json.dumps(value, indent=2) + "\n").encode()
+            members = [(name, manifest_bytes if name.endswith("MANIFEST.json") else data, kind) for name, data, kind in members]
+            sums = "".join(
+                f"{hashlib.sha256(data).hexdigest()}  {name.split('/', 1)[1]}\n"
+                for name, data, kind in members
+                if "/" in name and name.split('/', 1)[1] != "SHA256SUMS"
+            ).encode()
+            members = [(name, sums if name.endswith("SHA256SUMS") else data, kind) for name, data, kind in members]
+            archive = root / "forbidden.tar.gz"
+            data = self.archive(members)
+            archive.write_bytes(data)
+            result = subprocess.run([
+                sys.executable, str(ROOT / "scripts/validate-patch-pack.py"), str(archive), "--repo", str(repo)
+            ], text=True, capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            result = subprocess.run([
+                sys.executable, str(ROOT / "scripts/validate-patch-pack-v2.py"), str(archive)
+            ], text=True, capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            result = subprocess.run([
+                sys.executable, str(ROOT / "scripts/gpt-patch-pack-runner-v2.py"),
+                "--archive", str(archive), "--archive-sha256", hashlib.sha256(data).hexdigest(), "--repo", str(repo)
+            ], text=True, capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
 
     def test_schema_is_strict_and_matches_current_contract_shape(self):
         schema = json.loads((ROOT / "schemas/gpt-patch-pack-v2.schema.json").read_text(encoding="utf-8"))

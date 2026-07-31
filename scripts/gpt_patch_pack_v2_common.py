@@ -25,6 +25,7 @@ DEFAULT_COMPATIBILITY = {
     "legacy_behavior": "unsupported and out of scope", "authorization_source": None,
     "supported_legacy_versions": [], "direction": "none", "removal_condition": None,
 }
+FORBIDDEN_TERMINAL_BASENAMES = {"AGENT_RESULT.md", "agent-result.json", "evidence.json", "completion.json"}
 
 
 class DuplicateKey(ValueError):
@@ -63,6 +64,41 @@ def validate_sha(value: Any, label: str) -> str:
     if not isinstance(value, str) or not SHA_RE.fullmatch(value):
         raise ValueError(f"{label} must be a lowercase 40-character Git SHA")
     return value
+
+
+def validate_source_output_policy(value: dict[str, Any], paths: list[str] | None = None) -> None:
+    """Reject source-tree terminal artifacts declared by a v2 patch.
+
+    Historical evidence is allowed because only declared operation paths are
+    inspected; the immutable base tree is never scanned by this policy.
+    """
+    mode = value.get("execution_mode")
+    evidence_directory = value.get("evidence_directory")
+    canonical_evidence = set()
+    if mode == "repository_evidence":
+        if not isinstance(evidence_directory, str):
+            raise ValueError("repository evidence_directory is required")
+        canonical_evidence = {
+            f"{evidence_directory}/manifest.json",
+            f"{evidence_directory}/evidence.json",
+        }
+    operation_paths = paths if paths is not None else [
+        path
+        for key in ("files_created", "files_modified", "files_deleted")
+        for path in value.get(key, [])
+    ]
+    for path in operation_paths:
+        normalized_path(path, "source-output path")
+        in_evidence_tree = path == ".gpt-review/evidence" or path.startswith(".gpt-review/evidence/")
+        basename_forbidden = PurePosixPath(path).name in FORBIDDEN_TERMINAL_BASENAMES
+        if mode == "gpt_tunnel_managed":
+            if in_evidence_tree or basename_forbidden:
+                raise ValueError(f"forbidden tunnel source-output path: {path}")
+        elif mode == "repository_evidence":
+            if path in canonical_evidence:
+                continue
+            if in_evidence_tree or basename_forbidden:
+                raise ValueError(f"forbidden repository-evidence source-output path: {path}")
 
 
 def sha256(path: Path) -> str:
@@ -155,6 +191,7 @@ def validate_manifest(value: dict[str, Any], *, pack_root: Path | None = None) -
         classes.append(set(normalized))
     if classes[0] & classes[1] or classes[0] & classes[2] or classes[1] & classes[2]:
         raise ValueError("file operation classes overlap")
+    validate_source_output_policy(value)
     validate_sha(value["target_tree"], "target_tree")
     requirements = value["requirements"]
     if not isinstance(requirements, list) or not requirements:
