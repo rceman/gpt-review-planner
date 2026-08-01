@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 2.1.0 — 2026-08-01
+
 - Add transactional runtime-upgrade, persisted-state migration, incident-response,
   direct-session, tool-contract, and chat-handoff policies.
 - Add a strict runtime-upgrade task template, schema, validator, canonical prompts,
