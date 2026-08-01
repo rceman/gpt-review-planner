@@ -82,6 +82,8 @@ optional `--commit SHA` must match that REF and cannot replace it.
 
 Before running the complete gate suite, check the [host prerequisites](docs/HOST_PREREQUISITES.md), including `python3 -m pytest`.
 
+For runtime upgrades and gateway incident work, start with the [runtime upgrade policy](docs/RUNTIME_UPGRADE_POLICY.md), the [persisted-state migration policy](docs/PERSISTED_STATE_MIGRATION_POLICY.md), and the [incident response policy](docs/INCIDENT_RESPONSE_POLICY.md). Validate a declared task with `python3 scripts/validate-runtime-upgrade-task.py` before mutation.
+
 GPT may analyze repositories statically, write specifications, fixtures, production code, and tests, and prepare patch-pack artifacts. Runtime validation is not executed by GPT.
 
 The local coding agent owns dependency restoration, formatting, compilation, linting, unit/integration/E2E tests, benchmarks, runtime smoke tests, narrow integration fixes, regression coverage, and exact committed JSON evidence.

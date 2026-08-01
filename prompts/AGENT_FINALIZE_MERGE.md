@@ -4,6 +4,11 @@ Load the exact pinned `docs/PROCEDURE_INDEX.md`, `docs/AGENT_REPORTING.md`, and
 `docs/POST_MERGE_BRANCH_CLEANUP.md` before execution. Substitute all parameters
 from the owner handoff; do not infer identities from HEAD.
 
+If the merge contains runtime-affecting policy or release work, also load
+`docs/RUNTIME_UPGRADE_POLICY.md` and verify that the release rehearsal, installed
+version, running version, migration, and rollback evidence are complete before
+claiming merge finalization.
+
 ```bash
 set -euo pipefail
 REPOSITORY="<REPOSITORY>"

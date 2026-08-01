@@ -136,3 +136,13 @@ compatibility work.
 
 Choose one direct canonical implementation unless the user explicitly
 authorizes additional compatibility scope.
+
+## One-time persisted-state migration exception
+
+An owner may explicitly authorize one migration from one exact old persisted
+schema to one exact canonical new schema. That authorization is migration-only,
+bounded to the declared records and direction, and must include backup,
+target-decoder validation, atomic commit, rollback, and a removal condition.
+It does not authorize permanent fallback readers, aliases, dual schemas, or
+general legacy behavior. After migration evidence and cutover verification,
+the migration entry point is removed as declared.

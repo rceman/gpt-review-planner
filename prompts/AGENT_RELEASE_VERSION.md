@@ -10,6 +10,10 @@ duplicate instructions or reports bilingually. Follow
 
 Before changing anything, read and follow `docs/RELEASE_PROCESS.md` completely.
 
+For a runtime-affecting release also read `docs/RUNTIME_UPGRADE_POLICY.md` and
+`docs/PERSISTED_STATE_MIGRATION_POLICY.md`; validate the declared upgrade task
+before release mutation and prove installed and running versions separately.
+
 Read `docs/HOST_PREREQUISITES.md` before release mutation and verify:
 
 ```bash

@@ -52,3 +52,14 @@ The old `agent-result.json`/gateway-agent-result-v2 contract is historical
 1.5.0 material only; workflow 2.0.0 has no parallel reader or compatibility
 path. Internal raw gate captures remain authoritative for execution integrity,
 but are not duplicated in tunnel completion.
+
+## Runtime policy evidence
+
+Runtime-upgrade evidence preserves the single workflow-v2 completion authority.
+Record source and target identity, persisted-state scope, explicit migration
+authorization, target-decoder-before-activation order, installed and running
+version proofs, unchanged-process identity, readiness, protocol/MCP schema
+parity, rollback proof, and the durable plan revision after incident closure.
+A direct-session receipt is transport evidence only and never a task, run, plan,
+Git, merge, or release authority. Do not claim success while a required
+activation side effect remains pending.

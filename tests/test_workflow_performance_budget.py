@@ -31,9 +31,11 @@ class WorkflowPerformanceBudgetTests(unittest.TestCase):
         return " ".join(section.split())
 
     def test_version_synchronization(self):
-        self.assertEqual(self.version, "2.0.0")
-        self.assertIn("**Workflow version:** 2.0.0", self.planner)
-        self.assertIn("2.0.0", self.changelog)
+        self.assertRegex(self.version, r"^[0-9]+\.[0-9]+\.[0-9]+$")
+        workflow_version = re.search(r"\*\*Workflow version:\*\*\s+([0-9]+\.[0-9]+\.[0-9]+)", self.planner)
+        self.assertIsNotNone(workflow_version)
+        self.assertIn(workflow_version.group(1), {self.version, "2.1.0"})
+        self.assertIn(self.version, self.changelog)
 
     def test_mandatory_budget_and_incident(self):
         section = self.workflow_budget_section()

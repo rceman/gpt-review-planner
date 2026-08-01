@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "task_id": "runtime-upgrade-v2-1-0",
+  "operation": "runtime_upgrade",
+  "title": "Runtime upgrade with transactional migration and rollback",
+  "source_version": "2.0.0",
+  "target_version": "2.1.0",
+  "source_sha": "fb55ce752f03cfe13cfddc4babc8930f8983d034",
+  "target_release": {"version": "2.1.0", "tag": "v2.1.0", "sha": "1111111111111111111111111111111111111111"},
+  "persisted_state_scope": ["project records", "current plans", "active task/run pointers"],
+  "migration_required": true,
+  "migration": {
+    "old_schema": "workflow-v1",
+    "new_schema": "workflow-v2",
+    "authorized": true,
+    "authorization_source": "owner-approved v2.1.0 release task",
+    "direction": "forward",
+    "dry_run": true,
+    "backup": true,
+    "entry_point": "canonical migration command from the release handoff",
+    "target_decoder_validation": true,
+    "atomic_commit": true,
+    "rollback": true,
+    "removal_condition": "remove the one-time migration entry point after v2.1.0 cutover evidence is retained"
+  },
+  "process_scope": {"affected": ["gateway"], "unchanged": ["tunnel-client"]},
+  "preflight": {
+    "installed_version_check": {"argv": ["gpt-tunnelctl", "version"], "env": {}, "timeout_seconds": 30, "max_output_bytes": 65536},
+    "running_version_check": {"argv": ["gpt-tunnelctl", "status"], "env": {}, "timeout_seconds": 30, "max_output_bytes": 65536},
+    "persisted_state_check": {"argv": ["gpt-tunnel", "project", "status", "gpt-review-planner"], "env": {}, "timeout_seconds": 30, "max_output_bytes": 131072},
+    "target_decoder_validation": {"argv": ["gpt-tunnelctl", "doctor"], "env": {}, "timeout_seconds": 60, "max_output_bytes": 131072},
+    "readiness_check": {"argv": ["gpt-tunnelctl", "status"], "env": {}, "timeout_seconds": 30, "max_output_bytes": 65536},
+    "protocol_check": {"argv": ["python3", "scripts/check-gateway-mcp-contract.py"], "env": {}, "timeout_seconds": 120, "max_output_bytes": 262144}
+  },
+  "activation": {"order": ["inspect", "prepare", "backup", "migrate", "target_decoder_validation", "activate", "verify"], "shutdown_required": true, "affected_processes": ["gateway"], "unchanged_processes": ["tunnel-client"]},
+  "verification": {
+    "installed_version": ["all installed binaries report 2.1.0"],
+    "running_version": ["running gateway reports 2.1.0"],
+    "unchanged_processes": ["tunnel-client PID and executable identity are unchanged"],
+    "readiness": ["gateway readiness and doctor pass"],
+    "protocol": ["tools/list schema parity and representative MCP calls pass"],
+    "rollback": ["rollback source, restored hashes, readiness, and process identities are recorded"]
+  },
+  "rollback": {"source": "verified pre-upgrade binaries and persisted-state backup", "trigger": "any migration, activation, readiness, protocol, or unchanged-process proof failure", "command": "canonical bounded rollback operation", "proof": ["pre-upgrade hashes restored", "gateway-only process recovery verified", "tunnel-client identity unchanged"]},
+  "compatibility": {"scope": "explicit", "authorized": true, "authorization_source": "owner-approved v2.1.0 release task", "supported_legacy_versions": ["workflow-v1"], "direction": "forward", "removal_condition": "remove after v2.1.0 migration evidence and cutover verification"},
+  "success_criterion": "Only after migration, activation, installed/running version proof, unchanged tunnel proof, readiness, protocol checks, and rollback-state recording pass may the upgrade be reported succeeded.",
+  "required_gates": [
+    {"id": "G1", "argv": ["python3", "-m", "unittest", "discover", "-s", "tests", "-v"], "env": {}, "timeout_seconds": 1800, "max_output_bytes": 16777216},
+    {"id": "G2", "argv": ["python3", "-m", "pytest", "-q"], "env": {}, "timeout_seconds": 1800, "max_output_bytes": 16777216},
+    {"id": "G3", "argv": ["python3", "scripts/validate-runtime-upgrade-task.py", "templates/runtime-upgrade-task.json"], "env": {}, "timeout_seconds": 60, "max_output_bytes": 262144}
+  ]
+}

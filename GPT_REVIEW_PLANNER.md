@@ -2,7 +2,7 @@
 
 Start with the [procedure index](docs/PROCEDURE_INDEX.md) before operational detail. After a terminal status, consult it and emit the handoff required by the next transition; `MERGE_READY` requires a merge handoff and is not merge completion.
 
-**Workflow version:** 2.0.0
+**Workflow version:** 2.1.0
 **Status:** Active  
 **Canonical repository:** `https://github.com/rceman/gpt-review-planner`  
 **Default document:** `GPT_REVIEW_PLANNER.md`  
@@ -213,6 +213,18 @@ creates evidence/commits, and performs only directly evidenced narrow repairs.
 An architecture-only prose handoff is not an executable patch pack.
 
 ---
+
+## 2.3 Runtime upgrade, incident, and protocol integrity policy
+
+Load the [runtime upgrade policy](docs/RUNTIME_UPGRADE_POLICY.md), [persisted-state migration policy](docs/PERSISTED_STATE_MIGRATION_POLICY.md), [incident response policy](docs/INCIDENT_RESPONSE_POLICY.md), [direct session policy](docs/DIRECT_AGENT_SESSION_CONTROL_POLICY.md), and [tool-contract policy](docs/TOOL_CONTRACT_INTEGRITY_POLICY.md) for any gateway/runtime work. The canonical machine-readable declaration is [`templates/runtime-upgrade-task.json`](templates/runtime-upgrade-task.json), validated by `python3 scripts/validate-runtime-upgrade-task.py` and `schemas/runtime-upgrade-task.schema.json`.
+
+Every runtime task declares source/target identity, persisted-state scope, migration authorization and entry point, target decoder validation, affected and unchanged processes, installed and running version proof, readiness, protocol/MCP checks, rollback, compatibility scope, and the exact success criterion. Target decoder validation and migration occur before old-runtime shutdown. An upgrade cannot claim success while activation, verification, or a required side effect is pending; a preparation-only task must be named and scoped as preparation-only.
+
+Operational state invariants are mandatory: every configured active project has a durable active project and valid canonical current plan; registration and initial-plan creation are atomic; every dispatched task has exactly one run; every run references an existing task; active tasks and runs are non-terminal; history-only runs cannot be active; and immutable history is never rewritten to satisfy current pointers. A durable plan update is required after incident recovery.
+
+Direct agent session control is transport only: registered sessions, bounded serialized `agent_send`/`agent_tail`/`agent_status`, structured receipts, and no task/run/plan/Git/repository mutation. It cannot grant implementation, acceptance, merge, or release authority. Tool releases require `tools/list`/`tools/call` input and output schema parity, representative live calls, and authoritative remote branch/ref verification; fixed MCP tool counts are forbidden.
+
+Use the [chat handoff checkpoint](docs/CHAT_HANDOFF_CHECKPOINT.md) before a conversation transition. The handoff must include exact SHAs, versions, runtime/process state, authoritative hub identity, tool surface, durable plan/task state, risks, compatibility scope, validation commands, and the exact next action.
 
 ## 3. Responsibility model
 

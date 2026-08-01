@@ -32,3 +32,8 @@ After installation, rerun:
 python3 -m pytest --version
 python3 -m pytest -q
 ```
+
+For runtime-upgrade or gateway integration work, the host preflight also records
+installed and running runtime versions, process identities, the authoritative
+remote branch/ref, and the protocol/MCP tool surface. These operational proofs
+do not replace the repository's local gates.

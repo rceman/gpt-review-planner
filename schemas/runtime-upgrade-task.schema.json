@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rceman/gpt-review-planner/schemas/runtime-upgrade-task.schema.json",
+  "title": "Planner Runtime Upgrade Task",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "task_id", "operation", "title", "source_version", "target_version", "source_sha", "target_release", "persisted_state_scope", "migration_required", "migration", "process_scope", "preflight", "activation", "verification", "rollback", "compatibility", "success_criterion", "required_gates"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "task_id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{2,80}$"},
+    "operation": {"const": "runtime_upgrade"},
+    "title": {"type": "string", "minLength": 1, "maxLength": 512},
+    "source_version": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"},
+    "target_version": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"},
+    "source_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "target_release": {"type": "object", "additionalProperties": false, "required": ["version", "tag", "sha"], "properties": {"version": {"type": "string"}, "tag": {"type": "string"}, "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}}},
+    "persisted_state_scope": {"type": "array", "minItems": 1, "maxItems": 64, "items": {"type": "string", "minLength": 1}},
+    "migration_required": {"type": "boolean"},
+    "migration": {"type": "object", "additionalProperties": false, "required": ["old_schema", "new_schema", "authorized", "authorization_source", "direction", "dry_run", "backup", "entry_point", "target_decoder_validation", "atomic_commit", "rollback", "removal_condition"], "properties": {"old_schema": {"type": ["string", "null"]}, "new_schema": {"type": ["string", "null"]}, "authorized": {"type": "boolean"}, "authorization_source": {"type": ["string", "null"]}, "direction": {"enum": ["none", "forward"]}, "dry_run": {"type": "boolean"}, "backup": {"type": "boolean"}, "entry_point": {"type": "string"}, "target_decoder_validation": {"type": "boolean"}, "atomic_commit": {"type": "boolean"}, "rollback": {"type": "boolean"}, "removal_condition": {"type": ["string", "null"]}}},
+    "process_scope": {"type": "object", "additionalProperties": false, "required": ["affected", "unchanged"], "properties": {"affected": {"type": "array", "minItems": 1, "items": {"type": "string"}}, "unchanged": {"type": "array", "minItems": 1, "items": {"type": "string"}}}},
+    "preflight": {"type": "object", "additionalProperties": false, "required": ["installed_version_check", "running_version_check", "persisted_state_check", "target_decoder_validation", "readiness_check", "protocol_check"], "properties": {"installed_version_check": {"$ref": "#/$defs/command"}, "running_version_check": {"$ref": "#/$defs/command"}, "persisted_state_check": {"$ref": "#/$defs/command"}, "target_decoder_validation": {"$ref": "#/$defs/command"}, "readiness_check": {"$ref": "#/$defs/command"}, "protocol_check": {"$ref": "#/$defs/command"}}},
+    "activation": {"type": "object", "additionalProperties": false, "required": ["order", "shutdown_required", "affected_processes", "unchanged_processes"], "properties": {"order": {"type": "array", "minItems": 2, "items": {"type": "string"}}, "shutdown_required": {"type": "boolean"}, "affected_processes": {"type": "array", "minItems": 1, "items": {"type": "string"}}, "unchanged_processes": {"type": "array", "minItems": 1, "items": {"type": "string"}}}},
+    "verification": {"type": "object", "additionalProperties": false, "required": ["installed_version", "running_version", "unchanged_processes", "readiness", "protocol", "rollback"], "properties": {"installed_version": {"type": "array", "minItems": 1, "items": {"type": "string"}}, "running_version": {"type": "array", "minItems": 1, "items": {"type": "string"}}, "unchanged_processes": {"type": "array", "minItems": 1, "items": {"type": "string"}}, "readiness": {"type": "array", "minItems": 1, "items": {"type": "string"}}, "protocol": {"type": "array", "minItems": 1, "items": {"type": "string"}}, "rollback": {"type": "array", "minItems": 1, "items": {"type": "string"}}}},
+    "rollback": {"type": "object", "additionalProperties": false, "required": ["source", "trigger", "command", "proof"], "properties": {"source": {"type": "string"}, "trigger": {"type": "string"}, "command": {"type": "string"}, "proof": {"type": "array", "minItems": 1, "items": {"type": "string"}}}},
+    "compatibility": {"type": "object", "additionalProperties": false, "required": ["scope", "authorized", "authorization_source", "supported_legacy_versions", "direction", "removal_condition"], "properties": {"scope": {"enum": ["none", "explicit"]}, "authorized": {"type": "boolean"}, "authorization_source": {"type": ["string", "null"]}, "supported_legacy_versions": {"type": "array", "items": {"type": "string"}}, "direction": {"enum": ["none", "forward", "bidirectional"]}, "removal_condition": {"type": ["string", "null"]}}},
+    "success_criterion": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "required_gates": {"type": "array", "minItems": 1, "maxItems": 128, "items": {"type": "object", "additionalProperties": false, "required": ["id", "argv", "env", "timeout_seconds", "max_output_bytes"], "properties": {"id": {"type": "string", "pattern": "^G[1-9][0-9]*$"}, "argv": {"type": "array", "minItems": 1, "items": {"type": "string"}}, "env": {"type": "object", "additionalProperties": {"type": "string"}}, "timeout_seconds": {"type": "integer", "exclusiveMinimum": 0, "maximum": 3600}, "max_output_bytes": {"type": "integer", "exclusiveMinimum": 0, "maximum": 67108864}}}}
+  },
+  "$defs": {
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["argv", "env", "timeout_seconds", "max_output_bytes"],
+      "properties": {
+        "argv": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "env": {"type": "object", "additionalProperties": {"type": "string"}},
+        "timeout_seconds": {"type": "integer", "exclusiveMinimum": 0, "maximum": 3600},
+        "max_output_bytes": {"type": "integer", "exclusiveMinimum": 0, "maximum": 67108864}
+      }
+    }
+  }
+}

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Add transactional runtime-upgrade, persisted-state migration, incident-response,
+  direct-session, tool-contract, and chat-handoff policies.
+- Add a strict runtime-upgrade task template, schema, validator, canonical prompts,
+  and regression coverage for migration ordering, process identity, rollback, and
+  authoritative refs.
+
 ## 2.0.0 — 2026-07-31
 
 - Replaced dual gateway/repository completion paths with one explicit execution

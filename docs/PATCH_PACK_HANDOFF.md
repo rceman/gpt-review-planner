@@ -39,3 +39,11 @@ finalization, and explicitly forbids repository evidence and evidence-only
 commits. In `repository_evidence` mode the handoff requires the one canonical
 repository evidence directory and forbids tunnel completion. No v1/v2
 negotiation, aliases, or fallback readers are exposed for new tasks.
+
+Runtime-affecting patch packs must link the pinned runtime-upgrade, migration,
+incident, and tool-contract policies and include the machine-readable task
+declaration validated by `scripts/validate-runtime-upgrade-task.py`. The local
+agent must prove target-decoder validation before activation, installed versus
+running version identity, unchanged-process identity, readiness, protocol/tool
+schema parity, and rollback. A handoff must not claim a full upgrade while any
+required activation side effect is pending.
