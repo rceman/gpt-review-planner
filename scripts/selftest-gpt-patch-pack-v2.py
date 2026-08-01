@@ -20,6 +20,8 @@ def run(argv: list[str], cwd: Path) -> str:
 
 
 def main() -> int:
+    planner_version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+    baseline_release = f"v{planner_version}"
     with tempfile.TemporaryDirectory(prefix="gpt-pack-v2-selftest-") as raw:
         root = Path(raw); remote = root / "remote.git"; repo = root / "repo"; author = root / "author"; out1 = root / "out1"; out2 = root / "out2"
         run(["git", "init", "--bare", str(remote)], root)
@@ -35,7 +37,7 @@ def main() -> int:
         requirements = root / "requirements.json"; requirements.write_text(json.dumps({"requirements": [{"id": "REQ-001", "summary": "Exact tree", "acceptance": ["The target tree is exact."]}]}), encoding="utf-8")
         gates = root / "gates.json"; gates.write_text(json.dumps({"gates": [{"id": "G1", "name": "Compile", "kind": "command", "argv": ["python3", "-m", "compileall", "-q", "scripts"], "env": {}, "timeout_seconds": 60, "max_output_bytes": 1048576}]}), encoding="utf-8")
         env = {"SOURCE_DATE_EPOCH": "1751241600", "GPT_PATCH_PACK_SOURCE_COMPLETE": "1"}
-        build_args = ["python3", str(ROOT / "scripts/build-gpt-patch-pack-v2.py"), "--repo", str(repo), "--repository", "selftest/repo", "--accepted-origin-url", str(remote), "--branch", "main", "--base-commit", base, "--remote", "origin", "--remote-ref", "refs/remotes/origin/main", "--baseline-release", "v2.0.0", "--slug", "synthetic", "--title", "Synthetic", "--description", "Synthetic v2", "--changes-patch", str(patch), "--agent-task", str(task), "--requirements", str(requirements), "--gates", str(gates), "--execution-mode", "gpt_tunnel_managed"]
+        build_args = ["python3", str(ROOT / "scripts/build-gpt-patch-pack-v2.py"), "--repo", str(repo), "--repository", "selftest/repo", "--accepted-origin-url", str(remote), "--branch", "main", "--base-commit", base, "--remote", "origin", "--remote-ref", "refs/remotes/origin/main", "--baseline-release", baseline_release, "--slug", "synthetic", "--title", "Synthetic", "--description", "Synthetic v2", "--changes-patch", str(patch), "--agent-task", str(task), "--requirements", str(requirements), "--gates", str(gates), "--execution-mode", "gpt_tunnel_managed"]
         for output in (out1, out2):
             result = subprocess.run(build_args + ["--output-directory", str(output)], cwd=ROOT, env={**__import__('os').environ, **env}, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if result.returncode:
