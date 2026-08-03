@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import re
 import argparse
+import subprocess
 import sys
 from pathlib import Path
 from pathlib import PurePosixPath
@@ -42,6 +43,30 @@ def main() -> int:
     agents = project.joinpath(*agents_relative.parts)
     lock = project / ".gpt-workflow.lock"
     errors: list[str] = []
+
+    project_release = project / "scripts" / "release.py"
+    planner_release = Path(__file__).resolve().with_name("release.py")
+    conformance = Path(__file__).resolve().with_name("validate-release-tool-conformance.py")
+    if project_release.exists() or project_release.is_symlink():
+        if project_release.is_symlink() or not project_release.is_file():
+            errors.append("project scripts/release.py must be a regular file")
+        else:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(conformance),
+                    "--release-script",
+                    str(project_release),
+                    "--canonical-script",
+                    str(planner_release),
+                ],
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            if result.returncode != 0:
+                errors.append("project release tooling failed planner conformance: " + (result.stderr.strip() or "unknown error"))
 
     if not agents.is_file():
         errors.append("missing AGENTS.md")

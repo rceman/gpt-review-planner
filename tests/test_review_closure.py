@@ -133,6 +133,21 @@ class ReviewClosureIntegrationTests(unittest.TestCase):
         self.assertIn("static validation", text)
         self.assertIn("unauthorized shims", text)
 
+    def test_agent_result_requires_mode_specific_release_gate_and_conformance(self) -> None:
+        text = self.text("prompts/GPT_REVIEW_AGENT_RESULT.md")
+        for phrase in (
+            "exactly one",
+            "implementation_unreleased",
+            "release_publication",
+            "check-source",
+            "check-release-ready",
+            "check-tag-ready",
+            "attached project's `scripts/release.py`",
+            "planner canonical script",
+            "MERGE_READY",
+        ):
+            self.assertIn(phrase, text)
+
     def test_archive_guide_documents_normal_round_budget(self) -> None:
         text = self.text("docs/PROJECT_ARCHIVE_REVIEW.md")
         self.assertIn("one normal correction round", text)

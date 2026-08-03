@@ -8,6 +8,15 @@ against the task behavior contract and patch specification.
 Check scope, behavior, architecture, security, dependencies, tests, skipped gates,
 warnings, and every documented or undocumented deviation.
 
+Before declaring `MERGE_READY` for a release-surface task, require exactly one
+explicit lifecycle declaration (`implementation_unreleased` or
+`release_publication`), its mode-specific state gate, and successful conformance
+of the attached project's `scripts/release.py` against the planner canonical script.
+`implementation_unreleased` requires `check-source`;
+`release_publication` requires `check-release-ready` before release mutation and
+`check-tag-ready` before tagging. Do not treat a declaration without its
+matching state gate or project conformance result as merge-ready.
+
 When corrections are required, produce an Executable Correction Patch Pack with
 exact files, code, regression tests, fixtures, application order, and verification gates.
 

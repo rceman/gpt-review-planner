@@ -35,7 +35,9 @@ class WorkflowPerformanceBudgetTests(unittest.TestCase):
         workflow_version = re.search(r"\*\*Workflow version:\*\*\s+([0-9]+\.[0-9]+\.[0-9]+)", self.planner)
         self.assertIsNotNone(workflow_version)
         self.assertIn(workflow_version.group(1), {self.version, "2.1.0"})
-        self.assertIn(self.version, self.changelog)
+        self.assertIn("## Unreleased", self.changelog)
+        self.assertRegex(self.changelog, r"(?s)## Unreleased\s+.+?\n## ")
+        self.assertNotRegex(self.changelog, rf"(?m)^## {re.escape(self.version)} — \d{{4}}-\d{{2}}-\d{{2}}$")
 
     def test_mandatory_budget_and_incident(self):
         section = self.workflow_budget_section()

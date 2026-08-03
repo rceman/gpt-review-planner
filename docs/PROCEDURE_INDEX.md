@@ -34,7 +34,7 @@ GPT_DELTA_REVIEW
 | PROC-CORRECTION | `CORRECTION_REQUIRED` | GPT | [review closure](REVIEW_CLOSURE_PROTOCOL.md) | task-specific correction patch/handoff | verdict, defects | complete/blocked | agent implementation, then delta review |
 | PROC-MERGE | `MERGE_READY` | Local agent | [cleanup contract](POST_MERGE_BRANCH_CLEANUP.md) | [merge prompt](../prompts/AGENT_FINALIZE_MERGE.md) | immutable parameters | `MERGE_FINALIZED`/`MERGE_CLEANUP_BLOCKED`/`MERGE_BLOCKED` | feature close |
 | PROC-CLEANUP | merge CI success | Local agent | [post-merge cleanup](POST_MERGE_BRANCH_CLEANUP.md) | merge prompt | merge SHA, feature tip | finalized/cleanup-blocked | task close |
-| PROC-RELEASE | explicit owner release task | Owner/Local agent | [release process](RELEASE_PROCESS.md) | [release prompt](../prompts/AGENT_RELEASE_VERSION.md) | version, authorization | prepared/finalized/blocked | separate release close |
+| PROC-RELEASE | explicit owner release task | Owner/Local agent | [release lifecycle](RELEASE_LIFECYCLE.md) and [release process](RELEASE_PROCESS.md) | [release prompt](../prompts/AGENT_RELEASE_VERSION.md) | exact lifecycle mode, target version, authorization | source-checked/prepared/release-ready/tag-ready/finalized/blocked | separate release close |
 | PROC-CI-POLICY | any CI decision | GPT/Owner | [CI capability policy](CI_CAPABILITY_POLICY.md) | [CI helper](../scripts/check-github-ci.py) | policy, SHA | success/pending/unavailable/blocked | current procedure |
 | PROC-RUNTIME-UPGRADE | authorized runtime upgrade | Local agent | [runtime upgrade](RUNTIME_UPGRADE_POLICY.md), [migration](PERSISTED_STATE_MIGRATION_POLICY.md) | [runtime upgrade](../prompts/AGENT_RUNTIME_UPGRADE.md) | task declaration, source/target identity, state scope | succeeded/failed/rollback | verification or incident |
 | PROC-INCIDENT | incident trigger or unknown readiness failure | Local agent/GPT | [incident response](INCIDENT_RESPONSE_POLICY.md) | [incident diagnosis](../prompts/AGENT_INCIDENT_DIAGNOSIS.md), [recovery](../prompts/AGENT_RUNTIME_RECOVERY.md) | logs, phase, process/state identity | diagnosed/checkpointed/blocked | durable plan update |
@@ -46,3 +46,8 @@ GPT_DELTA_REVIEW
 Ownership is explicit: GPT owns architecture, principal implementation, tests, correction patches, and delta review. The local agent owns integration, runtime gates, evidence, merge execution, and cleanup. `IMPLEMENTATION_COMPLETE` returns control to GPT. `CORRECTION_REQUIRED` requires a GPT-authored correction handoff or patch and returns through implementation to delta review; it does not automatically lead to merge. `OWNER_DECISION_REQUIRED` waits for the owner and follows only a task-specific approved transition. `MERGE_READY` requires GPT to provide `GPT_MERGE_HANDOFF`; it does not mean merge execution is complete. `MERGE_FINALIZED` closes the current feature task. Backlog work and release work start only as separate tasks, with release requiring explicit owner instruction.
 
 Load the linked normative contract and reusable prompt before execution; this index is a map, not a replacement for them.
+
+Release work has exactly two modes, `implementation_unreleased` and
+`release_publication`; load [`RELEASE_LIFECYCLE.md`](RELEASE_LIFECYCLE.md) and
+run the matching state gate before `MERGE_READY`. A source implementation may
+not be presented as a publication or tag-ready release.

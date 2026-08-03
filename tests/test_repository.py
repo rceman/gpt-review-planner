@@ -29,7 +29,11 @@ class RepositoryTest(unittest.TestCase):
             "toolchains/README.md",
             "docs/FAST_RUSTC_BOOTSTRAP.md",
             "docs/CHATGPT_RUST_SANDBOX_BOOTSTRAP.md",
+            "docs/RELEASE_LIFECYCLE.md",
+            "docs/RELEASE_TASK_2.2.0.md",
             "scripts/benchmark-offline-rust.py",
+            "scripts/validate-release-tool-conformance.py",
+            "scripts/validate-release-lifecycle-task.py",
             "scripts/gpt-patch-pack-runner-v2.py",
             "scripts/build-gpt-patch-pack-v2.py",
             "scripts/validate-patch-pack-v2.py",
@@ -41,6 +45,7 @@ class RepositoryTest(unittest.TestCase):
             "scripts/verify-agent-evidence.py",
             "benchmarks/chatgpt-sandbox-rust-1.97.1.json",
             "schemas/gpt-workflow-lock.schema.json",
+            "schemas/release-lifecycle-task.schema.json",
         ):
             self.assertTrue((ROOT / relative).is_file(), relative)
 
@@ -56,7 +61,9 @@ class RepositoryTest(unittest.TestCase):
         self.assertTrue(runbook_path.is_file())
         self.assertTrue(prompt_path.is_file())
         self.assertIn("docs/RELEASE_PROCESS.md", prompt)
+        self.assertIn("docs/RELEASE_LIFECYCLE.md", prompt)
         self.assertIn("docs/RELEASE_PROCESS.md", readme)
+        self.assertIn("docs/RELEASE_LIFECYCLE.md", readme)
         self.assertIn("`docs/RELEASE_PROCESS.md` completely", agents)
         self.assertIn("prompts/AGENT_RELEASE_VERSION.md", readme)
 
@@ -66,7 +73,7 @@ class RepositoryTest(unittest.TestCase):
             capture_output=True,
             text=True,
         ).stdout
-        for command in ("check", "prepare", "commit", "tag", "verify-tag"):
+        for command in ("check", "check-source", "check-release-ready", "check-tag-ready", "prepare", "commit", "tag", "verify-tag"):
             self.assertIn(command, cli_help)
 
         self.assertIn("CI associated with the exact `<RELEASE_COMMIT>` SHA", runbook)

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import importlib.util
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -58,6 +60,46 @@ STOP_KEYS = {
 
 class ContractError(ValueError):
     pass
+
+
+def validate_release_task(task_path: Path, repo: Path | None = None) -> dict[str, str]:
+    validator_path = Path(__file__).with_name("validate-release-lifecycle-task.py")
+    spec = importlib.util.spec_from_file_location("release_lifecycle_task", validator_path)
+    if spec is None or spec.loader is None:
+        raise ContractError("release lifecycle validator is unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    try:
+        data = json.loads(task_path.read_text(encoding="utf-8"), object_pairs_hook=module.unique_pairs)
+        result = module.validate_task(data)
+    except (OSError, UnicodeError, json.JSONDecodeError, module.LifecycleError) as exc:
+        raise ContractError(f"release lifecycle task is invalid: {exc}") from exc
+    if repo is not None:
+        release_script = repo / "scripts" / "release.py"
+        if release_script.is_symlink() or not release_script.is_file():
+            raise ContractError("attached project release script is missing or not regular")
+        command = [sys.executable, str(release_script), "--repo", str(repo)]
+        command.append("check-source" if result.get("lifecycle_mode") == "implementation_unreleased" else "check-release-ready")
+        check = subprocess.run(command, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+        if check.returncode != 0:
+            raise ContractError("release lifecycle state gate failed: " + (check.stderr.strip() or "unknown error"))
+        conformance = subprocess.run(
+            [
+                sys.executable,
+                str(Path(__file__).with_name("validate-release-tool-conformance.py")),
+                "--release-script",
+                str(release_script),
+                "--canonical-script",
+                str(Path(__file__).with_name("release.py")),
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if conformance.returncode != 0:
+            raise ContractError("release tool conformance failed: " + (conformance.stderr.strip() or "unknown error"))
+    return result
 
 
 def strict_text(value: Any, label: str) -> str:
@@ -161,10 +203,14 @@ def main() -> int:
         type=Path,
         default=Path("profiles/review-closure.json"),
     )
+    parser.add_argument("--release-task", type=Path)
+    parser.add_argument("--repo", type=Path)
     args = parser.parse_args()
     try:
         data = json.loads(args.contract.read_text(encoding="utf-8"))
         counts = validate_contract(data)
+        if args.release_task:
+            validate_release_task(args.release_task, args.repo.resolve() if args.repo else None)
     except (OSError, json.JSONDecodeError, ContractError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1

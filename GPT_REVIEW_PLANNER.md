@@ -31,6 +31,19 @@ The runner generates both from that contract, records its identity in gate-run
 output and evidence, and fails closed on any manifest, plan, or captured-result
 mismatch.
 
+Every release-surface task must carry exactly one lifecycle declaration pair in
+its immutable task and task-specific handoff record. The reusable policy is
+[`docs/RELEASE_LIFECYCLE.md`](docs/RELEASE_LIFECYCLE.md):
+
+```text
+Release lifecycle mode: implementation_unreleased | release_publication
+Release target version: X.Y.Z
+```
+
+Validate the task with `python3 scripts/validate-release-lifecycle-task.py` and
+run the matching source, release-ready, or tag-ready state gate before
+`MERGE_READY`.
+
 This workflow combines two models with deliberately different responsibilities:
 
 - **GPT** is the principal architect, behavior owner, reviewer, test designer, and code author.
@@ -1214,7 +1227,15 @@ summaries.
 
 `scripts/verify-agent-evidence.py` validates the implementation diff, proof hashes, requirement and gate completeness, direct commit ancestry, byte-identical manifest preservation, and exact two-file evidence diff without rerunning project tests.
 
-Repository versions are controlled by `VERSION`, `release-config.json`, and `scripts/release.py`. Concrete current versions are prohibited in README. The local agent prepares synchronized version files, executes quality gates, creates the release commit, waits for CI on that commit, and only then creates and explicitly pushes the immutable tag.
+Repository versions are controlled by `VERSION`, `release-config.json`, and the
+two-mode canonical implementation in `scripts/release.py`. A task touching
+release surfaces must declare exactly one lifecycle mode and target version,
+run the matching state-specific gate, and prove project release-tool
+conformance before `MERGE_READY`. `implementation_unreleased` keeps notes under
+`Unreleased` and forbids dated headings, release commits, tags, and publication;
+`release_publication` requires prepare, check-release-ready, release-commit CI,
+check-tag-ready, and annotated-tag verification in order. Concrete
+current-version literals remain prohibited in README.
 Remote CI is a capability-dependent gate, not a universal repository requirement. Repository visibility alone MUST NOT decide whether remote CI is required. See `docs/CI_CAPABILITY_POLICY.md` for policy resolution.
 # Workflow 2.0.0 single-authority execution
 

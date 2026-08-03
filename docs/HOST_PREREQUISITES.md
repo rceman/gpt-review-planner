@@ -37,3 +37,12 @@ For runtime-upgrade or gateway integration work, the host preflight also records
 installed and running runtime versions, process identities, the authoritative
 remote branch/ref, and the protocol/MCP tool surface. These operational proofs
 do not replace the repository's local gates.
+
+Release tooling is planner-owned. When a reviewed project contains
+`scripts/release.py`, validate its exact canonical synchronization before
+release work:
+
+```bash
+python3 scripts/validate-release-tool-conformance.py \
+  --release-script scripts/release.py
+```

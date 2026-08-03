@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add a canonical two-mode release lifecycle with source, release-ready, and
+  annotated-tag readiness checks, rollback-safe preparation, project conformance,
+  and machine-checkable task/review enforcement.
+
 ## 2.1.0 — 2026-08-01
 
 - Add transactional runtime-upgrade, persisted-state migration, incident-response,

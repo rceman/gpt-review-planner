@@ -1,0 +1,122 @@
+# Release lifecycle contract
+
+This document is the canonical policy for version and release work. It defines
+exactly two lifecycle modes:
+
+1. `implementation_unreleased` — an owner-selected next source version may be
+   present in every configured version field while accepted notes remain under
+   `## Unreleased`. This mode must not create a dated target heading, release
+   commit, tag, GitHub Release, or publication.
+2. `release_publication` — the owner-authorized publication path promotes the
+   accepted `Unreleased` notes to a dated target heading, creates the actual
+   release diff, validates readiness, and performs tagging/publication only
+   when separately authorized.
+
+There is no manual, third, fallback, alias, or compatibility lifecycle mode.
+
+## Task declaration
+
+The immutable task and its task-specific handoff record must carry exactly one
+of these declaration pairs:
+
+```text
+Release lifecycle mode: implementation_unreleased
+Release target version: X.Y.Z
+```
+
+or:
+
+```text
+Release lifecycle mode: release_publication
+Release target version: X.Y.Z
+```
+
+Reusable policy documents do not select a concrete version.
+
+## State commands
+
+The dependency-free canonical implementation is `scripts/release.py`.
+
+```text
+implementation_unreleased
+→ python3 scripts/release.py check-source
+→ implementation gates and review
+
+release_publication
+→ python3 scripts/release.py prepare <TARGET_VERSION>
+→ python3 scripts/release.py check-release-ready
+→ python3 scripts/release.py commit
+→ exact release-commit CI
+→ python3 scripts/release.py check-tag-ready
+→ python3 scripts/release.py tag
+→ python3 scripts/release.py verify-tag <TAG>
+→ separately authorized publication
+```
+
+`check-source` requires synchronized semantic versions, one non-empty
+`Unreleased` section, no dated heading for the current version, no target tag,
+and a clean worktree. `prepare` fully validates before changing bytes and
+supports both a lower current version and a pre-set target version. In the
+pre-set case configured version files remain byte-identical and the release
+commit may contain only the changelog.
+
+`check-release-ready` requires the target heading, an empty `Unreleased`
+section, synchronized version files, and no unrelated changed path.
+`check-tag-ready` additionally requires a clean worktree, the configured
+release commit subject and changed-path set, and an absent target tag.
+`tag` creates only an annotated tag. `verify-tag` rejects lightweight tags,
+wrong names, wrong versions, and tags resolving to another commit.
+
+All validation completes before writes. Preparation renders every target byte
+in memory and applies the set with rollback-safe atomic replacement. A failed
+application restores the original bytes and leaves no partial release state.
+
+## Task and review enforcement
+
+Any task touching configured version files, the changelog, release tooling or
+configuration, runtime/package version fields, release metadata, or tag
+behavior must contain exactly these immutable declaration strings:
+
+```text
+Release lifecycle mode: implementation_unreleased
+Release target version: X.Y.Z
+```
+
+or:
+
+```text
+Release lifecycle mode: release_publication
+Release target version: X.Y.Z
+```
+
+The machine checker is `scripts/validate-release-lifecycle-task.py`. An
+`implementation_unreleased` task must declare `scripts/release.py check-source`
+and must not declare publication mutation commands. A `release_publication`
+task must declare prepare, `check-release-ready`, commit, `check-tag-ready`,
+and `verify-tag` gates. GPT review must not emit `MERGE_READY` until the exact
+declaration, state-specific gate, and conformance proof are present and
+consistent.
+
+Project-local release tooling, when present, must pass:
+
+```bash
+python3 scripts/validate-release-tool-conformance.py \
+  --release-script scripts/release.py
+```
+
+The project script must be byte-identical to the planner-owned canonical
+implementation and advertise the same lifecycle commands. No project may
+silently diverge with a simplified release implementation.
+
+## Safety invariants
+
+- all configured version files must agree before and after a lifecycle step;
+- downgrade, malformed/empty/multiple `Unreleased` headings, conflicting target
+  headings or dates, repeated promotion, and an existing target tag fail before
+  mutation;
+- release commits contain only the actual non-empty subset of configured
+  release files plus the changelog and use the configured message;
+- release publication is never inferred from a source-state success;
+- `MERGE_READY` is not release completion and cannot bypass lifecycle proof;
+- release behavior remains compatibility scope `none` unless a separate owner
+  instruction authorizes a bounded migration declaration.

@@ -27,7 +27,9 @@ Projects pin both the selected tag and its exact commit in `.gpt-workflow.lock`.
 Workflow 2.0.0 is an incompatible cutover to the explicit, v2-only execution
 and evidence contracts. New tasks must use GPT Patch Pack v2 and declare one
 execution mode; historical v1 artifacts remain immutable history and are not
-read, migrated, or negotiated by current tooling. The cutover does not change
-the version during this correction task; a later release decision is separate.
+read, migrated, or negotiated by current tooling. Release-surface tasks also
+declare exactly one `implementation_unreleased` or `release_publication`
+lifecycle mode and an owner-selected target version. See
+[`RELEASE_LIFECYCLE.md`](RELEASE_LIFECYCLE.md).
 
 See [`RELEASE_PROCESS.md`](RELEASE_PROCESS.md).

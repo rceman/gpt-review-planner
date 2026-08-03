@@ -10,6 +10,7 @@ Canonical workflow and tooling for a two-model software delivery process:
 Published versions are identified by immutable `vX.Y.Z` Git tags and GitHub Releases. The repository version is stored in [`VERSION`](VERSION) and must be changed only through [`scripts/release.py`](scripts/release.py).
 
 For the complete reusable release procedure, read [`docs/RELEASE_PROCESS.md`](docs/RELEASE_PROCESS.md) and use [`prompts/AGENT_RELEASE_VERSION.md`](prompts/AGENT_RELEASE_VERSION.md).
+The reusable two-mode contract is [`docs/RELEASE_LIFECYCLE.md`](docs/RELEASE_LIFECYCLE.md); task-specific mode and target declarations stay in the immutable task and handoff record.
 
 The [engineering baseline](docs/engineering/README.md) defines the canonical
 stack, profiles, exceptions, and review checklists. Validate the registry with
@@ -216,11 +217,17 @@ python3 scripts/gpt-patch-pack-runner-v2.py \
 
 ```bash
 python scripts/release.py check
+python scripts/release.py check-source
+# For an owner-authorized release_publication task:
 python scripts/release.py prepare X.Y.Z
+python scripts/release.py check-release-ready
 # Local agent runs every required quality gate.
 python scripts/release.py commit
 # Push the release commit and wait for CI.
+python scripts/release.py check-tag-ready
 python scripts/release.py tag
+# Verify the annotated tag.
+python scripts/release.py verify-tag vX.Y.Z
 # Push the created tag explicitly.
 ```
 

@@ -8,7 +8,11 @@ paths, refs, tags, CI output, and error messages without translation. Do not
 duplicate instructions or reports bilingually. Follow
 `docs/AGENT_COMMUNICATION_LANGUAGE.md`.
 
-Before changing anything, read and follow `docs/RELEASE_PROCESS.md` completely.
+Before changing anything, read and follow `docs/RELEASE_LIFECYCLE.md` and
+`docs/RELEASE_PROCESS.md` completely. The task-specific handoff must contain
+exactly one `Release lifecycle mode: implementation_unreleased` or `Release
+lifecycle mode: release_publication` declaration and one `Release target
+version: X.Y.Z` declaration.
 
 For a runtime-affecting release also read `docs/RUNTIME_UPGRADE_POLICY.md` and
 `docs/PERSISTED_STATE_MIGRATION_POLICY.md`; validate the declared upgrade task
@@ -24,6 +28,24 @@ Use only:
 
 - `scripts/release.py`
 - `release-config.json`
+
+For `implementation_unreleased`, run only the source-state gate:
+
+```bash
+python3 scripts/release.py check-source
+```
+
+Do not create a dated heading, release commit, tag, or publication in that
+mode. For `release_publication`, use the ordered canonical commands from
+`docs/RELEASE_LIFECYCLE.md`: `prepare`, `check-release-ready`, `commit`, exact
+release-commit CI, `check-tag-ready`, `tag`, and `verify-tag`.
+
+If the project contains `scripts/release.py`, prove planner conformance with:
+
+```bash
+python3 scripts/validate-release-tool-conformance.py \
+  --release-script scripts/release.py
+```
 
 The owner has selected `<TARGET_VERSION>`. Do not select or infer another
 version. Do not manually edit synchronized version files, bypass required

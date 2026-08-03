@@ -91,3 +91,9 @@ orchestrate deterministic shell pipelines.
 Runtime reports must distinguish installed version from running version and include the exact source/target identity, migration/decoder ordering, affected and unchanged process proof, readiness, protocol/MCP parity, rollback state, and the durable plan revision after incident closure. Do not report a full upgrade as succeeded while activation or a required side effect is pending, and do not use `remaining_risks` to hide incomplete work.
 
 Incident reports use one bounded record containing the trigger, startup phase, exact first fatal line, competing hypotheses, source/log/state correlation, and corrective-action checkpoint. A direct-session receipt is transport metadata only and must not be presented as task, run, plan, Git, merge, or release evidence. Tool reports record required names and schema parity rather than a hard-coded tool count.
+
+Release reports also identify the exact lifecycle mode and target version. An
+`implementation_unreleased` source-state result is not release-ready and must
+not be reported as a release, tag, or publication. Publication reports record
+the separate source, release-ready, tag-ready, release-commit, and annotated
+tag proofs without claiming a later phase from an earlier successful check.

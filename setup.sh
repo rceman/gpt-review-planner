@@ -8,6 +8,7 @@ ARCHIVE_REVIEW_ONLY_PROMPT_PATH="prompts/GPT_PROJECT_ARCHIVE_REVIEW_ONLY.md"
 ARCHIVE_PREP_PROMPT_PATH="prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md"
 ARCHIVE_GUIDE_PATH="docs/PROJECT_ARCHIVE_REVIEW.md"
 RELEASE_PROCESS_PATH="docs/RELEASE_PROCESS.md"
+RELEASE_LIFECYCLE_PATH="docs/RELEASE_LIFECYCLE.md"
 BLOCK_BEGIN="<!-- BEGIN GPT-REVIEW-PLANNER -->"
 BLOCK_END="<!-- END GPT-REVIEW-PLANNER -->"
 
@@ -113,6 +114,7 @@ ${BLOCK_BEGIN}
 > [\`${ARCHIVE_PREP_PROMPT_PATH}\`](${browser_repository}/blob/${commit}/${ARCHIVE_PREP_PROMPT_PATH})
 > Archive guide: [\`${ARCHIVE_GUIDE_PATH}\`](${browser_repository}/blob/${commit}/${ARCHIVE_GUIDE_PATH})
 > Release process: [\`${RELEASE_PROCESS_PATH}\`](${browser_repository}/blob/${commit}/${RELEASE_PROCESS_PATH})
+> Release lifecycle: [\`${RELEASE_LIFECYCLE_PATH}\`](${browser_repository}/blob/${commit}/${RELEASE_LIFECYCLE_PATH})
 >
 > If \`engineering-profile.json\` is present, validate it with the exact pinned
 > planner checkout and follow the selected profile and relevant documents.
@@ -123,9 +125,10 @@ ${BLOCK_BEGIN}
 > authority remains Liquibase. Python rules apply to tools/tests; a valid legacy
 > Python exception does not demand rewrite.
 >
-> Any release, version bump, or version-tag request requires reading the exact commit-pinned release process.
+> Any release, version bump, or version-tag request requires reading the exact commit-pinned release lifecycle and release process.
 > The owner explicitly selects the target version.
 > Only repository release automation may modify synchronized version files; manual version synchronization is forbidden.
+> Release-surface tasks declare exactly one lifecycle mode and target version in the task-specific handoff. Use `check-source` for `implementation_unreleased`; use the ordered prepare/check-release-ready/commit/check-tag-ready/tag/verify-tag flow for `release_publication`. A source-state pass is not release or tag readiness.
 > Operating model:
 > - GPT owns architecture, behavior contracts, fixtures, tests, review, and the principal implementation.
 > - The local agent owns integration, dependency restoration, compilation, runtime tests, and minimal integration corrections.

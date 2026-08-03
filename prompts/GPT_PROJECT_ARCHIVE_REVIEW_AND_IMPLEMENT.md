@@ -179,6 +179,11 @@ execution, review the result in delta mode and issue `CORRECTION_REQUIRED`,
 `OWNER_DECISION_REQUIRED`, or `MERGE_READY` according to the pinned closure
 protocol.
 
+For any version, changelog, release-tool, release-metadata, or tag surface,
+validate the exact two-mode lifecycle declaration and run the matching
+`check-source`, `check-release-ready`, or `check-tag-ready` contract plus
+planner-owned release-tool conformance before emitting `MERGE_READY`.
+
 ## GPT execution boundary
 
 GPT performs static repository and artifact analysis only. GPT must not install

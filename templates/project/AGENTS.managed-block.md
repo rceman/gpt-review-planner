@@ -52,9 +52,17 @@ The local agent owns runtime integration and gates.
 ## Release procedure
 
 Any request to release, bump a version, or create a version tag requires reading
-`docs/RELEASE_PROCESS.md` completely. Use only the repository release automation;
+`docs/RELEASE_LIFECYCLE.md` and `docs/RELEASE_PROCESS.md` completely. Use only the repository release automation;
 the owner selects the target version and synchronized version files must not be
 edited manually. Release-commit CI must pass before tagging, and final tag CI is
 external metadata. Do not publish a GitHub Release without explicit authorization.
 Never force-push, rewrite published history, or use broad `git push --tags`.
 CI policy: resolve `required`, `auto`, `optional`, or `disabled` explicitly. Repository visibility alone MUST NOT decide whether remote CI is required.
+
+Release-surface tasks must carry exactly one lifecycle mode and target-version
+declaration in their task-specific handoff. Use `python3 scripts/release.py
+check-source` for `implementation_unreleased`; use the ordered
+prepare/check-release-ready/commit/check-tag-ready/tag/verify-tag flow for
+`release_publication`. If `scripts/release.py` is present in the project, it
+must pass the planner-owned release-tool conformance check. A source-state pass
+is not release or tag readiness.
