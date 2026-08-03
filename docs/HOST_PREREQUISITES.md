@@ -44,5 +44,6 @@ release work:
 
 ```bash
 python3 scripts/validate-release-tool-conformance.py \
-  --release-script scripts/release.py
+  --release-script scripts/release.py \
+  --ci-script scripts/check-github-ci.py
 ```

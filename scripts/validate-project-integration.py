@@ -45,11 +45,14 @@ def main() -> int:
     errors: list[str] = []
 
     project_release = project / "scripts" / "release.py"
+    project_ci = project / "scripts" / "check-github-ci.py"
     planner_release = Path(__file__).resolve().with_name("release.py")
     conformance = Path(__file__).resolve().with_name("validate-release-tool-conformance.py")
     if project_release.exists() or project_release.is_symlink():
         if project_release.is_symlink() or not project_release.is_file():
             errors.append("project scripts/release.py must be a regular file")
+        elif project_ci.is_symlink() or not project_ci.is_file():
+            errors.append("project scripts/check-github-ci.py must be a regular file when release.py is present")
         else:
             result = subprocess.run(
                 [
@@ -57,6 +60,8 @@ def main() -> int:
                     str(conformance),
                     "--release-script",
                     str(project_release),
+                    "--ci-script",
+                    str(project_ci),
                     "--canonical-script",
                     str(planner_release),
                 ],

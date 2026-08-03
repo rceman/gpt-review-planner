@@ -1230,8 +1230,10 @@ summaries.
 Repository versions are controlled by `VERSION`, `release-config.json`, and the
 two-mode canonical implementation in `scripts/release.py`. A task touching
 release surfaces must declare exactly one lifecycle mode and target version,
-run the matching state-specific gate, and prove project release-tool
-conformance before `MERGE_READY`. `implementation_unreleased` keeps notes under
+run the matching state-specific gate, and prove two-script project release-tool
+conformance before `MERGE_READY`. The conformance gate binds both the attached
+`scripts/release.py` and `scripts/check-github-ci.py`; exact CI gates resolve
+their SHA with `--sha-from-git HEAD`. `implementation_unreleased` keeps notes under
 `Unreleased` and forbids dated headings, release commits, tags, and publication;
 `release_publication` requires prepare, check-release-ready, release-commit CI,
 check-tag-ready, and annotated-tag verification in order. Concrete

@@ -44,7 +44,19 @@ If the project contains `scripts/release.py`, prove planner conformance with:
 
 ```bash
 python3 scripts/validate-release-tool-conformance.py \
-  --release-script scripts/release.py
+  --release-script scripts/release.py \
+  --ci-script scripts/check-github-ci.py
+```
+
+For every required remote-CI gate, use the exact checked-out commit:
+
+```bash
+python3 scripts/check-github-ci.py \
+  --repository OWNER/REPO \
+  --sha-from-git HEAD \
+  --policy required \
+  --wait \
+  --format json
 ```
 
 The owner has selected `<TARGET_VERSION>`. Do not select or infer another

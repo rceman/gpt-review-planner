@@ -15,6 +15,32 @@ target version in its immutable task and task-specific handoff record.
 
 The script is repository-local and dependency-free. It supports plain-text version files, JSON fields, and selected TOML table keys. Package ecosystems are included only when listed in `release-config.json`; no file is guessed or modified implicitly.
 
+Before `MERGE_READY`, a release-surface task must pass the immutable task
+projection validator and prove the attached project's two-script conformance:
+
+```bash
+python3 scripts/validate-release-lifecycle-task.py <IMMUTABLE_TASK_JSON>
+python3 scripts/validate-release-tool-conformance.py \
+  --release-script scripts/release.py \
+  --ci-script scripts/check-github-ci.py
+```
+
+Required CI gates use the exact checked-out commit rather than a manually
+copied SHA:
+
+```bash
+python3 scripts/check-github-ci.py \
+  --repository OWNER/REPO \
+  --sha-from-git HEAD \
+  --policy required \
+  --wait \
+  --format json
+```
+
+The lifecycle task validator accepts only the canonical command names
+`check-source`, `check-release-ready`, and `check-tag-ready`, and enforces the
+mode-specific order declared in the immutable task.
+
 ## Commands
 
 ### Check consistency
@@ -53,9 +79,11 @@ creating only the necessary release metadata changes.
 python3 scripts/release.py check-release-ready
 ```
 
-This requires synchronized target versions, exactly one dated target heading,
-an empty `Unreleased` section, and only the actual configured release-file
-subset changed.
+Run this only after `prepare`. It validates the prepared release diff before
+the release commit: synchronized target versions, exactly one dated target
+heading, an empty `Unreleased` section, and only the actual configured
+release-file subset changed. It does not precede preparation or release
+mutation.
 
 ### Commit the version
 
@@ -117,6 +145,13 @@ implementation and tests written
 → CI passes on release commit
 → tag created and pushed
 → release artifacts verified
+```
+
+The canonical publication order is:
+
+```text
+prepare → check-release-ready → commit → exact release-commit CI
+→ check-tag-ready → tag → verify-tag
 ```
 
 The version is not incremented automatically on every merge. The project owner

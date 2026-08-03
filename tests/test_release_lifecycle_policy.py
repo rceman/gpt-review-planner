@@ -178,7 +178,14 @@ class ReleaseLifecyclePolicyTests(unittest.TestCase):
 
     def test_tool_conformance_and_exact_cli_names(self) -> None:
         result = subprocess.run(
-            [sys.executable, str(CONFORMANCE), "--release-script", str(RELEASE)],
+            [
+                sys.executable,
+                str(CONFORMANCE),
+                "--release-script",
+                str(RELEASE),
+                "--ci-script",
+                str(ROOT / "scripts/check-github-ci.py"),
+            ],
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -195,7 +202,11 @@ class ReleaseLifecyclePolicyTests(unittest.TestCase):
                 "Release lifecycle mode: implementation_unreleased",
                 "Release target version: 2.2.0",
             ],
-            "required_gates": ["python3 scripts/release.py check-source"],
+            "required_gates": [
+                "python3 scripts/validate-release-tool-conformance.py --release-script scripts/release.py --ci-script scripts/check-github-ci.py",
+                "python3 scripts/release.py check-source",
+                "python3 scripts/release.py check",
+            ],
         }
         publication = {
             "constraints": [
@@ -203,10 +214,13 @@ class ReleaseLifecyclePolicyTests(unittest.TestCase):
                 "Release target version: 2.2.0",
             ],
             "required_gates": [
+                "python3 scripts/validate-release-tool-conformance.py --release-script scripts/release.py --ci-script scripts/check-github-ci.py",
                 "python3 scripts/release.py prepare 2.2.0",
                 "python3 scripts/release.py check-release-ready",
                 "python3 scripts/release.py commit",
+                "python3 scripts/check-github-ci.py --repository owner/repo --sha-from-git HEAD --policy required --wait --format json",
                 "python3 scripts/release.py check-tag-ready",
+                "python3 scripts/release.py tag",
                 "python3 scripts/release.py verify-tag v2.2.0",
             ],
         }
@@ -224,10 +238,73 @@ class ReleaseLifecyclePolicyTests(unittest.TestCase):
         result = subprocess.run([sys.executable, str(LIFECYCLE_VALIDATOR), str(path)], capture_output=True, text=True)
         self.assertNotEqual(result.returncode, 0)
 
+    def test_lifecycle_validator_uses_strict_projection_and_rejects_spoofing(self) -> None:
+        valid = {
+            "constraints": [
+                "unrelated nested text is ignored",
+                "Release lifecycle mode: implementation_unreleased",
+                "Release target version: 2.2.0",
+            ],
+            "required_gates": [
+                "python3 scripts/validate-release-tool-conformance.py --release-script scripts/release.py --ci-script scripts/check-github-ci.py",
+                "python3 scripts/release.py check-source",
+            ],
+            "metadata": {"constraints": ["Release lifecycle mode: release_publication"]},
+        }
+        path = Path(tempfile.mkdtemp()) / "task.json"
+        path.write_text(json.dumps(valid), encoding="utf-8")
+        self.assertEqual(subprocess.run([sys.executable, str(LIFECYCLE_VALIDATOR), str(path)], capture_output=True).returncode, 0)
+
+        cases = [
+            {"constraints": ["Release lifecycle mode: release_publication", "Release target version: 2.2.0"], "required_gates": valid["required_gates"]},
+            {"constraints": ["Release lifecycle mode: implementation_unreleased", "Release lifecycle mode: implementation_unreleased", "Release target version: 2.2.0"], "required_gates": valid["required_gates"]},
+            {"constraints": valid["constraints"][:2], "required_gates": valid["required_gates"]},
+            {"constraints": ["Release lifecycle mode: implementation_unreleased", "Release target version: 2.2.0"], "required_gates": ["echo 'python3 scripts/release.py check-source'"]},
+            {"constraints": ["Release lifecycle mode: implementation_unreleased", "Release target version: 2.2.0"], "required_gates": ["python3 scripts/release.py check-source; echo bad"]},
+            {"constraints": ["Release lifecycle mode: implementation_unreleased", "Release target version: 2.2.0"], "required_gates": valid["required_gates"] + [valid["required_gates"][0]]},
+            {"constraints": ["Release lifecycle mode: implementation_unreleased", "Release target version: 2.2.0"], "required_gates": valid["required_gates"] + ["python3 scripts/release.py prepare 2.2.0"]},
+        ]
+        for index, case in enumerate(cases):
+            with self.subTest(index=index):
+                case_path = Path(tempfile.mkdtemp()) / "task.json"
+                case_path.write_text(json.dumps(case), encoding="utf-8")
+                self.assertNotEqual(subprocess.run([sys.executable, str(LIFECYCLE_VALIDATOR), str(case_path)], capture_output=True).returncode, 0)
+
+    def test_publication_gate_sequence_rejects_invalid_required_gates(self) -> None:
+        base = [
+            "python3 scripts/validate-release-tool-conformance.py --release-script scripts/release.py --ci-script scripts/check-github-ci.py",
+            "python3 scripts/release.py prepare 2.2.0",
+            "python3 scripts/release.py check-release-ready",
+            "python3 scripts/release.py commit",
+            "python3 scripts/check-github-ci.py --repository owner/repo --sha-from-git HEAD --policy required --wait --format json",
+            "python3 scripts/release.py check-tag-ready",
+            "python3 scripts/release.py tag",
+            "python3 scripts/release.py verify-tag v2.2.0",
+        ]
+        def valid_task(gates: list[str]) -> dict[str, object]:
+            return {"constraints": ["Release lifecycle mode: release_publication", "Release target version: 2.2.0"], "required_gates": gates}
+        cases = {
+            "missing_ci": base[:4] + base[5:],
+            "missing_tag": base[:6] + base[7:],
+            "wrong_prepare_target": [base[0], base[1].replace("prepare 2.2.0", "prepare 2.2.1"), *base[2:]],
+            "wrong_verify_tag": [*base[:-1], "python3 scripts/release.py verify-tag v2.2.1"],
+            "duplicate_gate": base[:3] + [base[2]] + base[3:],
+            "out_of_order": base[:2] + [base[3], base[2]] + base[4:],
+        }
+        for name, gates in cases.items():
+            path = Path(tempfile.mkdtemp()) / "task.json"
+            path.write_text(json.dumps(valid_task(gates)), encoding="utf-8")
+            with self.subTest(case=name):
+                self.assertNotEqual(
+                    subprocess.run([sys.executable, str(LIFECYCLE_VALIDATOR), str(path)], capture_output=True).returncode,
+                    0,
+                )
+
     def test_review_closure_uses_attached_project_release_script(self) -> None:
         repo = self.make_repo("2.2.0")
         (repo / "scripts").mkdir()
         shutil.copy2(RELEASE, repo / "scripts" / "release.py")
+        shutil.copy2(ROOT / "scripts/check-github-ci.py", repo / "scripts" / "check-github-ci.py")
         task = repo / "task.json"
         task.write_text(
             json.dumps(
@@ -236,12 +313,15 @@ class ReleaseLifecyclePolicyTests(unittest.TestCase):
                         "Release lifecycle mode: implementation_unreleased",
                         "Release target version: 2.2.0",
                     ],
-                    "required_gates": ["python3 scripts/release.py check-source"],
+                    "required_gates": [
+                        "python3 scripts/validate-release-tool-conformance.py --release-script scripts/release.py --ci-script scripts/check-github-ci.py",
+                        "python3 scripts/release.py check-source",
+                    ],
                 }
             ),
             encoding="utf-8",
         )
-        git(repo, "add", "scripts/release.py", "task.json")
+        git(repo, "add", "scripts/release.py", "scripts/check-github-ci.py", "task.json")
         git(repo, "commit", "-qm", "attach release lifecycle task")
         closure = subprocess.run(
             [

@@ -13,9 +13,12 @@ explicit lifecycle declaration (`implementation_unreleased` or
 `release_publication`), its mode-specific state gate, and successful conformance
 of the attached project's `scripts/release.py` against the planner canonical script.
 `implementation_unreleased` requires `check-source`;
-`release_publication` requires `check-release-ready` before release mutation and
-`check-tag-ready` before tagging. Do not treat a declaration without its
-matching state gate or project conformance result as merge-ready.
+`release_publication` requires `prepare`, then `check-release-ready` to validate
+the prepared diff before `commit`, and `check-tag-ready` before tagging. Do not
+treat a declaration without its
+matching state gate or two-script project conformance result as merge-ready.
+The conformance gate must bind both `scripts/release.py` and
+`scripts/check-github-ci.py`; CI gates must use `--sha-from-git HEAD`.
 
 When corrections are required, produce an Executable Correction Patch Pack with
 exact files, code, regression tests, fixtures, application order, and verification gates.

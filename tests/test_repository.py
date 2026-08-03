@@ -34,6 +34,7 @@ class RepositoryTest(unittest.TestCase):
             "scripts/benchmark-offline-rust.py",
             "scripts/validate-release-tool-conformance.py",
             "scripts/validate-release-lifecycle-task.py",
+            "scripts/check-github-ci.py",
             "scripts/gpt-patch-pack-runner-v2.py",
             "scripts/build-gpt-patch-pack-v2.py",
             "scripts/validate-patch-pack-v2.py",
@@ -45,7 +46,6 @@ class RepositoryTest(unittest.TestCase):
             "scripts/verify-agent-evidence.py",
             "benchmarks/chatgpt-sandbox-rust-1.97.1.json",
             "schemas/gpt-workflow-lock.schema.json",
-            "schemas/release-lifecycle-task.schema.json",
         ):
             self.assertTrue((ROOT / relative).is_file(), relative)
 

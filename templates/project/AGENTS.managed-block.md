@@ -63,6 +63,7 @@ Release-surface tasks must carry exactly one lifecycle mode and target-version
 declaration in their task-specific handoff. Use `python3 scripts/release.py
 check-source` for `implementation_unreleased`; use the ordered
 prepare/check-release-ready/commit/check-tag-ready/tag/verify-tag flow for
-`release_publication`. If `scripts/release.py` is present in the project, it
-must pass the planner-owned release-tool conformance check. A source-state pass
-is not release or tag readiness.
+`release_publication`. If `scripts/release.py` is present in the project, its
+release script and `scripts/check-github-ci.py` must pass the planner-owned
+two-script conformance check. A source-state pass is not release or tag
+readiness.

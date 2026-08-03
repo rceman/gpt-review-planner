@@ -18,9 +18,11 @@ If the task touches VERSION, configured version fields, CHANGELOG.md, release
 metadata, release tooling, or tags, require the exact task-specific
 declarations `Release lifecycle mode: implementation_unreleased` or `Release
 lifecycle mode: release_publication` and `Release target version: X.Y.Z`.
-Require the matching machine-checkable state gate and
-`scripts/validate-release-tool-conformance.py` proof; do not allow
-`MERGE_READY` from a missing or contradictory lifecycle.
+Require the matching machine-checkable state gate and the exact two-script
+`scripts/validate-release-tool-conformance.py` proof for both the project's
+`scripts/release.py` and `scripts/check-github-ci.py`; exact CI gates must use
+`--sha-from-git HEAD`. Do not allow `MERGE_READY` from a missing or
+contradictory lifecycle.
 
 Unless explicitly authorized, declare:
 

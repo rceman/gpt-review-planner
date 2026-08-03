@@ -60,8 +60,10 @@ supports both a lower current version and a pre-set target version. In the
 pre-set case configured version files remain byte-identical and the release
 commit may contain only the changelog.
 
-`check-release-ready` requires the target heading, an empty `Unreleased`
-section, synchronized version files, and no unrelated changed path.
+`check-release-ready` runs after `prepare` and validates the prepared diff
+before `commit`: it requires the target heading, an empty `Unreleased` section,
+synchronized version files, and no unrelated changed path. It does not run
+before preparation or release mutation.
 `check-tag-ready` additionally requires a clean worktree, the configured
 release commit subject and changed-path set, and an absent target tag.
 `tag` creates only an annotated tag. `verify-tag` rejects lightweight tags,
@@ -89,24 +91,31 @@ Release lifecycle mode: release_publication
 Release target version: X.Y.Z
 ```
 
-The machine checker is `scripts/validate-release-lifecycle-task.py`. An
-`implementation_unreleased` task must declare `scripts/release.py check-source`
-and must not declare publication mutation commands. A `release_publication`
-task must declare prepare, `check-release-ready`, commit, `check-tag-ready`,
-and `verify-tag` gates. GPT review must not emit `MERGE_READY` until the exact
-declaration, state-specific gate, and conformance proof are present and
-consistent.
+The machine checker is `scripts/validate-release-lifecycle-task.py`. It reads
+only the immutable task's `constraints` and `required_gates` projection; there
+is no standalone lifecycle schema or alternate gate alias. An
+`implementation_unreleased` task must declare exactly one canonical
+`check-source` gate, and may declare the exact consistency check and exact
+SHA-from-Git CI gate, but must not declare publication mutation commands. A
+`release_publication` task must declare the exact ordered conformance,
+prepare, `check-release-ready`, commit, SHA-from-Git CI, `check-tag-ready`,
+tag, and `verify-tag` gates. GPT review must not emit `MERGE_READY` until the
+exact declaration, state-specific gate, two-script conformance proof, and
+ordered publication sequence are present and consistent.
 
 Project-local release tooling, when present, must pass:
 
 ```bash
 python3 scripts/validate-release-tool-conformance.py \
-  --release-script scripts/release.py
+  --release-script scripts/release.py \
+  --ci-script scripts/check-github-ci.py
 ```
 
 The project script must be byte-identical to the planner-owned canonical
-implementation and advertise the same lifecycle commands. No project may
-silently diverge with a simplified release implementation.
+implementation, and the project CI helper must be byte-identical to the
+planner-owned canonical helper. Both scripts must advertise their exact
+supported interfaces. No project may silently diverge with a simplified
+release or CI implementation.
 
 ## Safety invariants
 

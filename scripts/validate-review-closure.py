@@ -76,8 +76,11 @@ def validate_release_task(task_path: Path, repo: Path | None = None) -> dict[str
         raise ContractError(f"release lifecycle task is invalid: {exc}") from exc
     if repo is not None:
         release_script = repo / "scripts" / "release.py"
+        ci_script = repo / "scripts" / "check-github-ci.py"
         if release_script.is_symlink() or not release_script.is_file():
             raise ContractError("attached project release script is missing or not regular")
+        if ci_script.is_symlink() or not ci_script.is_file():
+            raise ContractError("attached project CI script is missing or not regular")
         command = [sys.executable, str(release_script), "--repo", str(repo)]
         command.append("check-source" if result.get("lifecycle_mode") == "implementation_unreleased" else "check-release-ready")
         check = subprocess.run(command, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
@@ -89,6 +92,8 @@ def validate_release_task(task_path: Path, repo: Path | None = None) -> dict[str
                 str(Path(__file__).with_name("validate-release-tool-conformance.py")),
                 "--release-script",
                 str(release_script),
+                "--ci-script",
+                str(ci_script),
                 "--canonical-script",
                 str(Path(__file__).with_name("release.py")),
             ],
