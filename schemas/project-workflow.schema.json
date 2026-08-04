@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gpt-review-planner.invalid/schemas/project-workflow.schema.json",
+  "title": "GPT Review Planner project workflow declaration",
+  "description": "Strict project admission and agent-boundary contract for the first fast-workflow slice.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "branching", "agent", "ci", "quality"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "branching": {"$ref": "#/$defs/branching"},
+    "agent": {"$ref": "#/$defs/agent"},
+    "ci": {"$ref": "#/$defs/ci"},
+    "quality": {"$ref": "#/$defs/quality"}
+  },
+  "$defs": {
+    "branching": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "default_branch",
+        "integration_branch",
+        "task_branch_prefix",
+        "one_active_task",
+        "release_admission",
+        "stale_task_policy",
+        "revision_suffix"
+      ],
+      "properties": {
+        "default_branch": {"const": "main"},
+        "integration_branch": {"const": "develop"},
+        "task_branch_prefix": {"const": "task/"},
+        "one_active_task": {"const": true},
+        "release_admission": {"const": "merge_into_integration"},
+        "stale_task_policy": {"const": "new_revision_branch"},
+        "revision_suffix": {"const": "-r{revision}"}
+      }
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "completion_boundary",
+        "wait_for_ci",
+        "owns_merge",
+        "owns_release",
+        "owns_history_rewrite"
+      ],
+      "properties": {
+        "completion_boundary": {"const": "pushed_task_commit"},
+        "wait_for_ci": {"const": false},
+        "owns_merge": {"const": false},
+        "owns_release": {"const": false},
+        "owns_history_rewrite": {"const": false}
+      }
+    },
+    "ci": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task", "task_merge", "release"],
+      "properties": {
+        "task": {"enum": ["disabled", "observe", "require"]},
+        "task_merge": {"enum": ["disabled", "observe", "require"]},
+        "release": {"enum": ["disabled", "observe", "require"]}
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract_path", "prepare_commit_required"],
+      "properties": {
+        "contract_path": {
+          "const": "quality-gates.json",
+          "pattern": "^(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+        },
+        "prepare_commit_required": {"const": true}
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "branching": {
+    "default_branch": "main",
+    "integration_branch": "develop",
+    "task_branch_prefix": "task/",
+    "one_active_task": true,
+    "release_admission": "merge_into_integration",
+    "stale_task_policy": "new_revision_branch",
+    "revision_suffix": "-r{revision}"
+  },
+  "agent": {
+    "completion_boundary": "pushed_task_commit",
+    "wait_for_ci": false,
+    "owns_merge": false,
+    "owns_release": false,
+    "owns_history_rewrite": false
+  },
+  "ci": {
+    "task": "disabled",
+    "task_merge": "observe",
+    "release": "observe"
+  },
+  "quality": {
+    "contract_path": "quality-gates.json",
+    "prepare_commit_required": true
+  }
+}
