@@ -177,12 +177,63 @@ class ReleasePublicationTests(unittest.TestCase):
         with self.assertRaises(validator.PublicationError):
             validator.validate_declaration(base)
 
+    def test_tag_pattern_schema_and_validator_parity(self) -> None:
+        schema = json.loads((ROOT / "schemas/release-publication.schema.json").read_text())
+        schema_pattern = schema["$defs"]["tag"]["properties"]["pattern"]["pattern"]
+        for pattern in ("v*", "vX.Y.Z", "v2.2.0"):
+            with self.subTest(pattern=pattern):
+                self.assertIsNotNone(re.fullmatch(schema_pattern, pattern))
+                declaration = json.loads(
+                    (ROOT / "fixtures/release-publication/gpt-review-planner/release-publication.json").read_text()
+                )
+                declaration["tag"]["pattern"] = pattern
+                self.assertEqual(validator.validate_declaration(declaration)["tag"]["pattern"], pattern)
+
+        escaped = r"v2\.2\.0"
+        self.assertIsNone(re.fullmatch(schema_pattern, escaped))
+        declaration = json.loads(
+            (ROOT / "fixtures/release-publication/gpt-review-planner/release-publication.json").read_text()
+        )
+        declaration["tag"]["pattern"] = escaped
+        with self.assertRaises(validator.PublicationError):
+            validator.validate_declaration(declaration)
+
     def test_workflow_digest_and_name_are_bound(self) -> None:
         base = ROOT / "fixtures/release-publication/gpt-tunnel-gateway"
         data = json.loads((base / "release-publication.json").read_text())
         data["workflow"]["name"] = "Other"
         with self.assertRaises(validator.PublicationError):
             validator.validate_declaration(data, repo_root=base)
+
+    def test_github_actions_release_fallback_topology_is_bounded(self) -> None:
+        source = (ROOT / "fixtures/release-publication/gpt-review-planner/.github/workflows/build-offline-rust.yml").read_text()
+        variants = {
+            "unconditional": (
+                source
+                .replace(
+                    '          if gh release view "$tag" >/dev/null 2>&1; then\n',
+                    '          gh release view "$tag" >/dev/null 2>&1\n',
+                )
+                .replace("          else\n", "")
+                .replace("          fi\n", "")
+            ),
+            "reversed": (
+                source
+                .replace('            gh release upload "$tag" dist/* --clobber\n', '            gh release create "$tag" dist/* --generate-notes\n')
+                .replace('            gh release create "$tag" dist/* \\\n', '            gh release upload "$tag" dist/* --clobber\n')
+            ),
+            "missing_success_upload": source.replace('            gh release upload "$tag" dist/* --clobber\n', ""),
+            "missing_fallback_create": source.replace('            gh release create "$tag" dist/* \\\n', ""),
+        }
+        for name, workflow in variants.items():
+            with self.subTest(variant=name), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                declaration = json.loads(
+                    (ROOT / "fixtures/release-publication/gpt-review-planner/release-publication.json").read_text()
+                )
+                path = self._write_declaration_with_workflow(root, workflow, declaration)
+                with self.assertRaises(validator.PublicationError):
+                    validator.load_publication_declaration(path, repo_root=root)
 
     def _tagged_repo(self, mode: str) -> tuple[tempfile.TemporaryDirectory[str], Path, str]:
         temp = tempfile.TemporaryDirectory()
@@ -191,7 +242,11 @@ class ReleasePublicationTests(unittest.TestCase):
         git(repo, "config", "user.email", "test@example.invalid")
         git(repo, "config", "user.name", "Test")
         (repo / "VERSION").write_text("2.2.0\n")
-        fixture_name = {"gateway": "gpt-tunnel-gateway", "planner": "gpt-review-planner"}.get(mode)
+        fixture_name = {
+            "gateway": "gpt-tunnel-gateway",
+            "planner": "gpt-review-planner",
+            "planner_no_assets": "gpt-review-planner",
+        }.get(mode)
         declaration_source = (
             ROOT / f"fixtures/release-publication/{fixture_name}/release-publication.json"
             if fixture_name
@@ -212,6 +267,25 @@ class ReleasePublicationTests(unittest.TestCase):
         data = json.loads((repo / "release-publication.json").read_text())
         import hashlib
         if destination is not None:
+            if mode == "planner_no_assets":
+                workflow_text = destination.read_text(encoding="utf-8")
+                workflow_text = workflow_text.replace(
+                    '            gh release upload "$tag" dist/* --clobber\n',
+                    "            :\n",
+                )
+                workflow_text = workflow_text.replace(
+                    '            gh release create "$tag" dist/* \\\n',
+                    '            gh release create "$tag" \\\n',
+                )
+                destination.write_text(workflow_text, encoding="utf-8")
+                data["tag_push_side_effects"] = ["tag_ci", "github_release_create_or_update"]
+                data["assets"] = {
+                    "policy": "none",
+                    "expected": False,
+                    "workflow_source_patterns": [],
+                    "published_name_patterns": [],
+                }
+                data["proof_requirements"]["assets"] = False
             data["workflow"]["sha256"] = hashlib.sha256(destination.read_bytes()).hexdigest()
         (repo / "release-publication.json").write_text(json.dumps(data, indent=2) + "\n")
         git(repo, "add", ".")
@@ -436,7 +510,161 @@ class ReleasePublicationTests(unittest.TestCase):
         result = json.loads(completed.stdout)
         self.assertEqual(result["state"], "success")
         self.assertEqual(result["release_id"], 99)
+        self.assertEqual(result["release_state"], "success")
+        self.assertEqual(result["asset_state"], "success")
         self.assertEqual(result["asset_names"], ["rustc-lite.tar.zst", "rustc-lite.sha256", "rustc-lite.json"])
+        self.assertIn("/repos/acme/planner/releases/99/assets?per_page=100", handler.requests)
+
+    def test_verifier_skips_assets_when_not_expected(self) -> None:
+        temp, repo, sha = self._tagged_repo("planner_no_assets")
+        self.addCleanup(temp.cleanup)
+        handler = type("Handler", (FakeGitHub,), {})
+        handler.requests = []
+        handler.payloads = {
+            "/repos/acme/planner/actions/runs?event=push&per_page=100": {
+                "workflow_runs": [{
+                    "id": 44, "name": "Build Offline Rust Toolchain", "path": ".github/workflows/build-offline-rust.yml",
+                    "head_sha": sha, "head_branch": "v2.2.0", "event": "push", "status": "completed",
+                    "conclusion": "success", "created_at": "2026-08-01T00:00:01Z",
+                    "html_url": "https://example.invalid/run/44",
+                }]
+            },
+            "/repos/acme/planner/actions/runs/44/jobs?per_page=100": {
+                "jobs": [{"id": 54, "html_url": "https://example.invalid/job/54"}]
+            },
+            "/repos/acme/planner/releases/tags/v2.2.0": {
+                "id": 100, "tag_name": "v2.2.0", "draft": False, "prerelease": False,
+            },
+        }
+        server = HTTPServer(("127.0.0.1", 0), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(thread.join, 2)
+        self.addCleanup(server.shutdown)
+        completed = run_script(
+            VERIFIER_PATH,
+            "--repo", str(repo), "--repository", "acme/planner", "--tag", "v2.2.0",
+            "--created-after", "2026-07-31T23:59:59Z",
+            "--api-url", f"http://127.0.0.1:{server.server_port}", "--format", "json",
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        result = json.loads(completed.stdout)
+        self.assertEqual(result["state"], "success")
+        self.assertEqual(result["release_state"], "success")
+        self.assertEqual(result["asset_state"], "not_applicable")
+        self.assertEqual(result["asset_names"], [])
+        self.assertNotIn("/assets?per_page=100", "\n".join(handler.requests))
+
+    def test_verifier_required_missing_asset_proof_is_blocking(self) -> None:
+        temp, repo, sha = self._tagged_repo("planner")
+        self.addCleanup(temp.cleanup)
+        handler = type("Handler", (FakeGitHub,), {})
+        handler.requests = []
+        handler.payloads = {
+            "/repos/acme/planner/actions/runs?event=push&per_page=100": {
+                "workflow_runs": [{
+                    "id": 45, "name": "Build Offline Rust Toolchain", "path": ".github/workflows/build-offline-rust.yml",
+                    "head_sha": sha, "head_branch": "v2.2.0", "event": "push", "status": "completed",
+                    "conclusion": "success", "created_at": "2026-08-01T00:00:01Z",
+                }]
+            },
+            "/repos/acme/planner/actions/runs/45/jobs?per_page=100": {"jobs": [{"id": 55}]},
+            "/repos/acme/planner/releases/tags/v2.2.0": {
+                "id": 101, "tag_name": "v2.2.0", "draft": False, "prerelease": False,
+            },
+            "/repos/acme/planner/releases/101/assets?per_page=100": [{"name": "rustc-lite.tar.zst"}],
+        }
+        server = HTTPServer(("127.0.0.1", 0), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(thread.join, 2)
+        self.addCleanup(server.shutdown)
+        completed = run_script(
+            VERIFIER_PATH,
+            "--repo", str(repo), "--repository", "acme/planner", "--tag", "v2.2.0",
+            "--created-after", "2026-07-31T23:59:59Z",
+            "--api-url", f"http://127.0.0.1:{server.server_port}", "--format", "json",
+        )
+        self.assertEqual(completed.returncode, 3)
+        result = json.loads(completed.stdout)
+        self.assertEqual(result["state"], "failed")
+        self.assertTrue(result["blocking"])
+        self.assertEqual(result["release_state"], "success")
+        self.assertEqual(result["asset_state"], "failed")
+
+    def test_verifier_release_metadata_failure_is_failed_and_does_not_start_assets(self) -> None:
+        temp, repo, sha = self._tagged_repo("planner")
+        self.addCleanup(temp.cleanup)
+        handler = type("Handler", (FakeGitHub,), {})
+        handler.requests = []
+        handler.payloads = {
+            "/repos/acme/planner/actions/runs?event=push&per_page=100": {
+                "workflow_runs": [{
+                    "id": 46, "name": "Build Offline Rust Toolchain", "path": ".github/workflows/build-offline-rust.yml",
+                    "head_sha": sha, "head_branch": "v2.2.0", "event": "push", "status": "completed",
+                    "conclusion": "success", "created_at": "2026-08-01T00:00:01Z",
+                }]
+            },
+            "/repos/acme/planner/actions/runs/46/jobs?per_page=100": {"jobs": [{"id": 56}]},
+            "/repos/acme/planner/releases/tags/v2.2.0": {
+                "id": 102, "tag_name": "v2.2.1", "draft": False, "prerelease": False,
+            },
+        }
+        server = HTTPServer(("127.0.0.1", 0), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(thread.join, 2)
+        self.addCleanup(server.shutdown)
+        completed = run_script(
+            VERIFIER_PATH,
+            "--repo", str(repo), "--repository", "acme/planner", "--tag", "v2.2.0",
+            "--created-after", "2026-07-31T23:59:59Z",
+            "--api-url", f"http://127.0.0.1:{server.server_port}", "--format", "json",
+        )
+        self.assertEqual(completed.returncode, 3)
+        result = json.loads(completed.stdout)
+        self.assertEqual(result["state"], "failed")
+        self.assertTrue(result["blocking"])
+        self.assertEqual(result["release_state"], "failed")
+        self.assertEqual(result["asset_state"], "not_run")
+        self.assertNotIn("/assets?per_page=100", "\n".join(handler.requests))
+
+    def test_verifier_release_query_unavailable_preserves_unavailable_release_state(self) -> None:
+        temp, repo, sha = self._tagged_repo("planner")
+        self.addCleanup(temp.cleanup)
+        handler = type("Handler", (FakeGitHub,), {})
+        handler.requests = []
+        handler.payloads = {
+            "/repos/acme/planner/actions/runs?event=push&per_page=100": {
+                "workflow_runs": [{
+                    "id": 47, "name": "Build Offline Rust Toolchain", "path": ".github/workflows/build-offline-rust.yml",
+                    "head_sha": sha, "head_branch": "v2.2.0", "event": "push", "status": "completed",
+                    "conclusion": "success", "created_at": "2026-08-01T00:00:01Z",
+                }]
+            },
+            "/repos/acme/planner/actions/runs/47/jobs?per_page=100": {"jobs": [{"id": 57}]},
+        }
+        server = HTTPServer(("127.0.0.1", 0), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(thread.join, 2)
+        self.addCleanup(server.shutdown)
+        completed = run_script(
+            VERIFIER_PATH,
+            "--repo", str(repo), "--repository", "acme/planner", "--tag", "v2.2.0",
+            "--created-after", "2026-07-31T23:59:59Z",
+            "--api-url", f"http://127.0.0.1:{server.server_port}", "--format", "json",
+        )
+        self.assertEqual(completed.returncode, 4)
+        result = json.loads(completed.stdout)
+        self.assertEqual(result["state"], "unavailable")
+        self.assertTrue(result["blocking"])
+        self.assertEqual(result["release_state"], "unavailable")
+        self.assertEqual(result["asset_state"], "not_run")
 
     def test_verifier_rejects_failed_run_without_publication_request(self) -> None:
         temp, repo, sha = self._tagged_repo("gateway")

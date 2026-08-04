@@ -75,6 +75,8 @@ def output(args: argparse.Namespace, state: str, message: str, **values: object)
         "conclusion": None,
         "created_at": None,
         "release_id": None,
+        "release_state": None,
+        "asset_state": None,
         "asset_names": [],
         "message": message,
     }
@@ -141,13 +143,21 @@ def main(argv: list[str] | None = None) -> int:
     args.repository = args.repository or "local/repository"
     declaration_path = args.declaration or (args.repo / "release-publication.json")
     mode: str | None = None
+    report_values: dict[str, object] = {}
     try:
         declaration = load_publication_declaration(declaration_path, repo_root=args.repo)
         if any(not re.fullmatch(r"[0-9]+", value) for value in args.exclude_run_id):
             raise PublicationError("excluded run IDs must be decimal integers")
         mode = declaration["mode"]
         if mode == "none":
-            output(args, "not_applicable", "publication is disabled by repository declaration", mode=mode)
+            output(
+                args,
+                "not_applicable",
+                "publication is disabled by repository declaration",
+                mode=mode,
+                release_state="not_applicable",
+                asset_state="not_applicable",
+            )
             return 0
         if not args.tag:
             raise PublicationError("--tag is required for active publication modes")
@@ -164,6 +174,8 @@ def main(argv: list[str] | None = None) -> int:
                 mode=mode,
                 source="policy",
                 checked_sha=sha,
+                release_state="not_applicable",
+                asset_state="not_applicable",
             )
             return 0
         if not args.created_after:
@@ -190,40 +202,76 @@ def main(argv: list[str] | None = None) -> int:
         job = next((item for item in jobs["jobs"] if isinstance(item, dict)), None)
         if not isinstance(job, dict):
             raise PublicationError("selected workflow run has no job metadata")
+        expected_assets = declaration["assets"]
+        assert isinstance(expected_assets, dict)
         values: dict[str, object] = {
             "mode": mode, "run_id": run_id, "job_id": job.get("id"),
             "run_url": run.get("html_url"), "job_url": job.get("html_url"),
             "checked_sha": run.get("head_sha"), "conclusion": run.get("conclusion"),
             "created_at": run.get("created_at"),
+            "release_state": "not_applicable" if mode == "tag_only" else None,
+            "asset_state": "not_run" if mode == "github_actions" and expected_assets["expected"] else "not_applicable",
         }
         if mode == "github_actions":
+            report_values = dict(values)
+            report_values["release_state"] = "unavailable"
             release = fetch(f"{base}/repos/{args.repository}/releases/tags/{args.tag}", None)
             if not isinstance(release, dict) or release.get("tag_name") != args.tag:
-                raise PublicationError("GitHub Release metadata does not match the tag")
+                values["release_state"] = "failed"
+                report_values = dict(values)
+                output(args, "failed", "GitHub Release metadata does not match the tag", **values)
+                return 3
             if not isinstance(release.get("id"), int):
-                raise PublicationError("GitHub Release metadata has no numeric id")
+                values["release_state"] = "failed"
+                report_values = dict(values)
+                output(args, "failed", "GitHub Release metadata has no numeric id", **values)
+                return 3
             expected_release = declaration["github_release"]
             assert isinstance(expected_release, dict)
             for field in ("draft", "prerelease"):
                 if release.get(field) != expected_release[field]:
-                    raise PublicationError(f"GitHub Release {field} does not match declaration")
-            assets_payload = fetch(f"{base}/repos/{args.repository}/releases/{release.get('id')}/assets?per_page=100", None)
-            if not isinstance(assets_payload, list):
-                raise PublicationError("release assets response has invalid shape")
-            names = [item.get("name") for item in assets_payload if isinstance(item, dict) and isinstance(item.get("name"), str)]
-            expected_assets = declaration["assets"]
-            assert isinstance(expected_assets, dict)
-            patterns = expected_assets["published_name_patterns"]
-            if not all(any(fnmatch.fnmatch(name, pattern) for name in names) for pattern in patterns):
-                raise PublicationError("declared release assets are missing")
-            values.update(release_id=release.get("id"), asset_names=names)
-        output(args, "success", "declared release publication verified", **values)
+                    values["release_state"] = "failed"
+                    report_values = dict(values)
+                    output(args, "failed", f"GitHub Release {field} does not match declaration", **values)
+                    return 3
+            values.update(release_id=release.get("id"), release_state="success")
+            report_values = dict(values)
+            if expected_assets["expected"]:
+                values["asset_state"] = "unavailable"
+                report_values = dict(values)
+                assets_payload = fetch(
+                    f"{base}/repos/{args.repository}/releases/{release.get('id')}/assets?per_page=100",
+                    None,
+                )
+                if not isinstance(assets_payload, list):
+                    raise PublicationError("release assets response has invalid shape")
+                names = [
+                    item.get("name")
+                    for item in assets_payload
+                    if isinstance(item, dict) and isinstance(item.get("name"), str)
+                ]
+                patterns = expected_assets["published_name_patterns"]
+                if not all(any(fnmatch.fnmatch(name, pattern) for name in names) for pattern in patterns):
+                    values.update(asset_state="failed", asset_names=names)
+                    output(args, "failed", "declared release assets are missing", **values)
+                    return 3
+                values.update(asset_state="success", asset_names=names)
+            else:
+                values.update(asset_state="not_applicable", asset_names=[])
+        message = "declared release publication verified"
+        if mode == "github_actions" and values.get("asset_state") == "not_applicable":
+            message = "declared GitHub Release metadata verified; asset proof not applicable"
+        output(args, "success", message, **values)
         return 0
     except HTTPError as exc:
-        output(args, "unavailable", f"publication query returned HTTP {exc.code}", mode=mode)
+        error_values = dict(report_values)
+        error_values.setdefault("mode", mode)
+        output(args, "unavailable", f"publication query returned HTTP {exc.code}", **error_values)
         return 4
     except (URLError, OSError, ValueError, json.JSONDecodeError, PublicationError) as exc:
-        output(args, "invalid_response", str(exc), mode=mode)
+        error_values = dict(report_values)
+        error_values.setdefault("mode", mode)
+        output(args, "invalid_response", str(exc), **error_values)
         return 5
 
 

@@ -18,7 +18,7 @@ from typing import Any
 
 MODES = {"none", "tag_only", "github_actions"}
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
-TAG_RE = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
+TAG_RE = re.compile(r"^v(?:\*|X\.Y\.Z|[0-9]+\.[0-9]+\.[0-9]+)$")
 WORKFLOW_PATH_RE = re.compile(r"^\.github/workflows/[^/]+\.(?:yml|yaml)$")
 SAFE_PART_RE = re.compile(r"^[^/\\]+$")
 MAX_WORKFLOW_BYTES = 512 * 1024
@@ -121,7 +121,7 @@ def _validate_active(data: dict[str, Any]) -> dict[str, Any]:
     tag = _object(data["tag"], "tag", {"pattern", "annotated", "push_required", "identity_source"},
                   {"pattern", "annotated", "push_required", "identity_source"})
     pattern = _string(tag["pattern"], "tag.pattern")
-    if not TAG_RE.fullmatch(pattern.replace("\\.", ".")) and pattern not in {"v*", "vX.Y.Z"}:
+    if not TAG_RE.fullmatch(pattern):
         raise PublicationError("tag.pattern must describe a vX.Y.Z release tag")
     _bool(tag["annotated"], "tag.annotated", True)
     _bool(tag["push_required"], "tag.push_required", True)
@@ -276,6 +276,8 @@ def validate_declaration(data: Any, *, repo_root: Path | None = None) -> dict[st
             if scan["github_release"]:
                 raise PublicationError("tag_only workflow must not publish a GitHub Release")
         else:
+            if not scan["canonical_release_topology"]:
+                raise PublicationError("github_actions workflow must use the canonical release fallback")
             if not scan["release_view"] or not scan["release_create"]:
                 raise PublicationError("github_actions workflow must ensure a release with view and create")
             if scan["credential_authority"] != "github.token":
@@ -358,6 +360,74 @@ def _env_blocks(lines: list[str]) -> list[list[str]]:
             body.append(following)
         blocks.append(body)
     return blocks
+
+
+def _join_shell_continuations(lines: list[str]) -> list[str]:
+    joined: list[str] = []
+    pending = ""
+    for raw_line in lines:
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if any(operator in line for operator in (";", "&&", "||", "|")):
+            raise PublicationError("workflow release branches use unsupported shell operators")
+        if line.endswith("\\"):
+            pending += line[:-1].rstrip() + " "
+            continue
+        joined.append((pending + line).strip())
+        pending = ""
+    if pending:
+        raise PublicationError("workflow release branch has a truncated continuation")
+    return joined
+
+
+def _release_command_tokens(line: str, command: str) -> list[str]:
+    try:
+        tokens = shlex.split(line, posix=True)
+    except ValueError as exc:
+        raise PublicationError("workflow contains malformed release command syntax") from exc
+    if len(tokens) < 4 or tokens[:3] != ["gh", "release", command] or tokens[3] != "$tag":
+        raise PublicationError("workflow release branch does not use the canonical tag command")
+    return tokens
+
+
+def _canonical_release_topology(run_blocks: list[str]) -> dict[str, Any] | None:
+    marker = re.compile(r'^if gh release view "\$tag" >/dev/null 2>&1; then$')
+    candidates: list[tuple[list[str], int]] = []
+    for block in run_blocks:
+        lines = block.splitlines()
+        for index, line in enumerate(lines):
+            if marker.fullmatch(line.strip()):
+                candidates.append((lines, index))
+    if not candidates:
+        return None
+    if len(candidates) != 1:
+        raise PublicationError("workflow must contain exactly one canonical release fallback")
+
+    lines, if_index = candidates[0]
+    else_indices = [index for index in range(if_index + 1, len(lines)) if lines[index].strip() == "else"]
+    fi_indices = [index for index in range(if_index + 1, len(lines)) if lines[index].strip() == "fi"]
+    if len(else_indices) != 1 or len(fi_indices) != 1 or else_indices[0] >= fi_indices[0]:
+        raise PublicationError("workflow release fallback must contain one else and one fi")
+    else_index, fi_index = else_indices[0], fi_indices[0]
+    if any(line.strip().startswith("if ") for line in lines[if_index + 1:fi_index]):
+        raise PublicationError("workflow release fallback must not contain nested conditionals")
+
+    success_lines = _join_shell_continuations(lines[if_index + 1:else_index])
+    fallback_lines = _join_shell_continuations(lines[else_index + 1:fi_index])
+    upload_tokens: list[str] | None = None
+    if len(success_lines) == 1 and success_lines[0] == ":":
+        pass
+    elif len(success_lines) == 1:
+        upload_tokens = _release_command_tokens(success_lines[0], "upload")
+        if "--clobber" not in upload_tokens:
+            raise PublicationError("workflow existing-release branch must upload with --clobber")
+    else:
+        raise PublicationError("workflow existing-release branch must contain canonical upload or :")
+    if len(fallback_lines) != 1:
+        raise PublicationError("workflow fallback branch must contain one canonical create command")
+    create_tokens = _release_command_tokens(fallback_lines[0], "create")
+    return {"upload_tokens": upload_tokens, "create_tokens": create_tokens}
 
 
 def scan_workflow(path: Path) -> dict[str, Any]:
@@ -466,7 +536,8 @@ def scan_workflow(path: Path) -> dict[str, Any]:
     if permission_value not in {"read", "write"}:
         raise PublicationError("workflow permissions.contents must be read or write")
 
-    run_text = "\n".join(_run_blocks(lines))
+    run_blocks = _run_blocks(lines)
+    run_text = "\n".join(run_blocks)
     normalized_run = re.sub(r"\\\s*\n\s*", " ", run_text)
     commands: list[tuple[str, list[str]]] = []
     for match in re.finditer(r"\bgh\s+release\s+(view|create|upload|delete|edit|list)\b([^\n;&|]*)", normalized_run):
@@ -478,6 +549,13 @@ def scan_workflow(path: Path) -> dict[str, Any]:
         except ValueError as exc:
             raise PublicationError("workflow contains malformed release command syntax") from exc
         commands.append((command, tokens))
+
+    topology = _canonical_release_topology(run_blocks) if commands else None
+    expected_commands = {"view", "create"}
+    if topology is not None and topology["upload_tokens"] is not None:
+        expected_commands.add("upload")
+    if commands and (topology is None or {command for command, _ in commands} != expected_commands or len(commands) != len(expected_commands)):
+        raise PublicationError("workflow GitHub Release commands must use the canonical conditional topology")
 
     release_view = any(command == "view" for command, _ in commands)
     release_create = any(command == "create" for command, _ in commands)
@@ -537,6 +615,7 @@ def scan_workflow(path: Path) -> dict[str, Any]:
         "release_create": release_create,
         "release_upload": release_upload,
         "upload_clobber": upload_clobber,
+        "canonical_release_topology": topology is not None,
         "credential_authority": credential_authority,
         "notes_source": notes_source,
         "notes_file": notes_file,
