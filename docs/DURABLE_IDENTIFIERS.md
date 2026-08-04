@@ -34,8 +34,8 @@ is needed. Existing identifiers are not renamed or aliased.
 
 ## UUID history cutover
 
-Compatibility is limited to future read-only decoding of already persisted UUID
-history. It does not authorize new UUID creation, aliases, renames, dual
-creation paths, fuzzy shorthand, or a permanent fallback reader. Historical UUID
-records remain immutable; new operational identifiers use the adopted project
-code and canonical syntax.
+Already persisted UUID history remains readable as long as that history exists.
+That historical reader is read-only and is not a new operational identifier
+path. It does not authorize UUID creation, mutation aliases, fuzzy lookup, or
+dual operational paths. Historical UUID records remain immutable; new
+operational identifiers use the adopted project code and canonical syntax.

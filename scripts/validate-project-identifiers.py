@@ -11,12 +11,13 @@ from pathlib import Path
 from typing import Any
 
 
-PROJECT_ID_RE = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
+PROJECT_ID_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 PROJECT_CODE_RE = re.compile(r"^[A-Z]{3}$")
 TASK_RE = re.compile(r"^(?P<code>[A-Z]{3})-T(?P<number>[1-9][0-9]*)$")
 RUN_RE = re.compile(r"^(?P<task>[A-Z]{3}-T[1-9][0-9]*)-R(?P<number>[1-9][0-9]*)$")
 ADR_RE = re.compile(r"^(?P<code>[A-Z]{3})-A(?P<number>[1-9][0-9]*)$")
-MAX_NUMERIC_DIGITS = 1000
+MAX_IDENTIFIER_NUMBER = 9007199254740991
+MAX_IDENTIFIER_NUMBER_TEXT = str(MAX_IDENTIFIER_NUMBER)
 
 
 class ProjectIdentifiersError(ValueError):
@@ -82,13 +83,15 @@ def _constant(value: Any, expected: Any, label: str, *, json_number: bool = Fals
 
 
 def _counter(value: Any, label: str) -> None:
-    if not _json_integer(value) or value < 1:
+    if not _json_integer(value) or value < 1 or value > MAX_IDENTIFIER_NUMBER:
         raise ProjectIdentifiersError(f"{label} must be a positive integer")
 
 
 def _number(text: str, label: str) -> int:
-    if len(text) > MAX_NUMERIC_DIGITS:
-        raise ProjectIdentifiersError(f"{label} exceeds the implementation-safe numeric limit")
+    if len(text) > len(MAX_IDENTIFIER_NUMBER_TEXT) or (
+        len(text) == len(MAX_IDENTIFIER_NUMBER_TEXT) and text > MAX_IDENTIFIER_NUMBER_TEXT
+    ):
+        raise ProjectIdentifiersError(f"{label} exceeds the maximum {MAX_IDENTIFIER_NUMBER}")
     return int(text)
 
 
@@ -112,7 +115,7 @@ def validate_project_identifiers(
     project_id = record["project_id"]
     if (
         not isinstance(project_id, str)
-        or len(project_id) > 63
+        or len(project_id) > 64
         or PROJECT_ID_RE.fullmatch(project_id) is None
     ):
         raise ProjectIdentifiersError("project_id must be a canonical lowercase gateway identifier")

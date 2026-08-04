@@ -71,7 +71,11 @@ def schema_accepts(value: Any) -> bool:
                 return False
             if isinstance(candidate, float) and not math.isfinite(candidate):
                 return False
-            if candidate != math.floor(candidate) or candidate < rule["minimum"]:
+            if (
+                candidate != math.floor(candidate)
+                or candidate < rule["minimum"]
+                or candidate > rule["maximum"]
+            ):
                 return False
     return True
 
@@ -117,7 +121,7 @@ class ProjectIdentifierTests(unittest.TestCase):
             value = load_fixture(FIXTURES[0])
             value["schema_version"] = candidate
             cases.append((f"schema_version {candidate!r}", value))
-        for candidate in ("GPT-review-planner", "gpt_review_planner", "gpt--review", "-planner", "planner-"):
+        for candidate in ("GPT-review-planner", "-planner", "", "gpt/review", "gpt review"):
             value = load_fixture(FIXTURES[0])
             value["project_id"] = candidate
             cases.append((f"project_id {candidate!r}", value))
@@ -126,7 +130,17 @@ class ProjectIdentifierTests(unittest.TestCase):
             value["project_code"] = candidate
             cases.append((f"project_code {candidate!r}", value))
         for field in ("next_task_number", "next_adr_number"):
-            for candidate in (0, -1, True, 0.5):
+            for candidate in (
+                0,
+                -1,
+                True,
+                0.5,
+                float("nan"),
+                float("inf"),
+                float("-inf"),
+                9007199254740992,
+                9007199254740992.0,
+            ):
                 value = load_fixture(FIXTURES[0])
                 value[field] = candidate
                 cases.append((f"{field} {candidate!r}", value))
@@ -134,12 +148,36 @@ class ProjectIdentifierTests(unittest.TestCase):
             with self.subTest(name=name):
                 self.assert_invalid(value)
 
+        for project_id in ("1planner", "planner_name", "planner-name", "planner_"):
+            value = load_fixture(FIXTURES[0])
+            value["project_id"] = project_id
+            with self.subTest(project_id=project_id):
+                self.assert_valid(value)
+
     def test_schema_version_one_point_zero_and_integral_counters_follow_json_rules(self):
         value = load_fixture(FIXTURES[0])
         value["schema_version"] = 1.0
         value["next_task_number"] = 2.0
         value["next_adr_number"] = 3.0
         self.assert_valid(value)
+
+    def test_exact_cross_language_maximum_is_shared_by_records_and_ids(self):
+        maximum = 9007199254740991
+        value = load_fixture(FIXTURES[0])
+        value["next_task_number"] = float(maximum)
+        value["next_adr_number"] = float(maximum)
+        self.assert_valid(value)
+        self.assertEqual(validator.parse_task_id(f"GRP-T{maximum}", "GRP")["number"], maximum)
+        self.assertEqual(validator.parse_run_id(f"GRP-T1-R{maximum}", "GRP")["run_number"], maximum)
+        self.assertEqual(validator.parse_adr_id(f"GRP-A{maximum}", "GRP")["number"], maximum)
+        for identifier, parser in (
+            (f"GRP-T{maximum + 1}", validator.parse_task_id),
+            (f"GRP-T1-R{maximum + 1}", validator.parse_run_id),
+            (f"GRP-A{maximum + 1}", validator.parse_adr_id),
+        ):
+            with self.subTest(identifier=identifier):
+                with self.assertRaises(validator.ProjectIdentifiersError):
+                    parser(identifier, "GRP")
 
     def test_duplicate_keys_and_symlink_are_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -192,11 +230,11 @@ class ProjectIdentifierTests(unittest.TestCase):
             "task/<TASK-ID>-<slug>",
             "replaces",
             "supersedes",
-            "read-only decoding of already persisted UUID history",
-            "new UUID creation",
-            "aliases",
-            "dual creation paths",
-            "fuzzy shorthand",
+            "remains readable as long as that history exists",
+            "UUID creation",
+            "mutation aliases",
+            "dual operational paths",
+            "fuzzy lookup",
         ):
             self.assertIn(phrase, text)
 
