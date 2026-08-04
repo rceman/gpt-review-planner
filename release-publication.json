@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "mode": "github_actions",
+  "tag": {
+    "pattern": "vX.Y.Z",
+    "annotated": true,
+    "push_required": true,
+    "identity_source": "release-config.json"
+  },
+  "workflow": {
+    "path": ".github/workflows/build-offline-rust.yml",
+    "name": "Build Offline Rust Toolchain",
+    "sha256": "7c08217ddd34c87e5d9c4f126c2a1bad1ad3c97e3a7e5b5ab1ecc4c1157b0a56",
+    "purpose": "release_publication",
+    "event": "push",
+    "tag_trigger": "explicit_tags_filter",
+    "tag_patterns": ["v*"],
+    "permissions": {"contents": "write"},
+    "distinct_run_required": true,
+    "created_after_tag_push": true
+  },
+  "credential_authority": "github.token",
+  "local_credentials_required": false,
+  "tag_push_side_effects": ["tag_ci", "github_release_create_or_update", "asset_upload"],
+  "github_release": {
+    "behavior": "create_or_update",
+    "expected": true,
+    "draft": false,
+    "prerelease": false,
+    "notes": {"source": "generated"}
+  },
+  "assets": {
+    "policy": "workflow_produced",
+    "expected": true,
+    "workflow_source_patterns": ["dist/*"],
+    "published_name_patterns": ["*.tar.zst", "*.sha256", "*.json"]
+  },
+  "proof_requirements": {
+    "tag_ci": true,
+    "distinct_post_tag_workflow": true,
+    "release_metadata": true,
+    "assets": true
+  }
+}

@@ -96,6 +96,157 @@ class RepositoryTest(unittest.TestCase):
         self.assertNotRegex(prompt, r"\b[0-9a-f]{40}\b")
         self.assertNotRegex(prompt, r"\b\d{8,}\b")
 
+    def test_planner_self_adoption_setup_and_generated_state(self) -> None:
+        authority = "db3942a03a6a8fbbd98203b3daff81cf9a9f687d"
+        lifecycle_sentence = (
+            "> Release-surface tasks declare exactly one lifecycle mode and target version in the task-specific handoff. "
+            "Use `check-source` for `implementation_unreleased`; use the ordered "
+            "prepare/check-release-ready/commit/check-tag-ready/tag/verify-tag flow for `release_publication`. "
+            "A source-state pass is not release or tag readiness."
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            empty_project = Path(temp_dir) / "empty-project"
+            empty_project.mkdir()
+            empty_setup = subprocess.run(
+                [
+                    "bash",
+                    str(ROOT / "setup.sh"),
+                    "--project",
+                    str(empty_project),
+                    "--repository",
+                    "https://example.invalid/workflow.git",
+                    "--version",
+                    "vX.Y.Z",
+                    "--commit",
+                    FAKE_COMMIT,
+                    "--execution-mode",
+                    "repository_evidence",
+                    "--release-publication-file",
+                    str(ROOT / "templates/project/release-publication.none.json"),
+                ],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(empty_setup.returncode, 0, empty_setup.stderr)
+            self.assertEqual(empty_setup.stderr, "")
+            self.assertEqual(
+                empty_setup.stdout.splitlines(),
+                [
+                    "Installed GPT Review Planner integration.",
+                    f"Project: {empty_project}",
+                    f"AGENTS: {empty_project / 'AGENTS.md'}",
+                    f"Lock: {empty_project / '.gpt-workflow.lock'}",
+                    f"Workflow: vX.Y.Z @ {FAKE_COMMIT}",
+                ],
+            )
+            empty_agents = (empty_project / "AGENTS.md").read_text(encoding="utf-8")
+            self.assertIn(lifecycle_sentence, empty_agents)
+            self.assertEqual(empty_agents.count("<!-- BEGIN GPT-REVIEW-PLANNER -->"), 1)
+            self.assertEqual(empty_agents.count("<!-- END GPT-REVIEW-PLANNER -->"), 1)
+            self.assertEqual(
+                empty_agents.split("<!-- END GPT-REVIEW-PLANNER -->", 1)[1],
+                "\n",
+            )
+            subprocess.run(["git", "-C", str(empty_project), "init", "-q"], check=True)
+            subprocess.run(["git", "-C", str(empty_project), "add", "AGENTS.md"], check=True)
+            diff_check = subprocess.run(
+                ["git", "-C", str(empty_project), "diff", "--cached", "--check"],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(diff_check.returncode, 0, diff_check.stderr)
+
+            existing_project = Path(temp_dir) / "existing-project"
+            existing_project.mkdir()
+            (existing_project / "AGENTS.md").write_text("Existing instructions.\n", encoding="utf-8")
+            existing_setup = subprocess.run(
+                [
+                    "bash",
+                    str(ROOT / "setup.sh"),
+                    "--project",
+                    str(existing_project),
+                    "--repository",
+                    "https://example.invalid/workflow.git",
+                    "--version",
+                    "vX.Y.Z",
+                    "--commit",
+                    FAKE_COMMIT,
+                    "--execution-mode",
+                    "repository_evidence",
+                    "--release-publication-file",
+                    str(ROOT / "templates/project/release-publication.none.json"),
+                ],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(existing_setup.returncode, 0, existing_setup.stderr)
+            self.assertEqual(existing_setup.stderr, "")
+            existing_agents = (existing_project / "AGENTS.md").read_text(encoding="utf-8")
+            self.assertEqual(existing_agents.count("<!-- BEGIN GPT-REVIEW-PLANNER -->"), 1)
+            self.assertEqual(existing_agents.count("<!-- END GPT-REVIEW-PLANNER -->"), 1)
+            self.assertEqual(
+                existing_agents.split("<!-- END GPT-REVIEW-PLANNER -->", 1)[1],
+                "\n\nExisting instructions.\n",
+            )
+
+        for relative in ("AGENTS.md", ".gpt-workflow.lock", "release-publication.json"):
+            self.assertTrue((ROOT / relative).is_file(), relative)
+
+        declaration = ROOT / "release-publication.json"
+        fixture = ROOT / "fixtures/release-publication/gpt-review-planner/release-publication.json"
+        self.assertEqual(declaration.read_bytes(), fixture.read_bytes())
+        declaration_data = json.loads(declaration.read_text(encoding="utf-8"))
+        workflow = ROOT / ".github/workflows/build-offline-rust.yml"
+        self.assertEqual(
+            declaration_data["workflow"]["sha256"],
+            hashlib.sha256(workflow.read_bytes()).hexdigest(),
+        )
+        validated = subprocess.run(
+            [
+                "python3",
+                str(ROOT / "scripts/validate-release-publication.py"),
+                str(declaration),
+                "--repo",
+                str(ROOT),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(validated.returncode, 0, validated.stderr)
+
+        lock = json.loads((ROOT / ".gpt-workflow.lock").read_text(encoding="utf-8"))
+        self.assertEqual(set(lock), {
+            "schema_version", "repository", "version", "commit", "document",
+            "execution_mode", "installed_at",
+        })
+        self.assertEqual(lock["schema_version"], 2)
+        self.assertEqual(lock["repository"], "https://github.com/rceman/gpt-review-planner")
+        self.assertEqual(lock["version"], authority)
+        self.assertEqual(lock["commit"], authority)
+        self.assertEqual(lock["document"], "GPT_REVIEW_PLANNER.md")
+        self.assertEqual(lock["execution_mode"], "gpt_tunnel_managed")
+        self.assertRegex(lock["installed_at"], r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+
+        agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        self.assertEqual(agents.count("<!-- BEGIN GPT-REVIEW-PLANNER -->"), 1)
+        self.assertEqual(agents.count("<!-- END GPT-REVIEW-PLANNER -->"), 1)
+        self.assertTrue(agents.startswith("<!-- BEGIN GPT-REVIEW-PLANNER -->"))
+        self.assertEqual(
+            agents.split("<!-- END GPT-REVIEW-PLANNER -->", 1)[1],
+            "\n",
+        )
+        self.assertIn(lifecycle_sentence, agents)
+        self.assertIn(f"blob/{authority}/GPT_REVIEW_PLANNER.md", agents)
+        self.assertIn(f"Pinned workflow: `{authority}` at commit `{authority}`", agents)
+
+        integration = subprocess.run(
+            ["python3", str(ROOT / "scripts/validate-project-integration.py"), str(ROOT)],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(integration.returncode, 0, integration.stderr)
+
     def test_project_archive_workflow_contract(self) -> None:
         required = (
             "docs/PROJECT_ARCHIVE_REVIEW.md",

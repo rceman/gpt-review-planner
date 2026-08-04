@@ -130,7 +130,7 @@ ${BLOCK_BEGIN}
 > Any release, version bump, or version-tag request requires reading the exact commit-pinned release lifecycle and release process.
 > The owner explicitly selects the target version.
 > Only repository release automation may modify synchronized version files; manual version synchronization is forbidden.
-> Release-surface tasks declare exactly one lifecycle mode and target version in the task-specific handoff. Use `check-source` for `implementation_unreleased`; use the ordered prepare/check-release-ready/commit/check-tag-ready/tag/verify-tag flow for `release_publication`. A source-state pass is not release or tag readiness.
+> Release-surface tasks declare exactly one lifecycle mode and target version in the task-specific handoff. Use \`check-source\` for \`implementation_unreleased\`; use the ordered prepare/check-release-ready/commit/check-tag-ready/tag/verify-tag flow for \`release_publication\`. A source-state pass is not release or tag readiness.
 > Operating model:
 > - GPT owns architecture, behavior contracts, fixtures, tests, review, and the principal implementation.
 > - The local agent owns integration, dependency restoration, compilation, runtime tests, and minimal integration corrections.
@@ -277,7 +277,9 @@ fi
 
 {
   render_block "$repository" "$version" "$commit" "$lock_link" "$execution_mode"
-  printf '\n'
+  if [[ -s "$tmp_clean" ]]; then
+    printf '\n'
+  fi
   awk '
     BEGIN { started = 0 }
     {
