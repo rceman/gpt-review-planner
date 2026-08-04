@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "project_id": "gpt-review-planner",
+  "project_code": "GRP",
+  "next_task_number": 1,
+  "next_adr_number": 1
+}

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gpt-review-planner.invalid/schemas/project-identifiers.schema.json",
+  "title": "GPT Review Planner durable project identifiers",
+  "description": "Strict project code and allocation counters for canonical task, run, and ADR identifiers.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project_id",
+    "project_code",
+    "next_task_number",
+    "next_adr_number"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 63
+    },
+    "project_code": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "next_task_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "next_adr_number": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}
