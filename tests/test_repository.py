@@ -236,7 +236,10 @@ class RepositoryTest(unittest.TestCase):
             self.assertIn("Only repository release automation may modify synchronized version files", agents)
             self.assertIn("manual version synchronization is forbidden", agents)
             self.assertIn("Release-commit CI must pass before tagging", agents)
-            self.assertIn("Do not publish a GitHub Release without explicit authorization", agents)
+            self.assertIn(
+                "Owner authorization to push the exact tag includes only declaration-authorized automatic workflow side effects",
+                agents,
+            )
             self.assertIn("Never force-push", agents)
             self.assertIn("git push --tags", agents)
             lock = json.loads((project / ".gpt-workflow.lock").read_text(encoding="utf-8"))

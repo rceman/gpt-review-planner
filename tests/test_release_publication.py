@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -67,10 +68,72 @@ class FakeGitHub(BaseHTTPRequestHandler):
 class ReleasePublicationTests(unittest.TestCase):
     def test_schema_is_strict_and_declares_the_three_modes(self) -> None:
         schema = json.loads((ROOT / "schemas/release-publication.schema.json").read_text())
-        self.assertEqual(schema["oneOf"][0]["properties"]["mode"]["const"], "none")
-        self.assertEqual(schema["oneOf"][1]["properties"]["mode"]["enum"], ["tag_only", "github_actions"])
-        self.assertFalse(schema["oneOf"][0]["additionalProperties"])
-        self.assertFalse(schema["oneOf"][1]["additionalProperties"])
+        self.assertEqual(
+            [item["$ref"] for item in schema["oneOf"]],
+            [
+                "#/$defs/none",
+                "#/$defs/tag_only_no_workflow",
+                "#/$defs/tag_only_workflow",
+                "#/$defs/github_actions_no_assets",
+                "#/$defs/github_actions_assets",
+            ],
+        )
+        self.assertEqual(schema["$defs"]["none"]["properties"]["mode"]["const"], "none")
+        self.assertFalse(schema["$defs"]["active"]["additionalProperties"])
+        self.assertEqual(schema["$defs"]["tag_only_no_workflow"]["allOf"][1]["properties"]["workflow"]["type"], "null")
+        self.assertEqual(
+            schema["$defs"]["tag_only_workflow"]["allOf"][1]["properties"]["tag_push_side_effects"]["const"],
+            ["tag_ci"],
+        )
+        self.assertEqual(
+            schema["$defs"]["github_actions_no_assets"]["allOf"][1]["properties"]["tag_push_side_effects"]["const"],
+            ["tag_ci", "github_release_create_or_update"],
+        )
+        self.assertEqual(
+            schema["$defs"]["github_actions_assets"]["allOf"][1]["properties"]["tag_push_side_effects"]["const"],
+            ["tag_ci", "github_release_create_or_update", "asset_upload"],
+        )
+
+    def test_schema_and_templates_have_mode_specific_parity(self) -> None:
+        schema = json.loads((ROOT / "schemas/release-publication.schema.json").read_text())
+        definitions = schema["$defs"]
+        paths = [
+            ROOT / "fixtures/release-publication/none/release-publication.json",
+            ROOT / "fixtures/release-publication/gpt-tunnel-gateway/release-publication.json",
+            ROOT / "fixtures/release-publication/gpt-review-planner/release-publication.json",
+            ROOT / "templates/project/release-publication.none.json",
+            ROOT / "templates/project/release-publication.tag_only.json",
+            ROOT / "templates/project/release-publication.github_actions.json",
+        ]
+        for path in paths:
+            with self.subTest(path=path):
+                repo_root = path.parent if "fixtures/release-publication" in path.as_posix() else None
+                data = validator.load_publication_declaration(path, repo_root=repo_root)
+                self.assertIn(data["mode"], {"none", "tag_only", "github_actions"})
+                if data["mode"] == "none":
+                    self.assertEqual(data, {"schema_version": 1, "mode": "none"})
+                    self.assertIn("none", definitions)
+                elif data["mode"] == "tag_only" and data["workflow"] is None:
+                    self.assertEqual(
+                        definitions["tag_only_no_workflow"]["allOf"][1]["properties"]["proof_requirements"]["$ref"],
+                        "#/$defs/proofs_tag_only_none",
+                    )
+                    self.assertFalse(data["proof_requirements"]["tag_ci"])
+                    self.assertEqual(data["tag_push_side_effects"], [])
+                elif data["mode"] == "tag_only":
+                    self.assertEqual(data["workflow"]["purpose"], "tag_validation")
+                    self.assertEqual(data["workflow"]["permissions"]["contents"], "read")
+                    self.assertEqual(data["tag_push_side_effects"], ["tag_ci"])
+                    self.assertEqual(data["proof_requirements"]["release_metadata"], False)
+                elif data["assets"]["expected"]:
+                    self.assertEqual(data["workflow"]["purpose"], "release_publication")
+                    self.assertEqual(data["workflow"]["permissions"]["contents"], "write")
+                    self.assertEqual(data["tag_push_side_effects"], ["tag_ci", "github_release_create_or_update", "asset_upload"])
+                    self.assertTrue(data["proof_requirements"]["assets"])
+                else:
+                    self.assertEqual(data["workflow"]["permissions"]["contents"], "write")
+                    self.assertEqual(data["tag_push_side_effects"], ["tag_ci", "github_release_create_or_update"])
+                    self.assertFalse(data["proof_requirements"]["assets"])
 
     def test_none_fixture_is_exact_and_valid(self) -> None:
         path = ROOT / "fixtures/release-publication/none/release-publication.json"
@@ -129,9 +192,14 @@ class ReleasePublicationTests(unittest.TestCase):
         git(repo, "config", "user.name", "Test")
         (repo / "VERSION").write_text("2.2.0\n")
         fixture_name = {"gateway": "gpt-tunnel-gateway", "planner": "gpt-review-planner"}.get(mode)
-        (repo / "release-publication.json").write_text(
-            (ROOT / f"fixtures/release-publication/{fixture_name or mode}/release-publication.json").read_text()
+        declaration_source = (
+            ROOT / f"fixtures/release-publication/{fixture_name}/release-publication.json"
+            if fixture_name
+            else ROOT / "templates/project/release-publication.tag_only.json"
+            if mode == "tag_only_null"
+            else ROOT / f"fixtures/release-publication/{mode}/release-publication.json"
         )
+        (repo / "release-publication.json").write_text(declaration_source.read_text())
         workflow = repo / ".github/workflows"
         workflow.mkdir(parents=True)
         destination = None
@@ -151,6 +219,15 @@ class ReleasePublicationTests(unittest.TestCase):
         sha = git(repo, "rev-parse", "HEAD")
         git(repo, "tag", "-a", "v2.2.0", "-m", "v2.2.0")
         return temp, repo, sha
+
+    def _write_declaration_with_workflow(self, root: Path, workflow_text: str, declaration: dict[str, Any]) -> Path:
+        workflow = root / ".github/workflows/build-offline-rust.yml"
+        workflow.parent.mkdir(parents=True, exist_ok=True)
+        workflow.write_text(workflow_text, encoding="utf-8")
+        declaration["workflow"]["sha256"] = __import__("hashlib").sha256(workflow.read_bytes()).hexdigest()
+        path = root / "release-publication.json"
+        path.write_text(json.dumps(declaration, indent=2) + "\n", encoding="utf-8")
+        return path
 
     def test_verifier_none_makes_no_network_request(self) -> None:
         temp, repo, sha = self._tagged_repo("none")
@@ -201,6 +278,132 @@ class ReleasePublicationTests(unittest.TestCase):
         self.assertEqual(result["state"], "success")
         self.assertEqual(result["run_id"], 41)
         self.assertEqual(result["job_id"], 51)
+
+    def test_tag_only_without_workflow_is_successful_without_network(self) -> None:
+        temp, repo, sha = self._tagged_repo("tag_only_null")
+        self.addCleanup(temp.cleanup)
+        handler = type("Handler", (FakeGitHub,), {})
+        handler.payloads = {}
+        handler.requests = []
+        server = HTTPServer(("127.0.0.1", 0), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(server.shutdown)
+        self.addCleanup(thread.join, 2)
+        self.addCleanup(server.server_close)
+        completed = run_script(
+            VERIFIER_PATH,
+            "--repo", str(repo),
+            "--tag", "v2.2.0",
+            "--api-url", f"http://127.0.0.1:{server.server_port}",
+            "--format", "json",
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        result = json.loads(completed.stdout)
+        self.assertEqual(result["state"], "success")
+        self.assertFalse(result["blocking"])
+        self.assertEqual(result["checked_sha"], sha)
+        self.assertEqual(handler.requests, [])
+
+    def test_active_unavailable_publication_is_blocking(self) -> None:
+        temp, repo, sha = self._tagged_repo("gateway")
+        self.addCleanup(temp.cleanup)
+        handler = type("Handler", (FakeGitHub,), {})
+        handler.payloads = {}
+        handler.requests = []
+        server = HTTPServer(("127.0.0.1", 0), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(server.shutdown)
+        self.addCleanup(thread.join, 2)
+        self.addCleanup(server.server_close)
+        completed = run_script(
+            VERIFIER_PATH,
+            "--repo", str(repo), "--repository", "acme/gateway", "--tag", "v2.2.0",
+            "--created-after", "2026-07-31T23:59:59Z",
+            "--api-url", f"http://127.0.0.1:{server.server_port}", "--format", "json",
+        )
+        self.assertEqual(completed.returncode, 4)
+        result = json.loads(completed.stdout)
+        self.assertEqual(result["state"], "unavailable")
+        self.assertTrue(result["blocking"])
+        self.assertTrue(sha)
+
+    def test_upload_only_workflow_is_rejected_for_create_or_update(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = (ROOT / "fixtures/release-publication/gpt-review-planner/.github/workflows/build-offline-rust.yml").read_text()
+            workflow = re.sub(
+                r"if gh release view.*?\n.*?gh release upload",
+                "gh release upload",
+                source,
+                flags=re.DOTALL,
+            )
+            workflow = workflow.replace("          else\n", "")
+            declaration = json.loads((ROOT / "fixtures/release-publication/gpt-review-planner/release-publication.json").read_text())
+            path = self._write_declaration_with_workflow(root, workflow, declaration)
+            with self.assertRaises(validator.PublicationError):
+                validator.load_publication_declaration(path, repo_root=root)
+
+    def test_workflow_notes_and_release_flags_must_match_declaration(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = (ROOT / "fixtures/release-publication/gpt-review-planner/.github/workflows/build-offline-rust.yml").read_text()
+            workflow = source.replace("--generate-notes", "--notes-file CHANGELOG.md").replace("--clobber", "")
+            declaration = json.loads((ROOT / "fixtures/release-publication/gpt-review-planner/release-publication.json").read_text())
+            path = self._write_declaration_with_workflow(root, workflow, declaration)
+            with self.assertRaises(validator.PublicationError):
+                validator.load_publication_declaration(path, repo_root=root)
+
+    def test_nested_or_ambiguous_workflow_markers_are_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = (ROOT / "fixtures/release-publication/gpt-tunnel-gateway/.github/workflows/ci.yml").read_text()
+            workflow = source.replace("permissions:\n", "  nested:\n    push:\npermissions:\n")
+            path = root / ".github/workflows/ci.yml"
+            path.parent.mkdir(parents=True)
+            path.write_text(workflow, encoding="utf-8")
+            with self.assertRaises(validator.PublicationError):
+                validator.scan_workflow(path)
+
+    def test_publication_errors_are_path_neutral(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            declaration = Path(temp) / "release-publication.json"
+            declaration.write_text("{not-json", encoding="utf-8")
+            completed = run_script(VALIDATOR_PATH, str(declaration), "--repo", temp)
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertNotIn(temp, completed.stderr)
+
+    def test_setup_managed_block_matches_publication_contract(self) -> None:
+        clauses = (
+            "python3 scripts/validate-release-publication.py release-publication.json --repo .",
+            "git push origin refs/tags/v<TARGET_VERSION>:refs/tags/v<TARGET_VERSION>",
+            "none` has no publication task",
+            "tag_only` verifies declared tag CI",
+            "github_actions` verifies the declared publication workflow plus GitHub Release/assets",
+            "Owner authorization to push the exact tag includes only declaration-authorized automatic workflow side effects",
+            "Local `gh`, curl, wget, `GH_TOKEN`, and `GITHUB_TOKEN` publication is forbidden",
+        )
+        template = (ROOT / "templates/project/AGENTS.managed-block.md").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as temp:
+            project = Path(temp) / "project"
+            project.mkdir()
+            completed = subprocess.run(
+                [
+                    "bash", str(ROOT / "setup.sh"), "--project", str(project), "--version", "v2.2.2",
+                    "--commit", "a" * 40, "--execution-mode", "gpt_tunnel_managed",
+                    "--release-publication-file", str(ROOT / "templates/project/release-publication.none.json"),
+                ],
+                cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            rendered = (project / "AGENTS.md").read_text(encoding="utf-8")
+        for clause in clauses:
+            with self.subTest(clause=clause):
+                self.assertIn(clause, template)
+                self.assertIn(clause, rendered)
+        self.assertNotIn("Do not publish a GitHub Release without explicit authorization", template)
+        self.assertNotIn("Do not publish a GitHub Release without explicit authorization", rendered)
 
     def test_verifier_github_actions_checks_release_and_assets(self) -> None:
         temp, repo, sha = self._tagged_repo("planner")

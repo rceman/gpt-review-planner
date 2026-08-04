@@ -139,8 +139,11 @@ ${BLOCK_BEGIN}
 > - GPT performs only static validation and does not execute runtime quality gates. GPT still authors the approved implementation, fixtures, and tests.
 > - The local agent owns runtime integration and gates.
 > - Release-commit CI must pass before tagging; final tag CI is external metadata.
-> - Do not publish a GitHub Release without explicit authorization.
 > - Never force-push or use broad \`git push --tags\`.
+> - Before release task authoring, load and validate the explicit project declaration with \`python3 scripts/validate-release-publication.py release-publication.json --repo .\`.
+> - After \`git push origin refs/tags/v<TARGET_VERSION>:refs/tags/v<TARGET_VERSION>\`, derive the post-tag proof from that declaration: \`none\` has no publication task, \`tag_only\` verifies declared tag CI, and \`github_actions\` verifies the declared publication workflow plus GitHub Release/assets when expected.
+> - Owner authorization to push the exact tag includes only declaration-authorized automatic workflow side effects; it does not authorize manual API/CLI publication, installation, activation, restart, or connector refresh.
+> - Local \`gh\`, curl, wget, \`GH_TOKEN\`, and \`GITHUB_TOKEN\` publication is forbidden.
 ${BLOCK_END}
 EOF
 }

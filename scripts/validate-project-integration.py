@@ -72,8 +72,8 @@ def main() -> int:
                 publication_declaration, repo_root=project
             )
             publication_mode = publication["mode"]
-        except (OSError, UnicodeError, ValueError, RuntimeError) as exc:
-            errors.append(f"invalid release-publication.json: {exc}")
+        except (OSError, UnicodeError, ValueError, RuntimeError):
+            errors.append("invalid release-publication declaration")
 
     release_surfaces = {
         "scripts/release.py": project_release,
@@ -111,7 +111,7 @@ def main() -> int:
                 check=False,
             )
             if result.returncode != 0:
-                errors.append("project release tooling failed planner conformance: " + (result.stderr.strip() or "unknown error"))
+                errors.append("project release tooling failed planner conformance")
 
     if not agents.is_file():
         errors.append("missing AGENTS.md")

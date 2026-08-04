@@ -55,14 +55,18 @@ def fetch(url: str, token: str | None) -> object:
 
 
 def output(args: argparse.Namespace, state: str, message: str, **values: object) -> dict[str, object]:
+    source = values.pop(
+        "source",
+        "github-actions-rest" if state not in {"not_applicable", "invalid_response"} else "policy",
+    )
     data: dict[str, object] = {
         "schema_version": 1,
         "repository": args.repository,
         "tag": args.tag,
         "mode": values.pop("mode", None),
         "state": state,
-        "blocking": state not in {"success", "not_applicable", "unavailable"},
-        "source": "github-actions-rest" if state not in {"not_applicable", "invalid_response"} else "policy",
+        "blocking": state not in {"success", "not_applicable"},
+        "source": source,
         "run_id": None,
         "job_id": None,
         "run_url": None,
@@ -136,6 +140,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     args.repository = args.repository or "local/repository"
     declaration_path = args.declaration or (args.repo / "release-publication.json")
+    mode: str | None = None
     try:
         declaration = load_publication_declaration(declaration_path, repo_root=args.repo)
         if any(not re.fullmatch(r"[0-9]+", value) for value in args.exclude_run_id):
@@ -146,17 +151,24 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if not args.tag:
             raise PublicationError("--tag is required for active publication modes")
-        if not args.created_after:
-            raise PublicationError("--created-after is required for active publication modes")
-        args.created_after_time = parse_timestamp(args.created_after)
         tag_declaration = declaration["tag"]
         assert isinstance(tag_declaration, dict)
         if not tag_matches(str(tag_declaration["pattern"]), args.tag):
             raise PublicationError("tag does not match the declared release tag pattern")
         sha, _ = resolve_tag(args.repo, args.tag)
         if mode == "tag_only" and declaration["workflow"] is None:
-            output(args, "not_applicable", "tag publication has no declared workflow", mode=mode, checked_sha=sha)
+            output(
+                args,
+                "success",
+                "annotated tag verified; no post-tag workflow is declared",
+                mode=mode,
+                source="policy",
+                checked_sha=sha,
+            )
             return 0
+        if not args.created_after:
+            raise PublicationError("--created-after is required for active workflow publication modes")
+        args.created_after_time = parse_timestamp(args.created_after)
         if not REPOSITORY_RE.fullmatch(args.repository):
             raise PublicationError("--repository OWNER/REPO is required for active publication modes")
         workflow = declaration["workflow"]
@@ -188,6 +200,8 @@ def main(argv: list[str] | None = None) -> int:
             release = fetch(f"{base}/repos/{args.repository}/releases/tags/{args.tag}", None)
             if not isinstance(release, dict) or release.get("tag_name") != args.tag:
                 raise PublicationError("GitHub Release metadata does not match the tag")
+            if not isinstance(release.get("id"), int):
+                raise PublicationError("GitHub Release metadata has no numeric id")
             expected_release = declaration["github_release"]
             assert isinstance(expected_release, dict)
             for field in ("draft", "prerelease"):
@@ -206,10 +220,10 @@ def main(argv: list[str] | None = None) -> int:
         output(args, "success", "declared release publication verified", **values)
         return 0
     except HTTPError as exc:
-        output(args, "unavailable", f"publication query returned HTTP {exc.code}")
+        output(args, "unavailable", f"publication query returned HTTP {exc.code}", mode=mode)
         return 4
     except (URLError, OSError, ValueError, json.JSONDecodeError, PublicationError) as exc:
-        output(args, "invalid_response", str(exc))
+        output(args, "invalid_response", str(exc), mode=mode)
         return 5
 
 

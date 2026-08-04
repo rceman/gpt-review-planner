@@ -38,6 +38,10 @@
 > approved. Production Node.js backends and direct frontend database access are
 > forbidden. PostgreSQL schema authority remains Liquibase. Python rules apply
 > to tools/tests; a valid legacy Python exception does not demand rewrite.
+> - Before release task authoring, load and validate the explicit project declaration with `python3 scripts/validate-release-publication.py release-publication.json --repo .`.
+> - After `git push origin refs/tags/v<TARGET_VERSION>:refs/tags/v<TARGET_VERSION>`, derive the post-tag proof from that declaration: `none` has no publication task, `tag_only` verifies declared tag CI, and `github_actions` verifies the declared publication workflow plus GitHub Release/assets when expected.
+> - Owner authorization to push the exact tag includes only declaration-authorized automatic workflow side effects; it does not authorize manual API/CLI publication, installation, activation, restart, or connector refresh.
+> - Local `gh`, curl, wget, `GH_TOKEN`, and `GITHUB_TOKEN` publication is forbidden.
 <!-- END GPT-REVIEW-PLANNER -->
 
 - For `repository_evidence` executable patch packs, create a direct two-file JSON evidence commit after the implementation commit and validate it with the pinned `verify-agent-evidence.py`; never embed the evidence commit SHA inside its own evidence. For `gpt_tunnel_managed`, do not create repository evidence or an evidence-only commit.
@@ -55,7 +59,9 @@ Any request to release, bump a version, or create a version tag requires reading
 `docs/RELEASE_LIFECYCLE.md` and `docs/RELEASE_PROCESS.md` completely. Use only the repository release automation;
 the owner selects the target version and synchronized version files must not be
 edited manually. Release-commit CI must pass before tagging, and final tag CI is
-external metadata. Do not publish a GitHub Release without explicit authorization.
+external metadata. GitHub Release publication is permitted only as a
+declaration-authorized automatic workflow side effect; local API/CLI publication
+is forbidden.
 Never force-push, rewrite published history, or use broad `git push --tags`.
 CI policy: resolve `required`, `auto`, `optional`, or `disabled` explicitly. Repository visibility alone MUST NOT decide whether remote CI is required.
 

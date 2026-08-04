@@ -10,6 +10,7 @@ import argparse
 import hashlib
 import json
 import re
+import shlex
 import sys
 from pathlib import Path
 from typing import Any
@@ -40,12 +41,14 @@ def _no_duplicate_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 def load_json(path: Path) -> Any:
     try:
         raw = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeError) as exc:
-        raise PublicationError(f"cannot read {path}: {exc}") from exc
+    except UnicodeError as exc:
+        raise PublicationError("cannot read publication declaration as UTF-8") from exc
+    except OSError as exc:
+        raise PublicationError("cannot read publication declaration") from exc
     try:
         return json.loads(raw, object_pairs_hook=_no_duplicate_pairs)
     except json.JSONDecodeError as exc:
-        raise PublicationError(f"invalid JSON in {path}: {exc.msg}") from exc
+        raise PublicationError(f"invalid publication declaration JSON: {exc.msg}") from exc
 
 
 def _object(value: Any, label: str, keys: set[str], required: set[str]) -> dict[str, Any]:
@@ -79,6 +82,8 @@ def _string_list(value: Any, label: str, *, non_empty: bool = False) -> list[str
         raise PublicationError(f"{label} must be an {'non-empty ' if non_empty else ''}array of strings")
     if any(not isinstance(item, str) or not item for item in value):
         raise PublicationError(f"{label} must contain only non-empty strings")
+    if len(set(value)) != len(value):
+        raise PublicationError(f"{label} must not contain duplicates")
     return value
 
 
@@ -88,7 +93,7 @@ def validate_workflow_path(path: str) -> None:
         or ".." in path.split("/")
         or any(not SAFE_PART_RE.fullmatch(part) for part in path.split("/"))
     ):
-        raise PublicationError(f"workflow.path is not a normalized repository-relative workflow path: {path!r}")
+        raise PublicationError("workflow.path is not a normalized repository-relative workflow path")
 
 
 def _validate_none(data: dict[str, Any]) -> dict[str, Any]:
@@ -198,6 +203,8 @@ def _validate_active(data: dict[str, Any]) -> dict[str, Any]:
             raise PublicationError("github_release.notes.file must be repository-relative")
     elif set(notes) != {"source"}:
         raise PublicationError("github_release.notes.file is permitted only for declared_file")
+    if release_expected and notes_source == "none":
+        raise PublicationError("an expected GitHub Release must declare a notes source")
     asset_expected = _bool(assets["expected"], "assets.expected")
     if (policy == "workflow_produced") != asset_expected:
         raise PublicationError("assets.policy and expected must agree")
@@ -250,7 +257,7 @@ def validate_declaration(data: Any, *, repo_root: Path | None = None) -> dict[st
         try:
             scan = scan_workflow(path)
         except (OSError, UnicodeError) as exc:
-            raise PublicationError(f"cannot inspect declared workflow: {exc}") from exc
+            raise PublicationError("cannot inspect declared workflow") from exc
         if scan["sha256"] != workflow["sha256"]:
             raise PublicationError("workflow.sha256 does not match the declared workflow")
         if scan["name"] != workflow["name"]:
@@ -265,67 +272,278 @@ def validate_declaration(data: Any, *, repo_root: Path | None = None) -> dict[st
             raise PublicationError("workflow permissions do not match the declared workflow")
         if scan["release_source_patterns"] != source_patterns:
             raise PublicationError("assets.workflow_source_patterns do not match the declared workflow")
-        if normalized["mode"] == "github_actions" and not scan["github_release"]:
-            raise PublicationError("declared GitHub publication workflow has no release operation")
-        if normalized["mode"] == "tag_only" and scan["github_release"]:
-            raise PublicationError("tag_only workflow must not publish a GitHub Release")
+        if normalized["mode"] == "tag_only":
+            if scan["github_release"]:
+                raise PublicationError("tag_only workflow must not publish a GitHub Release")
+        else:
+            if not scan["release_view"] or not scan["release_create"]:
+                raise PublicationError("github_actions workflow must ensure a release with view and create")
+            if scan["credential_authority"] != "github.token":
+                raise PublicationError("github_actions workflow must use github.token")
+            release_notes = normalized["github_release"]["notes"]
+            assert isinstance(release_notes, dict)
+            if scan["notes_source"] != release_notes["source"]:
+                raise PublicationError("workflow notes source does not match the declaration")
+            if release_notes["source"] == "declared_file" and scan["notes_file"] != release_notes.get("file"):
+                raise PublicationError("workflow notes file does not match the declaration")
+            if scan["draft"] != normalized["github_release"]["draft"]:
+                raise PublicationError("workflow draft flag does not match the declaration")
+            if scan["prerelease"] != normalized["github_release"]["prerelease"]:
+                raise PublicationError("workflow prerelease flag does not match the declaration")
+            if assets["expected"]:
+                if not scan["release_upload"] or not scan["upload_clobber"]:
+                    raise PublicationError("workflow-produced assets require upload with --clobber")
+            elif scan["release_upload"]:
+                raise PublicationError("asset policy none forbids release uploads")
     return normalized
 
 
+def _indent(line: str) -> int:
+    if line.startswith("\t"):
+        raise PublicationError("workflow uses unsupported tab indentation")
+    return len(line) - len(line.lstrip(" "))
+
+
+def _scalar_list(raw: str, label: str) -> list[str]:
+    value = raw.strip()
+    if not (value.startswith("[") and value.endswith("]")):
+        raise PublicationError(f"workflow {label} uses unsupported list syntax")
+    inner = value[1:-1].strip()
+    if not inner:
+        return []
+    items = []
+    for item in inner.split(","):
+        item = item.strip()
+        if len(item) >= 2 and item[0] == item[-1] and item[0] in "'\"":
+            item = item[1:-1]
+        if not item or any(char in item for char in "[]{}"):
+            raise PublicationError(f"workflow {label} contains unsupported list data")
+        items.append(item)
+    if len(set(items)) != len(items):
+        raise PublicationError(f"workflow {label} contains duplicate values")
+    return items
+
+
+def _run_blocks(lines: list[str]) -> list[str]:
+    blocks: list[str] = []
+    for index, line in enumerate(lines):
+        match = re.match(r"^( *)(?:run):(?:\s*)(.*)$", line)
+        if not match:
+            continue
+        base = len(match.group(1))
+        rest = match.group(2).strip()
+        if rest and not rest.startswith(("|", ">")):
+            blocks.append(rest)
+            continue
+        body: list[str] = []
+        for following in lines[index + 1:]:
+            if following.strip() and _indent(following) <= base:
+                break
+            body.append(following.strip())
+        blocks.append("\n".join(body))
+    return blocks
+
+
+def _env_blocks(lines: list[str]) -> list[list[str]]:
+    blocks: list[list[str]] = []
+    for index, line in enumerate(lines):
+        match = re.match(r"^( *)env:\s*$", line)
+        if not match:
+            continue
+        base = len(match.group(1))
+        body: list[str] = []
+        for following in lines[index + 1:]:
+            if following.strip() and _indent(following) <= base:
+                break
+            body.append(following)
+        blocks.append(body)
+    return blocks
+
+
 def scan_workflow(path: Path) -> dict[str, Any]:
-    raw = path.read_bytes()
+    try:
+        raw = path.read_bytes()
+        text = raw.decode("utf-8")
+    except UnicodeError as exc:
+        raise PublicationError("workflow is not valid UTF-8") from exc
+    except OSError as exc:
+        raise PublicationError("cannot read declared workflow") from exc
     if len(raw) > MAX_WORKFLOW_BYTES:
         raise PublicationError("workflow exceeds bounded scan size")
-    text = raw.decode("utf-8")
     lines = text.splitlines()
     if len(lines) > MAX_WORKFLOW_LINES:
         raise PublicationError("workflow exceeds bounded scan line count")
-    name: str | None = None
-    event = "push" if re.search(r"(?m)^\s*push\s*:", text) else None
-    explicit_patterns: list[str] = []
-    push_line = None
-    on_line = None
+
+    top: list[tuple[int, str, str]] = []
     for index, line in enumerate(lines):
-        if re.match(r"^name\s*:", line):
-            name = line.split(":", 1)[1].strip().strip("\"'")
-        if re.match(r"^on\s*:\s*$", line):
-            on_line = index
-        if on_line is not None and re.match(r"^\s{2}push\s*:", line):
-            push_line = index
-        if push_line is not None and index >= push_line:
-            if index > push_line and line and not line.startswith((" ", "\t")):
-                break
-            match = re.search(r"tags\s*:\s*\[([^]]*)\]", line)
-            if match:
-                explicit_patterns.extend(re.findall(r"['\"]([^'\"]+)['\"]", match.group(1)))
-            elif re.match(r"^\s+tags\s*:\s*$", line):
-                for following in lines[index + 1:]:
-                    item = re.match(r"^\s+-\s+['\"]?([^'\"\s]+)['\"]?\s*$", following)
-                    if item:
-                        explicit_patterns.append(item.group(1))
-                    elif following and not following.startswith((" ", "\t")):
-                        break
-    if name is None or event is None:
-        raise PublicationError("workflow must declare a top-level name and push event")
-    permissions = "none"
-    for line in lines:
-        match = re.match(r"^\s+contents\s*:\s*(read|write)\s*$", line)
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        match = re.match(r"^([A-Za-z_][A-Za-z0-9_-]*):(?:\s*(.*))?$", line)
         if match:
-            permissions = match.group(1)
+            top.append((index, match.group(1), (match.group(2) or "").strip()))
+
+    def top_marker(key: str) -> tuple[int, str]:
+        matches = [(index, rest) for index, name, rest in top if name == key]
+        if len(matches) != 1:
+            raise PublicationError(f"workflow must contain exactly one top-level {key} marker")
+        return matches[0]
+
+    name_index, name_value = top_marker("name")
+    if not name_value:
+        raise PublicationError("workflow top-level name must be non-empty")
+    name = name_value.strip("\"'")
+    on_index, on_value = top_marker("on")
+    permissions_index, permissions_value = top_marker("permissions")
+    if on_value or permissions_value:
+        raise PublicationError("workflow on and permissions markers must use the supported block form")
+    if any(name == "push" for _, name, _ in top):
+        raise PublicationError("workflow contains an unsupported top-level push marker")
+
+    def block_end(start: int) -> int:
+        for index in range(start + 1, len(lines)):
+            if lines[index].strip() and _indent(lines[index]) == 0:
+                return index
+        return len(lines)
+
+    on_end = block_end(on_index)
+    on_block = lines[on_index + 1:on_end]
+    push_markers = []
+    for relative, line in enumerate(on_block):
+        if re.match(r"^\s*push\s*:", line):
+            push_markers.append((relative, line))
+    if len(push_markers) != 1 or _indent(push_markers[0][1]) != 2:
+        raise PublicationError("workflow must contain exactly one supported on.push marker")
+    push_relative, push_line = push_markers[0]
+    if push_line.split(":", 1)[1].strip():
+        raise PublicationError("workflow on.push must use the supported block form")
+    push_index = on_index + 1 + push_relative
+    push_end = on_end
+    for index in range(push_index + 1, on_end):
+        if lines[index].strip() and _indent(lines[index]) <= 2:
+            push_end = index
             break
-    release_commands = re.findall(r"\bgh\s+release\s+(?:create|upload)\b[^\n]*", text)
-    has_release = bool(release_commands)
-    if has_release and "GH_TOKEN: ${{ github.token }}" not in text and "GH_TOKEN:${{ github.token }}" not in text:
-        raise PublicationError("GitHub publication workflow must use github.token")
+    tag_markers: list[tuple[int, str]] = []
+    for index in range(push_index + 1, push_end):
+        if re.search(r"\btags\s*:", lines[index]):
+            if _indent(lines[index]) != 4:
+                raise PublicationError("workflow tags marker is not anchored to on.push")
+            tag_markers.append((index, lines[index]))
+    if len(tag_markers) > 1:
+        raise PublicationError("workflow contains duplicate on.push.tags markers")
+    explicit_patterns: list[str] = []
+    if tag_markers:
+        tag_index, tag_line = tag_markers[0]
+        tag_value = tag_line.split(":", 1)[1].strip()
+        if tag_value:
+            explicit_patterns = _scalar_list(tag_value, "on.push.tags")
+        else:
+            for following in lines[tag_index + 1:push_end]:
+                if not following.strip():
+                    continue
+                if _indent(following) <= 4:
+                    break
+                item = re.match(r"^\s{6}-\s+(.+?)\s*$", following)
+                if not item:
+                    raise PublicationError("workflow on.push.tags uses unsupported list syntax")
+                value = item.group(1).strip("\"'")
+                if not value:
+                    raise PublicationError("workflow on.push.tags contains an empty pattern")
+                explicit_patterns.append(value)
+            if len(set(explicit_patterns)) != len(explicit_patterns):
+                raise PublicationError("workflow on.push.tags contains duplicate values")
+
+    permission_end = block_end(permissions_index)
+    content_markers: list[tuple[int, str]] = []
+    for index, line in enumerate(lines):
+        if re.search(r"\bcontents\s*:", line):
+            content_markers.append((index, line))
+    if len(content_markers) != 1 or not (permissions_index < content_markers[0][0] < permission_end):
+        raise PublicationError("workflow must contain exactly one top-level permissions.contents marker")
+    content_line = content_markers[0][1]
+    if _indent(content_line) != 2:
+        raise PublicationError("workflow permissions.contents marker is not top-level")
+    permission_value = content_line.split(":", 1)[1].strip()
+    if permission_value not in {"read", "write"}:
+        raise PublicationError("workflow permissions.contents must be read or write")
+
+    run_text = "\n".join(_run_blocks(lines))
+    normalized_run = re.sub(r"\\\s*\n\s*", " ", run_text)
+    commands: list[tuple[str, list[str]]] = []
+    for match in re.finditer(r"\bgh\s+release\s+(view|create|upload|delete|edit|list)\b([^\n;&|]*)", normalized_run):
+        command = match.group(1)
+        if command in {"delete", "edit", "list"}:
+            raise PublicationError("workflow contains an unsupported GitHub Release command")
+        try:
+            tokens = shlex.split(match.group(2), posix=True)
+        except ValueError as exc:
+            raise PublicationError("workflow contains malformed release command syntax") from exc
+        commands.append((command, tokens))
+
+    release_view = any(command == "view" for command, _ in commands)
+    release_create = any(command == "create" for command, _ in commands)
+    release_upload = any(command == "upload" for command, _ in commands)
+    upload_clobber = any(command == "upload" and "--clobber" in tokens for command, tokens in commands)
+    generate_notes = any(command == "create" and "--generate-notes" in tokens for command, tokens in commands)
+    notes_files: list[str] = []
+    draft = False
+    prerelease = False
+    source_patterns: list[str] = []
+    for command, tokens in commands:
+        if command != "create":
+            if command == "upload":
+                source_patterns.extend(token for token in tokens if "*" in token or "?" in token or "[" in token)
+            continue
+        draft = draft or "--draft" in tokens
+        prerelease = prerelease or "--prerelease" in tokens
+        source_patterns.extend(token for token in tokens if "*" in token or "?" in token or "[" in token)
+        for index, token in enumerate(tokens):
+            if token == "--notes-file" and index + 1 < len(tokens):
+                notes_files.append(tokens[index + 1])
+            elif token.startswith("--notes-file="):
+                notes_files.append(token.split("=", 1)[1])
+    if len(notes_files) > 1 or (generate_notes and notes_files):
+        raise PublicationError("workflow declares ambiguous release notes behavior")
+    notes_file = notes_files[0] if notes_files else None
+    if generate_notes:
+        notes_source = "generated"
+    elif notes_file == "CHANGELOG.md":
+        notes_source = "changelog"
+    elif notes_file:
+        notes_source = "declared_file"
+    else:
+        notes_source = "none"
+
+    credential_markers: list[str] = []
+    for block in _env_blocks(lines):
+        for line in block:
+            match = re.match(r"^\s*(GH_TOKEN|GITHUB_TOKEN)\s*:\s*(.*)$", line)
+            if match:
+                credential_markers.append(match.group(2).strip())
+    if any("GH_TOKEN" in line or "GITHUB_TOKEN" in line for line in run_text.splitlines()):
+        raise PublicationError("workflow uses an unsupported local credential marker")
+    if credential_markers and any(value != "${{ github.token }}" for value in credential_markers):
+        raise PublicationError("workflow uses an unsupported credential authority")
+    credential_authority = "github.token" if credential_markers else "none"
+    has_release = release_view or release_create or release_upload
     return {
         "sha256": hashlib.sha256(raw).hexdigest(),
         "name": name,
-        "event": event,
+        "event": "push",
         "tag_trigger": "explicit_tags_filter" if explicit_patterns else "unfiltered_push",
         "tag_patterns": explicit_patterns,
-        "contents_permission": permissions,
+        "contents_permission": permission_value,
         "github_release": has_release,
-        "release_source_patterns": sorted(set(re.findall(r"(?:^|\s)(dist/\*|[^\s'\"]+/\*)", "\n".join(release_commands)))),
+        "release_view": release_view,
+        "release_create": release_create,
+        "release_upload": release_upload,
+        "upload_clobber": upload_clobber,
+        "credential_authority": credential_authority,
+        "notes_source": notes_source,
+        "notes_file": notes_file,
+        "generate_notes": generate_notes,
+        "draft": draft,
+        "prerelease": prerelease,
+        "release_source_patterns": sorted(set(source_patterns)),
     }
 
 
