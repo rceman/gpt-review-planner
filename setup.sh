@@ -23,6 +23,8 @@ Options:
   --execution-mode MODE  gpt_tunnel_managed or repository_evidence. Required.
   --repository URL     Canonical repository URL.
   --commit SHA         Exact commit. Otherwise resolved with git ls-remote.
+  --release-publication-file PATH
+                       Explicit project release-publication.json to validate and install.
   --agents-file PATH   AGENTS.md path relative to project. Default: AGENTS.md
   --force              Replace an existing lock even if repository differs.
   -h, --help           Show this help.
@@ -149,6 +151,7 @@ repository="$CANONICAL_REPOSITORY"
 commit=""
 execution_mode=""
 agents_file="AGENTS.md"
+release_publication_file=""
 force=0
 
 while [[ $# -gt 0 ]]; do
@@ -171,6 +174,11 @@ while [[ $# -gt 0 ]]; do
     --commit)
       [[ $# -ge 2 ]] || die "--commit requires a value"
       commit="$2"
+      shift 2
+      ;;
+    --release-publication-file)
+      [[ $# -ge 2 ]] || die "--release-publication-file requires a value"
+      release_publication_file="$2"
       shift 2
       ;;
     --execution-mode)
@@ -205,6 +213,17 @@ done
 [[ -d "$project" ]] || die "project directory does not exist: $project"
 
 project="$(cd "$project" && pwd)"
+planner_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+[[ -n "$release_publication_file" ]] || die "--release-publication-file is required; no publication mode is inferred"
+if [[ "$release_publication_file" != /* ]]; then
+  release_publication_file="$(cd "$(dirname "$release_publication_file")" && pwd)/$(basename "$release_publication_file")"
+fi
+[[ -f "$release_publication_file" && ! -L "$release_publication_file" ]] ||
+  die "release-publication input must be a regular non-symlink file"
+python3 "$planner_root/scripts/validate-release-publication.py" \
+  "$release_publication_file" --repo "$project" >/dev/null ||
+  die "release-publication input failed canonical validation"
 
 [[ "$agents_file" != /* ]] || die "--agents-file must be relative to the project"
 [[ "$agents_file" != ".." && "$agents_file" != ../* && "$agents_file" != *"/../"* ]] ||
@@ -280,6 +299,11 @@ cat > "$lock_file" <<EOF
   "installed_at": "${generated_at}"
 }
 EOF
+
+publication_declaration="$project/release-publication.json"
+if [[ "$release_publication_file" != "$publication_declaration" ]]; then
+  cp "$release_publication_file" "$publication_declaration"
+fi
 
 printf 'Installed GPT Review Planner integration.\n'
 printf 'Project: %s\n' "$project"

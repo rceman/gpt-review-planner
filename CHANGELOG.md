@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add an explicit release-publication declaration, strict workflow identity and
+  mode-derived tag/publication proof contract for integrated projects, including
+  setup/update fail-closed behavior and separate owner-report states.
 - Add a canonical two-mode release lifecycle with source, release-ready, and
   annotated-tag readiness checks, rollback-safe preparation, project conformance,
   and machine-checkable task/review enforcement.

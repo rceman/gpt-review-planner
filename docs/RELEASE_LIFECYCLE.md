@@ -53,6 +53,17 @@ release_publication
 → separately authorized publication
 ```
 
+An integrated project must also load and validate its explicit
+[`release-publication.json`](RELEASE_PUBLICATION.md) declaration before the
+immutable gate list is written. The declaration selects `none`, `tag_only`, or
+`github_actions` behavior; it is never inferred from repository visibility or
+from a workflow file. For active modes, project integration requires
+`release-config.json` and the four canonical release/publication scripts.
+After the exact tag push, post-tag CI and read-only publication verification
+are derived from the declaration. A `github_actions` declaration proves its
+declared GitHub Release and assets; a `tag_only` declaration does not claim
+those effects.
+
 `check-source` requires synchronized semantic versions, one non-empty
 `Unreleased` section, no dated heading for the current version, no target tag,
 and a clean worktree. `prepare` fully validates before changing bytes and

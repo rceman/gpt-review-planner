@@ -4,6 +4,11 @@ The planner keeps its primary source and unittest tooling dependency-free, but
 the complete repository gate suite requires host-provided tools. A validating
 host must provide Git, Bash, Python 3, and pytest available through Python:
 
+For project integration and release work, also load the canonical
+[`PROJECT_INTEGRATION.md`](PROJECT_INTEGRATION.md) and
+[`RELEASE_PUBLICATION.md`](RELEASE_PUBLICATION.md) contracts before setup or
+immutable release gates.
+
 ```bash
 git --version
 bash --version

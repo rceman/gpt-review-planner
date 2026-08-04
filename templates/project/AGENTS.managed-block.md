@@ -66,4 +66,20 @@ prepare/check-release-ready/commit/check-tag-ready/tag/verify-tag flow for
 `release_publication`. If `scripts/release.py` is present in the project, its
 release script and `scripts/check-github-ci.py` must pass the planner-owned
 two-script conformance check. A source-state pass is not release or tag
-readiness.
+readiness. For active integrated publication modes, the project's release
+script, CI helper, publication validator, and publication verifier must all
+pass planner conformance. Integrated projects must also load and validate the explicit
+`release-publication.json` with:
+
+```bash
+python3 scripts/validate-release-publication.py \
+  <PROJECT>/release-publication.json \
+  --repo <PROJECT>
+```
+
+`none` rejects release/publication surfaces; active modes require
+`release-config.json` and all four canonical scripts. After the exact
+`git push origin refs/tags/v<TARGET_VERSION>:refs/tags/v<TARGET_VERSION>`,
+derive tag CI and publication verification from that declaration. Never use
+local `gh`, curl, wget, `GH_TOKEN`, or `GITHUB_TOKEN` to create a Release or
+call a publication API.

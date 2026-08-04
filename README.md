@@ -11,6 +11,7 @@ Published versions are identified by immutable `vX.Y.Z` Git tags and GitHub Rele
 
 For the complete reusable release procedure, read [`docs/RELEASE_PROCESS.md`](docs/RELEASE_PROCESS.md) and use [`prompts/AGENT_RELEASE_VERSION.md`](prompts/AGENT_RELEASE_VERSION.md).
 The reusable two-mode contract is [`docs/RELEASE_LIFECYCLE.md`](docs/RELEASE_LIFECYCLE.md); task-specific mode and target declarations stay in the immutable task and handoff record.
+For integrated projects, read the strict [`docs/RELEASE_PUBLICATION.md`](docs/RELEASE_PUBLICATION.md) contract and validate the project's explicit `release-publication.json` before release gates.
 
 The [engineering baseline](docs/engineering/README.md) defines the canonical
 stack, profiles, exceptions, and review checklists. Validate the registry with

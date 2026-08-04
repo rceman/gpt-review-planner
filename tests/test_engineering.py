@@ -256,7 +256,7 @@ class EngineeringBaselineTests(unittest.TestCase):
             for name, version in (("tagged", "v1.1.1"), ("exact", commit)):
                 project = root / name
                 project.mkdir()
-                subprocess.run(["bash", str(ROOT / "setup.sh"), "--project", str(project), "--version", version, "--execution-mode", "repository_evidence", "--commit", commit], check=True, capture_output=True, text=True)
+                subprocess.run(["bash", str(ROOT / "setup.sh"), "--project", str(project), "--version", version, "--execution-mode", "repository_evidence", "--release-publication-file", str(ROOT / "templates/project/release-publication.none.json"), "--commit", commit], check=True, capture_output=True, text=True)
                 lock = json.loads((project / ".gpt-workflow.lock").read_text())
                 self.assertIn("installed_at", lock)
                 self.assertNotIn("generated_at", lock)

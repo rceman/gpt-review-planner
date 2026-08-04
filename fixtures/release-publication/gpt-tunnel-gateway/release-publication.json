@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "mode": "tag_only",
+  "tag": {
+    "pattern": "vX.Y.Z",
+    "annotated": true,
+    "push_required": true,
+    "identity_source": "release-config.json"
+  },
+  "workflow": {
+    "path": ".github/workflows/ci.yml",
+    "name": "CI",
+    "sha256": "d23a2e4ed9f00999702bd909582ab7c0ddb4d261bb58b9dcd6949993eabb97e6",
+    "purpose": "tag_validation",
+    "event": "push",
+    "tag_trigger": "unfiltered_push",
+    "tag_patterns": [],
+    "permissions": {"contents": "read"},
+    "distinct_run_required": true,
+    "created_after_tag_push": true
+  },
+  "credential_authority": "none",
+  "local_credentials_required": false,
+  "tag_push_side_effects": ["tag_ci"],
+  "github_release": {
+    "behavior": "none",
+    "expected": false,
+    "draft": false,
+    "prerelease": false,
+    "notes": {"source": "none"}
+  },
+  "assets": {
+    "policy": "none",
+    "expected": false,
+    "workflow_source_patterns": [],
+    "published_name_patterns": []
+  },
+  "proof_requirements": {
+    "tag_ci": true,
+    "distinct_post_tag_workflow": true,
+    "release_metadata": false,
+    "assets": false
+  }
+}

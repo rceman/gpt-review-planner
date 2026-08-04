@@ -7,13 +7,27 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
+PUBLICATION_NONE = ROOT / "templates/project/release-publication.none.json"
 
 
 class ExecutionModeTests(unittest.TestCase):
     def setup_project(self, mode: str | None):
         temp = tempfile.TemporaryDirectory()
         project = Path(temp.name)
-        command = ["bash", str(ROOT / "setup.sh"), "--project", str(project), "--version", "v2.0.0", "--commit", "a" * 40, "--execution-mode", mode] if mode else ["bash", str(ROOT / "setup.sh"), "--project", str(project), "--version", "v2.0.0", "--commit", "a" * 40]
+        command = [
+            "bash",
+            str(ROOT / "setup.sh"),
+            "--project",
+            str(project),
+            "--version",
+            "v2.0.0",
+            "--commit",
+            "a" * 40,
+            "--release-publication-file",
+            str(PUBLICATION_NONE),
+        ]
+        if mode:
+            command.extend(["--execution-mode", mode])
         result = subprocess.run(command, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return temp, project, result
 

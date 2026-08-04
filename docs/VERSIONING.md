@@ -32,4 +32,9 @@ declare exactly one `implementation_unreleased` or `release_publication`
 lifecycle mode and an owner-selected target version. See
 [`RELEASE_LIFECYCLE.md`](RELEASE_LIFECYCLE.md).
 
+Integrated release side effects are declared separately in
+[`RELEASE_PUBLICATION.md`](RELEASE_PUBLICATION.md). The declaration is
+version-agnostic, must be validated before immutable release gates, and does
+not authorize local GitHub Release/API or credential operations.
+
 See [`RELEASE_PROCESS.md`](RELEASE_PROCESS.md).

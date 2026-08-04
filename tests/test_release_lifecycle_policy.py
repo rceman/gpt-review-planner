@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RELEASE = ROOT / "scripts/release.py"
 LIFECYCLE_VALIDATOR = ROOT / "scripts/validate-release-lifecycle-task.py"
 CONFORMANCE = ROOT / "scripts/validate-release-tool-conformance.py"
+PROJECT_INTEGRATION = ROOT / "scripts/validate-project-integration.py"
 
 
 def load_release():
@@ -67,12 +68,107 @@ class ReleaseLifecyclePolicyTests(unittest.TestCase):
             },
         }
         (root / "release-config.json").write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+        (root / "release-publication.json").write_text('{"schema_version": 1, "mode": "none"}\n', encoding="utf-8")
         git(root, "add", ".")
         git(root, "commit", "-qm", "base")
         return root
 
     def config(self, repo: Path) -> dict:
         return self.release.load_config(repo, "release-config.json")
+
+    def make_integration_project(self, mode: str) -> Path:
+        repo = self.make_repo("2.2.0")
+        (repo / "AGENTS.md").write_text(
+            "<!-- BEGIN GPT-REVIEW-PLANNER -->\nmanaged\n<!-- END GPT-REVIEW-PLANNER -->\n",
+            encoding="utf-8",
+        )
+        (repo / ".gpt-workflow.lock").write_text(
+            json.dumps(
+                {
+                    "schema_version": 2,
+                    "repository": "owner/project",
+                    "version": "2.2.0",
+                    "commit": "a" * 40,
+                    "document": "GPT_REVIEW_PLANNER.md",
+                    "installed_at": "2026-08-03T00:00:00Z",
+                    "execution_mode": "repository_evidence",
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        if mode == "none":
+            (repo / "release-config.json").unlink()
+            return repo
+
+        declaration = ROOT / "fixtures/release-publication/gpt-tunnel-gateway/release-publication.json"
+        workflow = ROOT / "fixtures/release-publication/gpt-tunnel-gateway/.github/workflows/ci.yml"
+        (repo / "release-publication.json").write_bytes(declaration.read_bytes())
+        workflow_target = repo / ".github/workflows/ci.yml"
+        workflow_target.parent.mkdir(parents=True)
+        workflow_target.write_bytes(workflow.read_bytes())
+        scripts = repo / "scripts"
+        scripts.mkdir()
+        for name in (
+            "release.py",
+            "check-github-ci.py",
+            "validate-release-publication.py",
+            "verify-release-publication.py",
+        ):
+            shutil.copy2(ROOT / "scripts" / name, scripts / name)
+        return repo
+
+    def run_integration(self, repo: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, str(PROJECT_INTEGRATION), str(repo)],
+            capture_output=True,
+            text=True,
+        )
+
+    def test_project_integration_publication_mode_controls_release_surfaces(self) -> None:
+        none_repo = self.make_integration_project("none")
+        self.addCleanup(shutil.rmtree, none_repo, ignore_errors=True)
+        self.assertEqual(self.run_integration(none_repo).returncode, 0)
+
+        (none_repo / "release-config.json").write_text("{}\n", encoding="utf-8")
+        (none_repo / "scripts").mkdir()
+        for name in (
+            "release.py",
+            "check-github-ci.py",
+            "validate-release-publication.py",
+            "verify-release-publication.py",
+        ):
+            (none_repo / "scripts" / name).write_text("# forbidden\n", encoding="utf-8")
+        rejected = self.run_integration(none_repo)
+        self.assertNotEqual(rejected.returncode, 0)
+        for phrase in (
+            "release-config.json",
+            "scripts/release.py",
+            "scripts/check-github-ci.py",
+            "scripts/validate-release-publication.py",
+            "scripts/verify-release-publication.py",
+        ):
+            self.assertIn(phrase, rejected.stderr)
+
+    def test_active_publication_modes_require_all_release_surfaces(self) -> None:
+        valid = self.make_integration_project("tag_only")
+        self.addCleanup(shutil.rmtree, valid, ignore_errors=True)
+        self.assertEqual(self.run_integration(valid).returncode, 0)
+
+        for relative in (
+            "release-config.json",
+            "scripts/release.py",
+            "scripts/check-github-ci.py",
+            "scripts/validate-release-publication.py",
+            "scripts/verify-release-publication.py",
+        ):
+            repo = self.make_integration_project("tag_only")
+            self.addCleanup(shutil.rmtree, repo, ignore_errors=True)
+            (repo / relative).unlink()
+            rejected = self.run_integration(repo)
+            with self.subTest(relative=relative):
+                self.assertNotEqual(rejected.returncode, 0)
+                self.assertIn(relative, rejected.stderr)
 
     def test_source_state_is_distinct_from_release_ready(self) -> None:
         repo = self.make_repo()
@@ -222,12 +318,16 @@ class ReleaseLifecyclePolicyTests(unittest.TestCase):
                 "python3 scripts/release.py check-tag-ready",
                 "python3 scripts/release.py tag",
                 "python3 scripts/release.py verify-tag v2.2.0",
+                "git push origin refs/tags/v2.2.0:refs/tags/v2.2.0",
+                "python3 scripts/verify-release-publication.py --repo . --repository owner/repo --tag v2.2.0 --created-after 2026-08-03T00:00:00Z --format json",
             ],
         }
         for data in (implementation, publication):
             path = Path(tempfile.mkdtemp()) / "task.json"
             path.write_text(json.dumps(data), encoding="utf-8")
-            result = subprocess.run([sys.executable, str(LIFECYCLE_VALIDATOR), str(path)], capture_output=True, text=True)
+            declaration = Path(tempfile.mkdtemp()) / "release-publication.json"
+            declaration.write_text('{"schema_version": 1, "mode": "tag_only", "tag": {"pattern": "vX.Y.Z", "annotated": true, "push_required": true, "identity_source": "release-config.json"}, "workflow": null, "credential_authority": "none", "local_credentials_required": false, "tag_push_side_effects": [], "github_release": {"behavior": "none", "expected": false, "draft": false, "prerelease": false, "notes": {"source": "none"}}, "assets": {"policy": "none", "expected": false, "workflow_source_patterns": [], "published_name_patterns": []}, "proof_requirements": {"tag_ci": false, "distinct_post_tag_workflow": false, "release_metadata": false, "assets": false}}\n')
+            result = subprocess.run([sys.executable, str(LIFECYCLE_VALIDATOR), str(path), "--publication-declaration", str(declaration)], capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
         invalid = {
             "constraints": ["Release lifecycle mode: implementation_unreleased", "Release target version: 2.2.0"],
@@ -280,6 +380,9 @@ class ReleaseLifecyclePolicyTests(unittest.TestCase):
             "python3 scripts/release.py check-tag-ready",
             "python3 scripts/release.py tag",
             "python3 scripts/release.py verify-tag v2.2.0",
+            "git push origin refs/tags/v2.2.0:refs/tags/v2.2.0",
+            "python3 scripts/check-github-ci.py --repository owner/repo --sha-from-git HEAD --workflow-name CI --workflow-path .github/workflows/ci.yml --event push --tag v2.2.0 --created-after 2026-08-03T00:00:00Z --policy required --wait --format json",
+            "python3 scripts/verify-release-publication.py --repo . --repository owner/repo --tag v2.2.0 --created-after 2026-08-03T00:00:00Z --format json",
         ]
         def valid_task(gates: list[str]) -> dict[str, object]:
             return {"constraints": ["Release lifecycle mode: release_publication", "Release target version: 2.2.0"], "required_gates": gates}
@@ -296,7 +399,7 @@ class ReleaseLifecyclePolicyTests(unittest.TestCase):
             path.write_text(json.dumps(valid_task(gates)), encoding="utf-8")
             with self.subTest(case=name):
                 self.assertNotEqual(
-                    subprocess.run([sys.executable, str(LIFECYCLE_VALIDATOR), str(path)], capture_output=True).returncode,
+                    subprocess.run([sys.executable, str(LIFECYCLE_VALIDATOR), str(path), "--publication-declaration", str(ROOT / "fixtures/release-publication/gpt-tunnel-gateway/release-publication.json")], capture_output=True).returncode,
                     0,
                 )
 
@@ -305,6 +408,8 @@ class ReleaseLifecyclePolicyTests(unittest.TestCase):
         (repo / "scripts").mkdir()
         shutil.copy2(RELEASE, repo / "scripts" / "release.py")
         shutil.copy2(ROOT / "scripts/check-github-ci.py", repo / "scripts" / "check-github-ci.py")
+        shutil.copy2(ROOT / "scripts/validate-release-publication.py", repo / "scripts" / "validate-release-publication.py")
+        shutil.copy2(ROOT / "scripts/verify-release-publication.py", repo / "scripts" / "verify-release-publication.py")
         task = repo / "task.json"
         task.write_text(
             json.dumps(
@@ -321,7 +426,7 @@ class ReleaseLifecyclePolicyTests(unittest.TestCase):
             ),
             encoding="utf-8",
         )
-        git(repo, "add", "scripts/release.py", "scripts/check-github-ci.py", "task.json")
+        git(repo, "add", "scripts/release.py", "scripts/check-github-ci.py", "scripts/validate-release-publication.py", "scripts/verify-release-publication.py", "task.json", "release-publication.json")
         git(repo, "commit", "-qm", "attach release lifecycle task")
         closure = subprocess.run(
             [

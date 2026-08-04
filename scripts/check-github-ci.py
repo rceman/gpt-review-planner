@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -124,6 +125,33 @@ def run_sort_key(item: dict[str, object]) -> tuple[str, int]:
     return str(item.get("created_at", "")), numeric_id
 
 
+def parse_timestamp(value: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError("timestamp is not RFC3339") from exc
+    if parsed.tzinfo is None:
+        raise ValueError("timestamp must include a timezone")
+    return parsed.astimezone(timezone.utc)
+
+
+def expected_branch(ref: str) -> str:
+    for prefix in ("refs/heads/", "refs/tags/"):
+        if ref.startswith(prefix):
+            return ref[len(prefix):]
+    return ref
+
+
+def _created_after(run: dict[str, object], baseline: datetime) -> bool:
+    raw = run.get("created_at")
+    if not isinstance(raw, str):
+        return False
+    try:
+        return parse_timestamp(raw) > baseline
+    except ValueError:
+        return False
+
+
 def invalid(args: argparse.Namespace, message: str) -> int:
     result(args, "invalid_response", message)
     return 5
@@ -141,7 +169,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--interval", type=int, default=15)
     parser.add_argument("--api-url", default="https://api.github.com")
     parser.add_argument("--workflow")
+    parser.add_argument("--workflow-name")
+    parser.add_argument("--workflow-path")
     parser.add_argument("--event", default="push")
+    parser.add_argument("--ref")
+    parser.add_argument("--tag")
+    parser.add_argument("--created-after")
+    parser.add_argument("--exclude-run-id", action="append", default=[])
     args = parser.parse_args(argv)
     args.sha = args.sha or ""
 
@@ -158,6 +192,20 @@ def main(argv: list[str] | None = None) -> int:
         return invalid(args, "repository or SHA format is invalid")
     if args.timeout <= 0 or args.interval < 1:
         return invalid(args, "timeout must be positive and interval at least 1")
+    if args.ref and args.tag:
+        return invalid(args, "--ref and --tag are mutually exclusive")
+    if args.tag:
+        if not re.fullmatch(r"[^/\s]+", args.tag):
+            return invalid(args, "tag is invalid")
+        args.ref = f"refs/tags/{args.tag}"
+    if args.ref and (not args.ref.startswith("refs/") or ".." in args.ref.split("/")):
+        return invalid(args, "ref must be a normalized Git ref")
+    if any(not re.fullmatch(r"[0-9]+", item) for item in args.exclude_run_id):
+        return invalid(args, "excluded run IDs must be decimal integers")
+    try:
+        args.created_after_time = parse_timestamp(args.created_after) if args.created_after else None
+    except ValueError as exc:
+        return invalid(args, f"created-after must be an RFC3339 timestamp: {exc}")
     if args.policy == "disabled":
         result(args, "not_applicable", "remote CI is disabled by policy")
         return 0
@@ -184,8 +232,13 @@ def main(argv: list[str] | None = None) -> int:
             run for run in payload["workflow_runs"]
             if isinstance(run, dict)
             and run.get("head_sha") == args.sha
-            and (not args.workflow or args.workflow in str(run.get("name")) or args.workflow in str(run.get("path")))
-            and (not args.event or not run.get("event") or run.get("event") == args.event)
+            and (not args.workflow or args.workflow in {run.get("name"), run.get("path")})
+            and (not args.workflow_name or run.get("name") == args.workflow_name)
+            and (not args.workflow_path or run.get("path") == args.workflow_path)
+            and (not args.event or run.get("event") == args.event)
+            and (not args.ref or run.get("head_branch") == expected_branch(args.ref))
+            and (not args.created_after_time or _created_after(run, args.created_after_time))
+            and str(run.get("id")) not in {str(item) for item in args.exclude_run_id}
         ]
         if not candidates:
             if args.wait and time.monotonic() < deadline:

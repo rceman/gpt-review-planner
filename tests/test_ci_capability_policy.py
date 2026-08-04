@@ -44,7 +44,7 @@ class CICapabilityTests(unittest.TestCase):
             subprocess.run(['git','add','tracked.txt'],cwd=repo,check=True)
             subprocess.run(['git','commit','-m','fixture'],cwd=repo,check=True,capture_output=True,text=True)
             expected=subprocess.run(['git','rev-parse','HEAD'],cwd=repo,check=True,capture_output=True,text=True).stdout.strip()
-            Handler.payload={'workflow_runs':[{'id':1,'head_sha':expected,'status':'completed','conclusion':'success','html_url':'u'}]}
+            Handler.payload={'workflow_runs':[{'id':1,'head_sha':expected,'status':'completed','conclusion':'success','event':'push','html_url':'u'}]}
             p=self.run_tool(sha=None,sha_from_git='HEAD',cwd=repo)
             data=json.loads(p.stdout)
             self.assertEqual(p.returncode,0)
@@ -64,36 +64,36 @@ class CICapabilityTests(unittest.TestCase):
         self.assertEqual(invalid_ref.returncode,5)
         self.assertEqual(Handler.calls,0)
     def test_wrong_sha_rejected(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':'b'*40,'status':'completed','conclusion':'success'}]}; self.assertEqual(self.run_data()['state'],'no_run')
-    def test_pending_without_wait(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'queued','conclusion':None}]}; p=self.run_tool(); self.assertEqual(p.returncode,2); self.assertEqual(json.loads(p.stdout)['state'],'pending')
-    def test_pending_wait_timeout(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'queued','conclusion':None}]}; p=self.run_tool(extra=('--wait','--timeout','1','--interval','1')); self.assertEqual(p.returncode,6)
+    def test_pending_without_wait(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'queued','conclusion':None,'event':'push'}]}; p=self.run_tool(); self.assertEqual(p.returncode,2); self.assertEqual(json.loads(p.stdout)['state'],'pending')
+    def test_pending_wait_timeout(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'queued','conclusion':None,'event':'push'}]}; p=self.run_tool(extra=('--wait','--timeout','1','--interval','1')); self.assertEqual(p.returncode,6)
     def test_wait_absorbs_no_run_then_pending_then_success(self):
-        Handler.payload=[{'workflow_runs':[]},{'workflow_runs':[]},{'workflow_runs':[{'id':1,'head_sha':SHA,'status':'queued','conclusion':None}]},{'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'success','html_url':'u'}]}]
+        Handler.payload=[{'workflow_runs':[]},{'workflow_runs':[]},{'workflow_runs':[{'id':1,'head_sha':SHA,'status':'queued','conclusion':None,'event':'push'}]},{'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'success','event':'push','html_url':'u'}]}]
         p=self.run_tool(policy='required',extra=('--wait','--timeout','5','--interval','1')); self.assertEqual(p.returncode,0); self.assertEqual(json.loads(p.stdout)['state'],'success')
     def test_wait_permanent_no_run_times_out(self):
         Handler.payload={'workflow_runs':[]}; p=self.run_tool(policy='required',extra=('--wait','--timeout','1','--interval','1')); self.assertEqual(p.returncode,6); self.assertEqual(json.loads(p.stdout)['state'],'timed_out')
-    def test_failure_required(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'failure'}]}; self.assertEqual(self.run_tool(policy='required').returncode,3)
+    def test_failure_required(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'failure','event':'push'}]}; self.assertEqual(self.run_tool(policy='required').returncode,3)
     def test_neutral_active_policies_block(self):
-        Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'neutral'}]}
+        Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'neutral','event':'push'}]}
         for policy in ('required','auto','optional'):
             p=self.run_tool(policy=policy); self.assertEqual(p.returncode,3); self.assertTrue(json.loads(p.stdout)['blocking'])
     def test_skipped_active_policies_block(self):
-        Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'skipped'}]}
+        Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'skipped','event':'push'}]}
         for policy in ('required','auto','optional'):
             p=self.run_tool(policy=policy); self.assertEqual(p.returncode,3); self.assertTrue(json.loads(p.stdout)['blocking'])
     def test_failure_jobs_http_failure_preserves_failure(self):
-        Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'failure'}]}; Handler.jobs_status=500
+        Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'failure','event':'push'}]}; Handler.jobs_status=500
         p=self.run_tool(policy='auto'); self.assertEqual(p.returncode,3); self.assertEqual(json.loads(p.stdout)['state'],'failed')
     def test_failure_malformed_jobs_preserves_failure(self):
-        Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'failure'}]}; Handler.jobs_payload=[]
+        Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'failure','event':'push'}]}; Handler.jobs_payload=[]
         p=self.run_tool(policy='auto'); self.assertEqual(p.returncode,3); self.assertEqual(json.loads(p.stdout)['state'],'failed')
     def test_pending_jobs_failure_preserves_pending(self):
-        Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'queued','conclusion':None}]}; Handler.jobs_status=500
+        Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'queued','conclusion':None,'event':'push'}]}; Handler.jobs_status=500
         p=self.run_tool(policy='auto'); self.assertEqual(p.returncode,2); self.assertEqual(json.loads(p.stdout)['state'],'pending')
     def test_success_jobs_failure_preserves_success(self):
-        Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'success'}]}; Handler.jobs_status=500
+        Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'success','event':'push'}]}; Handler.jobs_status=500
         p=self.run_tool(policy='auto'); d=json.loads(p.stdout); self.assertEqual(p.returncode,0); self.assertEqual(d['state'],'success'); self.assertIsNone(d['job_id'])
-    def test_failure_auto(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'failure'}]}; self.assertEqual(self.run_tool(policy='auto').returncode,3)
-    def test_failure_optional(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'failure'}]}; self.assertEqual(self.run_tool(policy='optional').returncode,3)
+    def test_failure_auto(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'failure','event':'push'}]}; self.assertEqual(self.run_tool(policy='auto').returncode,3)
+    def test_failure_optional(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'failure','event':'push'}]}; self.assertEqual(self.run_tool(policy='optional').returncode,3)
     def test_failure_disabled_no_query(self): self.assertEqual(self.run_tool(policy='disabled').returncode,0); self.assertEqual(Handler.calls,0)
     def test_auto_no_run_nonblocking(self): self.assertEqual(self.run_tool(policy='auto').returncode,0)
     def test_optional_no_run_nonblocking(self): self.assertEqual(self.run_tool(policy='optional').returncode,0)
@@ -104,7 +104,17 @@ class CICapabilityTests(unittest.TestCase):
     def test_token_header_only_when_set(self): self.run_tool(); self.assertNotIn('Authorization',Handler.headers); self.run_tool(env={'GITHUB_TOKEN':'secret'}); self.assertEqual(Handler.headers['Authorization'],'Bearer secret')
     def test_explicit_policy_not_visibility(self): self.assertEqual(self.run_data(policy='auto')['policy'],'auto'); self.assertEqual(self.run_data(policy='disabled')['policy'],'disabled')
     def test_event_filter(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'success','event':'pull_request'}]}; self.assertEqual(self.run_data()['state'],'no_run')
+    def test_missing_event_is_rejected(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'success'}]}; self.assertEqual(self.run_data()['state'],'no_run')
     def test_workflow_filter(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'success','event':'push','name':'Other'}]}; self.assertEqual(self.run_data(extra=('--workflow','Validate'))['state'],'no_run')
+    def test_exact_workflow_name_and_path_selectors(self):
+        Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'success','event':'push','name':'Validate','path':'.github/workflows/validate.yml'}]}
+        self.assertEqual(self.run_data(extra=('--workflow-name','Validate','--workflow-path','.github/workflows/validate.yml'))['state'],'success')
+        self.assertEqual(self.run_data(extra=('--workflow-name','Other'))['state'],'no_run')
+    def test_ref_filter(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'success','event':'push','name':'Validate','ref':'refs/heads/main'}]}; self.assertEqual(self.run_data(extra=('--ref','refs/tags/v2.2.0'))['state'],'no_run')
+    def test_ref_filter_uses_head_branch_not_run_ref(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'success','event':'push','name':'Validate','ref':'refs/heads/stale','head_branch':'main'}]}; self.assertEqual(self.run_data(extra=('--ref','refs/heads/main'))['state'],'success')
+    def test_tag_filter_and_created_after(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'success','event':'push','name':'Validate','ref':'refs/tags/v2.2.0','head_branch':'v2.2.0','created_at':'2026-08-01T00:00:00Z'}]}; self.assertEqual(self.run_data(extra=('--tag','v2.2.0','--created-after','2026-07-31T23:59:59Z'))['state'],'success')
+    def test_created_after_compares_offsets_not_strings(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'success','event':'push','name':'Validate','head_branch':'v2.2.0','created_at':'2026-08-01T00:30:00Z'}]}; self.assertEqual(self.run_data(extra=('--tag','v2.2.0','--created-after','2026-08-01T02:00:00+02:00'))['state'],'success')
+    def test_excluded_run_id_is_not_selected(self): Handler.payload={'workflow_runs':[{'id':1,'head_sha':SHA,'status':'completed','conclusion':'success','event':'push','name':'Validate'}]}; self.assertEqual(self.run_data(extra=('--exclude-run-id','1'))['state'],'no_run')
     def test_malformed_json(self): Handler.payload=[]; p=self.run_tool(); self.assertEqual(p.returncode,5); self.assertTrue(json.loads(p.stdout)['blocking'])
 
 if __name__=='__main__': unittest.main()

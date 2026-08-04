@@ -24,6 +24,17 @@ Require the matching machine-checkable state gate and the exact two-script
 `--sha-from-git HEAD`. Do not allow `MERGE_READY` from a missing or
 contradictory lifecycle.
 
+For an integrated release/publication task, load and validate the explicit
+project `release-publication.json` with
+`python3 scripts/validate-release-publication.py <PROJECT>/release-publication.json --repo <PROJECT>` before
+writing the immutable gate list. Reject missing declarations and all
+mode/workflow/proof contradictions, including conflicts between workflow
+object/null, tag-CI proof, distinct-run proof, release expectation, asset
+expectation, and the canonical lifecycle sequence. In `github_actions` mode,
+local `gh`, curl, wget, `GH_TOKEN`, `GITHUB_TOKEN`, and credential/publication
+commands are forbidden; the
+declaration-derived read-only verifier is the only publication proof.
+
 Unless explicitly authorized, declare:
 
 ```text

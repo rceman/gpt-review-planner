@@ -20,6 +20,16 @@ matching state gate or two-script project conformance result as merge-ready.
 The conformance gate must bind both `scripts/release.py` and
 `scripts/check-github-ci.py`; CI gates must use `--sha-from-git HEAD`.
 
+For an integrated release/publication task, independently load and validate the
+project's explicit `release-publication.json` with
+`python3 scripts/validate-release-publication.py <PROJECT>/release-publication.json --repo <PROJECT>` before accepting immutable gates
+or `MERGE_READY`. Reject mode/workflow/proof contradictions, including a
+`workflow: null` declaration with active CI proofs, an active workflow without
+the required distinct-run proof, or release/assets claims that disagree with
+the declaration. In `github_actions` mode reject local `gh`, curl, wget,
+`GH_TOKEN`, `GITHUB_TOKEN`, or credential/publication commands; only the
+declaration-bound read-only verifier is valid.
+
 When corrections are required, produce an Executable Correction Patch Pack with
 exact files, code, regression tests, fixtures, application order, and verification gates.
 

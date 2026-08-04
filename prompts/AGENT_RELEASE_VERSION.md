@@ -36,9 +36,29 @@ python3 scripts/release.py check-source
 ```
 
 Do not create a dated heading, release commit, tag, or publication in that
-mode. For `release_publication`, use the ordered canonical commands from
-`docs/RELEASE_LIFECYCLE.md`: `prepare`, `check-release-ready`, `commit`, exact
-release-commit CI, `check-tag-ready`, `tag`, and `verify-tag`.
+mode. For `release_publication`, first validate the explicit declaration with:
+
+```bash
+python3 scripts/validate-release-publication.py \
+  <PROJECT>/release-publication.json \
+  --repo <PROJECT>
+```
+
+Then use the ordered canonical commands from `docs/RELEASE_LIFECYCLE.md`:
+`prepare`, `check-release-ready`, `commit`, exact release-commit CI,
+`check-tag-ready`, `tag`, and `verify-tag`. After `verify-tag`, push exactly:
+
+```bash
+git push origin refs/tags/v<TARGET_VERSION>:refs/tags/v<TARGET_VERSION>
+```
+
+Derive post-tag proofs only from the validated declaration. `workflow: null`
+means no post-tag CI; a declared workflow requires the exact name, path, tag
+selection, event, and created-after baseline in its tag-CI gate, followed by
+`scripts/verify-release-publication.py`. `github_actions` additionally expects
+the declared GitHub Release and assets; `tag_only` must not claim them. The
+agent never creates or updates a Release, calls a publication API, discovers
+credentials, or uses local `gh`, curl, wget, `GH_TOKEN`, or `GITHUB_TOKEN`.
 
 If the project contains `scripts/release.py`, prove planner conformance with:
 

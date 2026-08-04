@@ -9,6 +9,23 @@ If the merge contains runtime-affecting policy or release work, also load
 version, running version, migration, and rollback evidence are complete before
 claiming merge finalization.
 
+If the merge contains integrated release/publication work, also load
+`docs/RELEASE_LIFECYCLE.md`, `docs/RELEASE_PUBLICATION.md`, and
+`docs/PROJECT_INTEGRATION.md`. Validate the project declaration before
+accepting release evidence:
+
+```bash
+python3 scripts/validate-release-publication.py \
+  "${LOCAL_REPOSITORY}/release-publication.json" \
+  --repo "${LOCAL_REPOSITORY}"
+```
+
+The merge report keeps implementation merged, release commit, main, tag
+creation, tag push, tag CI, automatic workflow, GitHub Release, assets,
+installed version, running version, activation, and connector refresh as
+separate states. Merge finalization must not create a Release, call a
+publication API, or discover local credentials.
+
 ```bash
 set -euo pipefail
 REPOSITORY="<REPOSITORY>"

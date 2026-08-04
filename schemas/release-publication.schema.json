@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gpt-review-planner.invalid/schemas/release-publication.schema.json",
+  "title": "GPT Review Planner release publication declaration",
+  "description": "Strict, repository-local declaration of release side effects and proof obligations.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "mode"],
+      "properties": {
+        "schema_version": {"const": 1},
+        "mode": {"const": "none"}
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version", "mode", "tag", "workflow", "credential_authority",
+        "local_credentials_required", "tag_push_side_effects", "github_release",
+        "assets", "proof_requirements"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "mode": {"enum": ["tag_only", "github_actions"]},
+        "tag": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pattern", "annotated", "push_required", "identity_source"],
+          "properties": {
+            "pattern": {"type": "string", "minLength": 3},
+            "annotated": {"const": true},
+            "push_required": {"const": true},
+            "identity_source": {"const": "release-config.json"}
+          }
+        },
+        "workflow": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "path", "name", "sha256", "purpose", "event", "tag_trigger",
+                "tag_patterns", "permissions", "distinct_run_required", "created_after_tag_push"
+              ],
+              "properties": {
+                "path": {"type": "string", "minLength": 1},
+                "name": {"type": "string", "minLength": 1},
+                "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                "purpose": {"enum": ["tag_validation", "release_publication"]},
+                "event": {"const": "push"},
+                "tag_trigger": {"enum": ["explicit_tags_filter", "unfiltered_push"]},
+                "tag_patterns": {"type": "array", "items": {"type": "string", "minLength": 1}},
+                "permissions": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["contents"],
+                  "properties": {"contents": {"enum": ["read", "write"]}}
+                },
+                "distinct_run_required": {"const": true},
+                "created_after_tag_push": {"const": true}
+              }
+            }
+          ]
+        },
+        "credential_authority": {"enum": ["none", "github.token"]},
+        "local_credentials_required": {"const": false},
+        "tag_push_side_effects": {
+          "type": "array",
+          "minItems": 0,
+          "items": {"enum": ["tag_ci", "github_release_create_or_update", "asset_upload"]}
+        },
+        "github_release": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["behavior", "expected", "draft", "prerelease", "notes"],
+          "properties": {
+            "behavior": {"enum": ["none", "create_or_update"]},
+            "expected": {"type": "boolean"},
+            "draft": {"type": "boolean"},
+            "prerelease": {"type": "boolean"},
+            "notes": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["source"],
+                  "properties": {"source": {"enum": ["none", "generated", "changelog"]}}
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["source", "file"],
+                  "properties": {
+                    "source": {"const": "declared_file"},
+                    "file": {"type": "string", "minLength": 1}
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "assets": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["policy", "expected", "workflow_source_patterns", "published_name_patterns"],
+          "properties": {
+            "policy": {"enum": ["none", "workflow_produced"]},
+            "expected": {"type": "boolean"},
+            "workflow_source_patterns": {"type": "array", "items": {"type": "string", "minLength": 1}},
+            "published_name_patterns": {"type": "array", "items": {"type": "string", "minLength": 1}}
+          }
+        },
+        "proof_requirements": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tag_ci", "distinct_post_tag_workflow", "release_metadata", "assets"],
+          "properties": {
+            "tag_ci": {"const": true},
+            "distinct_post_tag_workflow": {"const": true},
+            "release_metadata": {"type": "boolean"},
+            "assets": {"type": "boolean"}
+          }
+        }
+      }
+    }
+  ]
+}

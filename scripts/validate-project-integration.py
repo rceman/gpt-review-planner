@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import re
 import argparse
+import importlib.util
 import subprocess
 import sys
 from pathlib import Path
@@ -11,6 +12,16 @@ from pathlib import PurePosixPath
 
 BEGIN = "<!-- BEGIN GPT-REVIEW-PLANNER -->"
 END = "<!-- END GPT-REVIEW-PLANNER -->"
+
+
+def _publication_validator():
+    path = Path(__file__).with_name("validate-release-publication.py")
+    spec = importlib.util.spec_from_file_location("project_release_publication_validator", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("publication validator is unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _unique_pairs(pairs):
@@ -46,14 +57,43 @@ def main() -> int:
 
     project_release = project / "scripts" / "release.py"
     project_ci = project / "scripts" / "check-github-ci.py"
+    project_publication_validator = project / "scripts" / "validate-release-publication.py"
+    project_publication_verifier = project / "scripts" / "verify-release-publication.py"
+    publication_declaration = project / "release-publication.json"
+    release_config = project / "release-config.json"
     planner_release = Path(__file__).resolve().with_name("release.py")
     conformance = Path(__file__).resolve().with_name("validate-release-tool-conformance.py")
-    if project_release.exists() or project_release.is_symlink():
-        if project_release.is_symlink() or not project_release.is_file():
-            errors.append("project scripts/release.py must be a regular file")
-        elif project_ci.is_symlink() or not project_ci.is_file():
-            errors.append("project scripts/check-github-ci.py must be a regular file when release.py is present")
-        else:
+    publication_mode: str | None = None
+    if publication_declaration.is_symlink() or not publication_declaration.is_file():
+        errors.append("missing or non-regular release-publication.json")
+    else:
+        try:
+            publication = _publication_validator().load_publication_declaration(
+                publication_declaration, repo_root=project
+            )
+            publication_mode = publication["mode"]
+        except (OSError, UnicodeError, ValueError, RuntimeError) as exc:
+            errors.append(f"invalid release-publication.json: {exc}")
+
+    release_surfaces = {
+        "scripts/release.py": project_release,
+        "scripts/check-github-ci.py": project_ci,
+        "scripts/validate-release-publication.py": project_publication_validator,
+        "scripts/verify-release-publication.py": project_publication_verifier,
+    }
+    if publication_mode == "none":
+        if release_config.exists() or release_config.is_symlink():
+            errors.append("publication mode none must not include release-config.json")
+        for label, path in release_surfaces.items():
+            if path.exists() or path.is_symlink():
+                errors.append(f"publication mode none must not include {label}")
+    elif publication_mode in {"tag_only", "github_actions"}:
+        if release_config.is_symlink() or not release_config.is_file():
+            errors.append("active publication project must declare a regular release-config.json")
+        missing_surfaces = [label for label, path in release_surfaces.items() if path.is_symlink() or not path.is_file()]
+        for label in missing_surfaces:
+            errors.append(f"active publication project must provide regular {label}")
+        if not missing_surfaces and release_config.is_file() and not release_config.is_symlink():
             result = subprocess.run(
                 [
                     sys.executable,

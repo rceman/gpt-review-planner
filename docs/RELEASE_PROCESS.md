@@ -4,6 +4,11 @@ Final release reports follow [`AGENT_REPORTING.md`](AGENT_REPORTING.md): use one
 
 Before release mutation, read [`HOST_PREREQUISITES.md`](HOST_PREREQUISITES.md), [`RUNTIME_UPGRADE_POLICY.md`](RUNTIME_UPGRADE_POLICY.md), and [`PERSISTED_STATE_MIGRATION_POLICY.md`](PERSISTED_STATE_MIGRATION_POLICY.md). A release that changes persisted state must declare migration authorization, target-decoder validation, backup, atomic commit, rollback, installed/running version proof, and rehearsal from the previous production-like state. Run `python3 scripts/validate-runtime-upgrade-task.py <TASK_JSON>` before any runtime activation.
 
+For an integrated project, load [`RELEASE_PUBLICATION.md`](RELEASE_PUBLICATION.md)
+and validate the project's explicit `release-publication.json` before release
+gates. The declaration is the only authority for tag-only versus automatic
+GitHub publication; it does not authorize mutation by itself.
+
 ## Authority model
 
 `VERSION` is the canonical version source. `release-config.json` declares every file that must carry the same version. `scripts/release.py` is the only supported mutation mechanism.

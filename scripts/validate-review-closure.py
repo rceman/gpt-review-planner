@@ -71,7 +71,7 @@ def validate_release_task(task_path: Path, repo: Path | None = None) -> dict[str
     spec.loader.exec_module(module)
     try:
         data = json.loads(task_path.read_text(encoding="utf-8"), object_pairs_hook=module.unique_pairs)
-        result = module.validate_task(data)
+        result = module.validate_task(data, repo=repo)
     except (OSError, UnicodeError, json.JSONDecodeError, module.LifecycleError) as exc:
         raise ContractError(f"release lifecycle task is invalid: {exc}") from exc
     if repo is not None:

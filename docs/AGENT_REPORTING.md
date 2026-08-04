@@ -97,3 +97,29 @@ Release reports also identify the exact lifecycle mode and target version. An
 not be reported as a release, tag, or publication. Publication reports record
 the separate source, release-ready, tag-ready, release-commit, and annotated
 tag proofs without claiming a later phase from an earlier successful check.
+For integrated projects, publication reports also identify the declared mode,
+workflow identity when present, exact tag-push refspec, distinct tag/publication
+CI result, and read-only verifier result. Read [`RELEASE_PUBLICATION.md`](RELEASE_PUBLICATION.md);
+do not report a GitHub Release or assets when the declaration says `none` or
+`tag_only`.
+
+## Separate owner-state reporting
+
+Owner-facing reports keep these states separate and ordered; none may be
+collapsed into a generic “release succeeded” claim:
+
+1. implementation merged
+2. release commit
+3. main
+4. tag created
+5. tag pushed
+6. tag CI
+7. auto workflow
+8. GitHub Release
+9. assets
+10. installed version
+11. running version
+12. activated
+13. connector refresh
+
+Each state records its own status and identity. A later state cannot be inferred from an earlier one: a successful release commit does not prove main, tag creation does not prove tag push or tag CI, an auto workflow does not by itself prove a GitHub Release or assets, and installed version, running version, activation, and connector refresh remain separate operational checks.

@@ -47,3 +47,14 @@ agent must prove target-decoder validation before activation, installed versus
 running version identity, unchanged-process identity, readiness, protocol/tool
 schema parity, and rollback. A handoff must not claim a full upgrade while any
 required activation side effect is pending.
+
+For an integrated release project, the handoff must load the pinned
+[`RELEASE_PUBLICATION.md`](RELEASE_PUBLICATION.md) contract and the project's
+`release-publication.json`. The project declaration is validated before a
+release task is accepted: `none` forbids publication, `tag_only` may explicitly
+set `workflow: null`, and `github_actions` requires exact workflow identity,
+permissions, credential authority, release behavior, asset source/name
+patterns, and proof requirements. Publication gates must use the exact
+declaration-derived workflow name/path, head-branch tag selection, parsed
+`--created-after` baseline, tag-push refspec, and read-only verifier. Agents
+must not add `gh`, curl, wget, or local credential commands to a handoff.

@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,6 +40,101 @@ class ProcedureIndexAndReportingTests(unittest.TestCase):
         self.assertIn('Merge CI: success | sha=<SHA> | run=<RUN_ID>',text)
         self.assertIn('Successful helper JSON is not pasted before repeated fields.',text)
         self.assertIn('no_run | blocking=false',text)
+
+    def test_owner_report_keeps_operational_states_separate(self):
+        text = self.read('docs/AGENT_REPORTING.md')
+        lower = text.lower()
+        lower = lower[lower.index('## separate owner-state reporting'):]
+        expected = (
+            'implementation merged', 'release commit', 'main', 'tag created',
+            'tag pushed', 'tag ci', 'auto workflow', 'github release', 'assets',
+            'installed version', 'running version', 'activated',
+            'connector refresh',
+        )
+        positions = []
+        for number, state in enumerate(expected, 1):
+            marker = f'{number}. {state}'
+            match = re.search(rf'^\s*{re.escape(marker)}\s*$', lower, re.MULTILINE)
+            self.assertIsNotNone(match, state)
+            positions.append(match.start())
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn('cannot be inferred from an earlier one', lower)
+        self.assertIn('tag creation does not prove tag push or tag ci', lower)
+        self.assertIn('installed version, running version, activation, and connector refresh remain separate', lower)
+
+    def test_release_prompts_validate_publication_before_gates_and_reject_contradictions(self):
+        authoring = self.read('prompts/GPT_CREATE_PATCH_PACK.md')
+        review = self.read('prompts/GPT_REVIEW_AGENT_RESULT.md')
+        for text in (authoring, review):
+            self.assertIn('release-publication.json', text)
+            self.assertIn(
+                'python3 scripts/validate-release-publication.py <PROJECT>/release-publication.json --repo <PROJECT>',
+                text,
+            )
+            self.assertIn('mode/workflow/proof contradictions', text)
+            self.assertIn('local `gh`', text)
+            self.assertIn('GH_TOKEN', text)
+            self.assertIn('GITHUB_TOKEN', text)
+        self.assertLess(
+            authoring.index('validate the explicit'),
+            authoring.index('writing the immutable gate list'),
+        )
+        self.assertLess(
+            review.index('independently load and validate the'),
+            review.index('accepting immutable gates'),
+        )
+
+    def test_release_agent_prompt_binds_declaration_tag_push_and_post_tag_proofs(self):
+        text = self.read('prompts/AGENT_RELEASE_VERSION.md')
+        for value in (
+            'release-publication.json',
+            'python3 scripts/validate-release-publication.py',
+            '<PROJECT>/release-publication.json',
+            '--repo <PROJECT>',
+            'git push origin refs/tags/v<TARGET_VERSION>:refs/tags/v<TARGET_VERSION>',
+            'workflow: null',
+            'scripts/verify-release-publication.py',
+            'github_actions',
+            'GitHub Release',
+            'assets',
+            'local `gh`',
+            'curl',
+            'wget',
+            'GH_TOKEN',
+            'GITHUB_TOKEN',
+        ):
+            self.assertIn(value, text)
+        self.assertLess(text.index('validate the explicit declaration'), text.index('git push origin refs/tags'))
+        self.assertLess(text.index('git push origin refs/tags'), text.index('Derive post-tag proofs'))
+
+    def test_publication_policy_cross_references_are_complete(self):
+        lifecycle = self.read('docs/RELEASE_LIFECYCLE.md')
+        versioning = self.read('docs/VERSIONING.md')
+        host = self.read('docs/HOST_PREREQUISITES.md')
+        procedure = self.read('docs/PROCEDURE_INDEX.md')
+        integration = self.read('docs/PROJECT_INTEGRATION.md')
+        managed = self.read('templates/project/AGENTS.managed-block.md')
+        merge = self.read('prompts/AGENT_FINALIZE_MERGE.md')
+        changelog = self.read('CHANGELOG.md')
+
+        self.assertIn('release-publication.json', lifecycle)
+        self.assertIn('RELEASE_PUBLICATION.md', lifecycle)
+        self.assertIn('RELEASE_PUBLICATION.md', versioning)
+        self.assertIn('PROJECT_INTEGRATION.md', host)
+        self.assertIn('PROC-PUBLICATION', procedure)
+        self.assertIn('PROJECT_INTEGRATION.md', procedure)
+        self.assertIn('--release-publication-file', integration)
+        for script in (
+            'scripts/release.py',
+            'scripts/check-github-ci.py',
+            'scripts/validate-release-publication.py',
+            'scripts/verify-release-publication.py',
+        ):
+            self.assertIn(script, integration)
+        self.assertIn('release-publication.json', managed)
+        self.assertIn('release-publication.json', merge)
+        self.assertIn('RELEASE_PUBLICATION.md', merge)
+        self.assertIn('release-publication declaration', changelog)
     def test_cross_references(self):
         self.assertIn('AGENT_REPORTING.md',self.read('docs/POST_MERGE_BRANCH_CLEANUP.md'))
         self.assertIn('AGENT_REPORTING.md',self.read('docs/RELEASE_PROCESS.md'))

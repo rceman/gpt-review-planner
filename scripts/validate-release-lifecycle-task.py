@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import re
 import shlex
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -114,6 +116,54 @@ def _canonical_ci(argv: list[str]) -> bool:
     )
 
 
+def _canonical_tag_ci(argv: list[str], declaration: dict[str, Any], target: str) -> bool:
+    workflow = declaration.get("workflow")
+    if not isinstance(workflow, dict):
+        return False
+    if len(argv) != 21 or argv[:2] != ["python3", "scripts/check-github-ci.py"]:
+        return False
+    if argv[2:12] != [
+        "--repository", argv[3], "--sha-from-git", "HEAD", "--workflow-name", workflow["name"],
+        "--workflow-path", workflow["path"], "--event", "push",
+    ]:
+        return False
+    if not REPOSITORY_RE.fullmatch(argv[3]):
+        return False
+    if argv[12:14] != ["--tag", f"v{target}"]:
+        return False
+    if argv[14] != "--created-after" or not _rfc3339(argv[15]):
+        return False
+    return argv[16:] == ["--policy", "required", "--wait", "--format", "json"]
+
+
+def _rfc3339(value: str) -> bool:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return parsed.tzinfo is not None
+
+
+def _canonical_publication_verifier(argv: list[str], target: str) -> bool:
+    return (
+        len(argv) == 12
+        and argv[:2] == ["python3", "scripts/verify-release-publication.py"]
+        and argv[2:4] == ["--repo", "."]
+        and argv[4] == "--repository"
+        and bool(REPOSITORY_RE.fullmatch(argv[5]))
+        and argv[6:8] == ["--tag", f"v{target}"]
+        and argv[8] == "--created-after"
+        and _rfc3339(argv[9])
+        and argv[10:] == ["--format", "json"]
+    )
+
+
+def _canonical_tag_push(argv: list[str], target: str) -> bool:
+    return argv == [
+        "git", "push", "origin", f"refs/tags/v{target}:refs/tags/v{target}"
+    ]
+
+
 def _canonical_release(argv: list[str], command: str, target: str) -> bool:
     if command == "check-source":
         return argv == ["python3", "scripts/release.py", "check-source"]
@@ -139,6 +189,14 @@ def _reject_release_surface_spoof(argv: list[str], index: int) -> None:
         raise LifecycleError(f"required_gates[{index}] contains a noncanonical check-github-ci.py command")
     if _is_script(argv, "scripts/validate-release-tool-conformance.py"):
         raise LifecycleError(f"required_gates[{index}] contains a noncanonical release-tool conformance command")
+    if _is_script(argv, "scripts/validate-release-publication.py") or _is_script(argv, "scripts/verify-release-publication.py"):
+        raise LifecycleError(f"required_gates[{index}] contains a noncanonical publication-tool command")
+    forbidden_publication_tokens = {"gh", "curl", "wget", "GITHUB_TOKEN", "GH_TOKEN", "github.com", "api.github.com"}
+    if any(token in forbidden_publication_tokens for token in argv) or any(
+        token in {"create", "upload"} and index > 0 and "release" in " ".join(argv[:index + 1])
+        for token in argv
+    ):
+        raise LifecycleError(f"required_gates[{index}] contains a forbidden local publication or credential surface")
     release_surface = {"VERSION", "CHANGELOG.md", "release-config.json"}
     if release_surface.intersection(argv):
         read_only = argv[0] == "git" and len(argv) > 1 and argv[1] in {"diff", "status", "show", "ls-files"}
@@ -172,7 +230,7 @@ def _validate_implementation(gates: list[list[str]], target: str) -> None:
         _reject_release_surface_spoof(argv, index)
 
 
-def _publication_kind(argv: list[str], target: str) -> str | None:
+def _publication_kind(argv: list[str], target: str, declaration: dict[str, Any]) -> str | None:
     ordered = (
         ("conformance", _canonical_conformance(argv)),
         ("prepare", _canonical_release(argv, "prepare", target)),
@@ -182,6 +240,9 @@ def _publication_kind(argv: list[str], target: str) -> str | None:
         ("check-tag-ready", _canonical_release(argv, "check-tag-ready", target)),
         ("tag", _canonical_release(argv, "tag", target)),
         ("verify-tag", _canonical_release(argv, "verify-tag", target)),
+        ("tag-push", _canonical_tag_push(argv, target)),
+        ("tag-ci", _canonical_tag_ci(argv, declaration, target)),
+        ("verify-publication", _canonical_publication_verifier(argv, target)),
     )
     for name, matches in ordered:
         if matches:
@@ -189,11 +250,16 @@ def _publication_kind(argv: list[str], target: str) -> str | None:
     return None
 
 
-def _validate_publication(gates: list[list[str]], target: str) -> None:
-    wanted = ["conformance", "prepare", "check-release-ready", "commit", "ci", "check-tag-ready", "tag", "verify-tag"]
+def _validate_publication(gates: list[list[str]], target: str, declaration: dict[str, Any]) -> None:
+    workflow = declaration.get("workflow")
+    wanted = ["conformance", "prepare", "check-release-ready", "commit", "ci"]
+    wanted.extend(["check-tag-ready", "tag", "verify-tag", "tag-push"])
+    if workflow is not None:
+        wanted.append("tag-ci")
+    wanted.append("verify-publication")
     found: list[tuple[int, str]] = []
     for index, argv in enumerate(gates):
-        kind = _publication_kind(argv, target)
+        kind = _publication_kind(argv, target, declaration)
         if kind is not None:
             found.append((index, kind))
             continue
@@ -212,7 +278,30 @@ def _validate_publication(gates: list[list[str]], target: str) -> None:
         raise LifecycleError("release_publication allows unrelated quality gates only between canonical lifecycle gates")
 
 
-def validate_task(data: Any, require_release_surface: bool = True) -> dict[str, str]:
+def _load_publication_declaration(repo: Path | None, declaration_path: Path | None) -> dict[str, Any]:
+    if declaration_path is None:
+        if repo is None:
+            raise LifecycleError("release_publication requires --repo or --publication-declaration")
+        declaration_path = repo / "release-publication.json"
+    path = Path(__file__).with_name("validate-release-publication.py")
+    spec = importlib.util.spec_from_file_location("release_publication_validator", path)
+    if spec is None or spec.loader is None:
+        raise LifecycleError("release publication validator is unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    try:
+        return module.load_publication_declaration(declaration_path, repo_root=repo)
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise LifecycleError(f"release-publication.json is invalid: {exc}") from exc
+
+
+def validate_task(
+    data: Any,
+    require_release_surface: bool = True,
+    *,
+    repo: Path | None = None,
+    publication_declaration: Path | None = None,
+) -> dict[str, str]:
     if not isinstance(data, dict):
         raise LifecycleError("task must be a JSON object")
     constraints = _string_array(data, "constraints")
@@ -226,7 +315,10 @@ def validate_task(data: Any, require_release_surface: bool = True) -> dict[str, 
     if mode == "implementation_unreleased":
         _validate_implementation(gates, target)
     else:
-        _validate_publication(gates, target)
+        declaration = _load_publication_declaration(repo, publication_declaration)
+        if declaration.get("mode") == "none":
+            raise LifecycleError("release_publication is forbidden when release-publication.json mode is none")
+        _validate_publication(gates, target, declaration)
     return {"status": "valid", "lifecycle_mode": mode, "target_version": target}
 
 
@@ -234,10 +326,17 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("task", type=Path)
     parser.add_argument("--not-release-touching", action="store_true")
+    parser.add_argument("--repo", type=Path)
+    parser.add_argument("--publication-declaration", type=Path)
     args = parser.parse_args(argv)
     try:
         data = json.loads(args.task.read_text(encoding="utf-8"), object_pairs_hook=unique_pairs)
-        result = validate_task(data, require_release_surface=not args.not_release_touching)
+        result = validate_task(
+            data,
+            require_release_surface=not args.not_release_touching,
+            repo=args.repo.resolve() if args.repo else None,
+            publication_declaration=args.publication_declaration,
+        )
     except (OSError, UnicodeError, json.JSONDecodeError, LifecycleError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1

@@ -7,17 +7,34 @@ This repository uses Option A:
 - exact pin in project `.gpt-workflow.lock`;
 - no copied workflow document in each project.
 
+Integrated projects also carry one explicit `release-publication.json`
+declaration. `none` projects must not contain `release-config.json` or any of
+the four canonical release/publication scripts. `tag_only` and
+`github_actions` projects must contain `release-config.json`,
+`scripts/release.py`, `scripts/check-github-ci.py`,
+`scripts/validate-release-publication.py`, and
+`scripts/verify-release-publication.py`; all four scripts must pass planner
+conformance. See [`RELEASE_PUBLICATION.md`](RELEASE_PUBLICATION.md).
+
 ## Install
 
 ```bash
-bash setup.sh --project /path/to/project --version v1.0.0
+bash setup.sh \
+  --project /path/to/project \
+  --version <VERSION> \
+  --release-publication-file /path/to/release-publication.json
 ```
 
 ## Update
 
 ```bash
-bash update.sh --project /path/to/project --version v1.1.0
+bash update.sh --project /path/to/project --version <VERSION>
 ```
+
+The setup declaration input is mandatory and is validated before the managed
+block or lock is written. Update reuses the project's already-installed
+declaration and fails closed when it is missing or invalid. Agents must not
+infer a mode or silently create a `none` declaration.
 
 Both scripts are idempotent. The managed block is replaced rather than duplicated.
 

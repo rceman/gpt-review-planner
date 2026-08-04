@@ -43,6 +43,10 @@ Release target version: X.Y.Z
 Validate the task with `python3 scripts/validate-release-lifecycle-task.py` and
 run the matching source, release-ready, or tag-ready state gate before
 `MERGE_READY`.
+Integrated projects must also provide one explicit `release-publication.json`;
+load [`docs/RELEASE_PUBLICATION.md`](docs/RELEASE_PUBLICATION.md) and validate
+it before accepting publication gates. The declaration, not a guessed workflow,
+selects post-tag CI and read-only publication verification.
 
 This workflow combines two models with deliberately different responsibilities:
 

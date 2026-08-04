@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "mode": "tag_only",
+  "tag": {
+    "pattern": "vX.Y.Z",
+    "annotated": true,
+    "push_required": true,
+    "identity_source": "release-config.json"
+  },
+  "workflow": null,
+  "credential_authority": "none",
+  "local_credentials_required": false,
+  "tag_push_side_effects": [],
+  "github_release": {
+    "behavior": "none",
+    "expected": false,
+    "draft": false,
+    "prerelease": false,
+    "notes": {"source": "none"}
+  },
+  "assets": {
+    "policy": "none",
+    "expected": false,
+    "workflow_source_patterns": [],
+    "published_name_patterns": []
+  },
+  "proof_requirements": {
+    "tag_ci": false,
+    "distinct_post_tag_workflow": false,
+    "release_metadata": false,
+    "assets": false
+  }
+}

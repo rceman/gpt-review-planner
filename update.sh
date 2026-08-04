@@ -12,6 +12,8 @@ Options:
   --execution-mode MODE  gpt_tunnel_managed or repository_evidence. Required.
   --repository URL     Override repository from existing lock file.
   --commit SHA         Exact commit. Otherwise resolved with git ls-remote.
+  --release-publication-file PATH
+                       Existing explicit project publication declaration.
   --agents-file PATH   AGENTS.md path relative to project. Default: AGENTS.md
   -h, --help           Show this help.
 EOF
@@ -28,6 +30,7 @@ repository=""
 commit=""
 execution_mode=""
 agents_file="AGENTS.md"
+release_publication_file=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -49,6 +52,11 @@ while [[ $# -gt 0 ]]; do
     --commit)
       [[ $# -ge 2 ]] || die "--commit requires a value"
       commit="$2"
+      shift 2
+      ;;
+    --release-publication-file)
+      [[ $# -ge 2 ]] || die "--release-publication-file requires a value"
+      release_publication_file="$2"
       shift 2
       ;;
     --execution-mode)
@@ -98,6 +106,7 @@ args=(
   --execution-mode "$execution_mode"
   --agents-file "$agents_file"
   --force
+  --release-publication-file "${release_publication_file:-$project/release-publication.json}"
 )
 
 if [[ -n "$commit" ]]; then
