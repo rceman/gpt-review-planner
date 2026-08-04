@@ -52,7 +52,7 @@ def schema_accepts(value: Any, node: dict[str, Any] | None = None) -> bool:
 
 def _schema_accepts(value: Any, node: dict[str, Any], root_schema: dict[str, Any]) -> bool:
     node = resolve_schema(node, root_schema)
-    if "const" in node and value != node["const"]:
+    if "const" in node and not _json_schema_equal(value, node["const"]):
         return False
     if "enum" in node and value not in node["enum"]:
         return False
@@ -81,6 +81,15 @@ def _schema_accepts(value: Any, node: dict[str, Any], root_schema: dict[str, Any
         if re.fullmatch(node["pattern"], value) is None:
             return False
     return True
+
+
+def _json_schema_equal(left: Any, right: Any) -> bool:
+    """Compare JSON values using JSON Schema's numeric equality semantics."""
+    if isinstance(left, bool) or isinstance(right, bool):
+        return type(left) is type(right) and left == right
+    if isinstance(left, (int, float)) and isinstance(right, (int, float)):
+        return left == right
+    return type(left) is type(right) and left == right
 
 
 class ProjectWorkflowTests(unittest.TestCase):
@@ -187,6 +196,23 @@ class ProjectWorkflowTests(unittest.TestCase):
             )
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("duplicate JSON key", result.stderr)
+
+    def test_schema_version_uses_json_numeric_equality(self):
+        for candidate, expected_valid in (
+            (1.0, True),
+            (True, False),
+            ("1", False),
+            (0, False),
+            (1.5, False),
+            (2, False),
+        ):
+            with self.subTest(candidate=repr(candidate)):
+                value = canonical_value()
+                value["schema_version"] = candidate
+                if expected_valid:
+                    self.assert_valid(value)
+                else:
+                    self.assert_invalid(value)
 
     def test_malformed_json_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:

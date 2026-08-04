@@ -52,9 +52,11 @@ def _exact_object(value: Any, label: str, keys: set[str]) -> dict[str, Any]:
     return value
 
 
-def _constant(value: Any, expected: Any, label: str) -> None:
+def _constant(value: Any, expected: Any, label: str, *, json_number: bool = False) -> None:
     if isinstance(expected, bool):
         valid = isinstance(value, bool) and value is expected
+    elif json_number and isinstance(value, (int, float)) and not isinstance(value, bool):
+        valid = value == expected
     else:
         valid = type(value) is type(expected) and value == expected
     if not valid:
@@ -68,7 +70,7 @@ def _enum(value: Any, allowed: set[str], label: str) -> None:
 
 def validate(value: Any) -> dict[str, Any]:
     root = _exact_object(value, "declaration", {"schema_version", "branching", "agent", "ci", "quality"})
-    _constant(root["schema_version"], 1, "schema_version")
+    _constant(root["schema_version"], 1, "schema_version", json_number=True)
 
     branching = _exact_object(
         root["branching"],
