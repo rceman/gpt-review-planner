@@ -10,7 +10,8 @@
     "repository_url": "git@github.com-therceman:therceman/airelay.git",
     "default_branch": "master",
     "branch": "master",
-    "head": "3ec7d8ccaa61061f6530dc5e787f0d5e3e2e342e"
+    "head": "3ec7d8ccaa61061f6530dc5e787f0d5e3e2e342e",
+    "gateway_state_dir": "/home/therceman/.local/share/gpt-tunnel-gateway"
   },
   "worktree_proof": {
     "clean": true,
@@ -23,9 +24,11 @@
     "controller_protocol_version": 1
   },
   "registry_digests": {
-    "project_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
-    "plan_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
-    "identifiers_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+    "managed_before_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+    "managed_after_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+    "project_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+    "plan_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+    "identifiers_sha256": "7777777777777777777777777777777777777777777777777777777777777777"
   },
   "hub": {
     "before": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -58,7 +61,7 @@
     "next_adr_number": 1
   },
   "mirror_proof": {
-    "path": "/home/therceman/.local/share/gpt-tunnel-gateway/mirrors/airelay.git",
+    "path": "/home/therceman/.local/share/gpt-tunnel-gateway/git-mirrors/airelay.git",
     "repository_url": "git@github.com-therceman:therceman/airelay.git",
     "head": "3ec7d8ccaa61061f6530dc5e787f0d5e3e2e342e"
   },

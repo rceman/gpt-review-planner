@@ -10,6 +10,7 @@
     "session_key": "airelay_master"
   },
   "project_code": "AIR",
+  "gateway_state_dir": "/home/therceman/.local/share/gpt-tunnel-gateway",
   "workflow": {
     "repository": "rceman/gpt-review-planner",
     "commit": "5d2172df0239c6c43c317a2a51086d2ee419ebc7"

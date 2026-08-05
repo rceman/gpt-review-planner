@@ -13,46 +13,43 @@
     "repository_url",
     "default_branch",
     "airelay",
+    "project_code",
+    "gateway_state_dir",
     "initial_plan",
     "expected_hub_revision"
   ],
   "properties": {
     "schema_version": {"const": 1},
     "project_id": {"$ref": "#/$defs/projectId"},
-    "root": {"$ref": "#/$defs/absoluteRoot"},
+    "root": {"$ref": "#/$defs/absolutePath"},
     "remote": {"$ref": "#/$defs/remote"},
     "repository_url": {"$ref": "#/$defs/repositoryUrl"},
     "default_branch": {"$ref": "#/$defs/branch"},
     "airelay": {"$ref": "#/$defs/airelay"},
     "project_code": {"$ref": "#/$defs/projectCode"},
+    "gateway_state_dir": {"$ref": "#/$defs/absolutePath"},
     "workflow": {"$ref": "#/$defs/workflow"},
     "initial_plan": {"$ref": "#/$defs/initialPlan"},
     "expected_hub_revision": {"$ref": "#/$defs/sha40"}
   },
   "$defs": {
-    "sha40": {
-      "type": "string",
-      "pattern": "^[0-9a-f]{40}$"
-    },
+    "sha40": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "projectId": {
       "type": "string",
       "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
       "minLength": 1,
       "maxLength": 64
     },
-    "projectCode": {
-      "type": "string",
-      "pattern": "^[A-Z]{3}$"
-    },
+    "projectCode": {"type": "string", "pattern": "^[A-Z]{3}$"},
     "objectId": {
       "type": "string",
       "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
       "minLength": 1,
       "maxLength": 128
     },
-    "absoluteRoot": {
+    "absolutePath": {
       "type": "string",
-      "pattern": "^/(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*//)(?:[^/\\\\\\u0000]+(?:/[^/\\\\\\u0000]+)*)$",
+      "pattern": "^/(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*//)[^\\\\\\u0000-\\u001f\\u007f]+$",
       "minLength": 2
     },
     "remote": {
@@ -63,6 +60,7 @@
     },
     "repositoryUrl": {
       "type": "string",
+      "pattern": "^(?:/[^\\s\\u0000-\\u001f\\u007f]+|[^\\s\\u0000-\\u001f\\u007f:]+:[^\\s\\u0000-\\u001f\\u007f]+)$",
       "minLength": 1,
       "maxLength": 2048
     },
@@ -80,7 +78,7 @@
         "session_required": {"type": "boolean"},
         "session_key": {
           "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$",
           "minLength": 1,
           "maxLength": 128
         }
@@ -159,8 +157,6 @@
           "maxItems": 200,
           "items": {"$ref": "#/$defs/initialPlanSection"}
         },
-        "active_task_id": {"$ref": "#/$defs/objectId"},
-        "active_run_id": {"$ref": "#/$defs/objectId"},
         "updated_by": {"type": "string", "minLength": 1, "maxLength": 255},
         "updated_at": {"type": "string", "format": "date-time"}
       }

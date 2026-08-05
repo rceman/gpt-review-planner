@@ -44,3 +44,24 @@ Unknown fields, duplicate JSON keys, unsafe paths, invalid identifiers, bad
 SHA values, malformed timestamps, invalid plan versions, and state/proof
 contradictions are rejected by the standard-library validator. There is no
 manual-config fallback and no gateway implementation in this O1 planner slice.
+
+## Required identity and recovery proof
+
+Every managed project selects a globally unique three-letter `project_code`.
+The request also declares `gateway_state_dir`; the activated mirror must be
+exactly `<gateway_state_dir>/git-mirrors/<project_id>.git`. Repository values
+must be normalized absolute paths or Git URLs containing `:`. Airelay session
+keys use the gateway-compatible alphanumeric/dot/underscore/hyphen syntax.
+
+Session proof is binary after preflight: a required session is `active` and
+contains its key; an optional session is `not_required` and contains neither a
+key nor a controller protocol version. `unverified` is not a receipt state.
+
+The receipt records distinct managed-registry before/after digests plus the
+project, plan, and identifiers record digests. Hub proof contains exactly the
+three canonical project, current-plan, and identifiers paths. Recovery receipts
+name their `last_completed_state` and retain the proof for that state. A
+`rolled_back` receipt additionally contains a rollback proof whose managed
+digest equals the original managed-before digest; rollback from a committed
+hub state includes the hub rollback revision and exact path set. All timestamps
+are chronological, and recovery and receipt rollback timestamps are identical.

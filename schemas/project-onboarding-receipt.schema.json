@@ -23,10 +23,10 @@
     {
       "if": {"properties": {"state": {"const": "prepared"}}},
       "then": {
-        "required": ["timestamps"],
         "properties": {
           "hub": {"not": {"required": ["after"]}},
-          "timestamps": {"required": ["prepared_at"]}
+          "timestamps": {"required": ["prepared_at"]},
+          "recovery": {"properties": {"status": {"const": "not_required"}}}
         },
         "not": {"anyOf": [
           {"required": ["created_project"]},
@@ -42,7 +42,8 @@
         "required": ["created_project", "created_plan", "created_identifiers"],
         "properties": {
           "hub": {"required": ["after"]},
-          "timestamps": {"required": ["hub_committed_at"]}
+          "timestamps": {"required": ["prepared_at", "hub_committed_at"]},
+          "recovery": {"properties": {"status": {"const": "not_required"}}}
         },
         "not": {"required": ["mirror_proof"]}
       }
@@ -53,10 +54,9 @@
         "required": ["created_project", "created_plan", "created_identifiers", "mirror_proof"],
         "properties": {
           "hub": {"required": ["after"]},
-          "timestamps": {"required": ["hub_committed_at", "activated_at"]},
-          "session_proof": {
-            "properties": {"status": {"const": "active"}}
-          }
+          "timestamps": {"required": ["prepared_at", "hub_committed_at", "activated_at"]},
+          "session_proof": {"properties": {"status": {"const": "active"}}},
+          "recovery": {"properties": {"status": {"const": "not_required"}}}
         }
       }
     },
@@ -65,8 +65,9 @@
       "then": {
         "properties": {
           "recovery": {
-            "required": ["reason"],
-            "properties": {"status": {"const": "required"}}
+            "required": ["last_completed_state", "reason"],
+            "properties": {"status": {"const": "required"}},
+            "not": {"anyOf": [{"required": ["rolled_back_at"]}, {"required": ["rollback_proof"]}]}
           }
         }
       }
@@ -76,12 +77,81 @@
       "then": {
         "properties": {
           "recovery": {
-            "required": ["reason", "rolled_back_at"],
+            "required": ["last_completed_state", "reason", "rolled_back_at", "rollback_proof"],
             "properties": {"status": {"const": "complete"}}
           },
           "timestamps": {"required": ["rolled_back_at"]}
-        },
+        }
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {"properties": {"state": {"enum": ["recovery_required", "rolled_back"]}}},
+          {"properties": {"recovery": {"properties": {"last_completed_state": {"const": "prepared"}}}}}
+        ]
+      },
+      "then": {
+        "properties": {"hub": {"not": {"required": ["after"]}}},
+        "not": {"anyOf": [
+          {"required": ["created_project"]},
+          {"required": ["created_plan"]},
+          {"required": ["created_identifiers"]},
+          {"required": ["mirror_proof"]}
+        ]}
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {"properties": {"state": {"enum": ["recovery_required", "rolled_back"]}}},
+          {"properties": {"recovery": {"properties": {"last_completed_state": {"const": "hub_committed"}}}}}
+        ]
+      },
+      "then": {
+        "required": ["created_project", "created_plan", "created_identifiers"],
+        "properties": {"hub": {"required": ["after"]}},
         "not": {"required": ["mirror_proof"]}
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {"properties": {"state": {"enum": ["recovery_required", "rolled_back"]}}},
+          {"properties": {"recovery": {"properties": {"last_completed_state": {"const": "activated"}}}}}
+        ]
+      },
+      "then": {
+        "required": ["created_project", "created_plan", "created_identifiers", "mirror_proof"],
+        "properties": {"hub": {"required": ["after"]}}
+      }
+    },
+    {
+      "if": {
+        "allOf": [
+          {"properties": {"state": {"const": "rolled_back"}}},
+          {"properties": {"recovery": {"properties": {"last_completed_state": {"enum": ["hub_committed", "activated"]}}}}}
+        ]
+      },
+      "then": {"properties": {"recovery": {"properties": {"rollback_proof": {"required": ["hub_revision", "hub_paths"]}}}}}
+    },
+    {
+      "if": {
+        "allOf": [
+          {"properties": {"state": {"const": "rolled_back"}}},
+          {"properties": {"recovery": {"properties": {"last_completed_state": {"const": "prepared"}}}}}
+        ]
+      },
+      "then": {
+        "properties": {
+          "recovery": {
+            "properties": {
+              "rollback_proof": {
+                "not": {"anyOf": [{"required": ["hub_revision"]}, {"required": ["hub_paths"]}]}
+              }
+            }
+          }
+        }
       }
     }
   ],
@@ -89,9 +159,7 @@
     "schema_version": {"const": 1},
     "operation_id": {"$ref": "#/$defs/uuid"},
     "request_sha256": {"$ref": "#/$defs/sha256"},
-    "state": {
-      "enum": ["prepared", "hub_committed", "activated", "recovery_required", "rolled_back"]
-    },
+    "state": {"enum": ["prepared", "hub_committed", "activated", "recovery_required", "rolled_back"]},
     "project_id": {"$ref": "#/$defs/projectId"},
     "repository_proof": {"$ref": "#/$defs/repositoryProof"},
     "worktree_proof": {"$ref": "#/$defs/worktreeProof"},
@@ -108,34 +176,22 @@
   "$defs": {
     "sha40": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-    "uuid": {
+    "uuid": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
+    "projectId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$", "minLength": 1, "maxLength": 64},
+    "objectId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$", "minLength": 1, "maxLength": 128},
+    "projectCode": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "absolutePath": {
       "type": "string",
-      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-    },
-    "projectId": {
-      "type": "string",
-      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
-      "minLength": 1,
-      "maxLength": 64
-    },
-    "objectId": {
-      "type": "string",
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
-      "minLength": 1,
-      "maxLength": 128
-    },
-    "absoluteRoot": {
-      "type": "string",
-      "pattern": "^/(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*//)(?:[^/\\\\\\u0000]+(?:/[^/\\\\\\u0000]+)*)$",
+      "pattern": "^/(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*//)[^\\\\\\u0000-\\u001f\\u007f]+$",
       "minLength": 2
     },
-    "remote": {
+    "remote": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$", "minLength": 1, "maxLength": 64},
+    "repositoryUrl": {
       "type": "string",
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+      "pattern": "^(?:/[^\\s\\u0000-\\u001f\\u007f]+|[^\\s\\u0000-\\u001f\\u007f:]+:[^\\s\\u0000-\\u001f\\u007f]+)$",
       "minLength": 1,
-      "maxLength": 64
+      "maxLength": 2048
     },
-    "repositoryUrl": {"type": "string", "minLength": 1, "maxLength": 2048},
     "branch": {
       "type": "string",
       "pattern": "^(?!-)(?!.*\\.\\.)(?!.*[ ~^:?*\\[\\]\\\\\\u0000\\r\\n])(?!.*/$).+$",
@@ -149,32 +205,26 @@
       "maxLength": 2048
     },
     "dateTime": {"type": "string", "format": "date-time"},
-    "positiveInteger": {
-      "type": "integer",
-      "minimum": 1,
-      "maximum": 9007199254740991
-    },
+    "positiveInteger": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
     "repositoryProof": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["root", "remote", "repository_url", "default_branch", "branch", "head"],
+      "required": ["root", "remote", "repository_url", "default_branch", "branch", "head", "gateway_state_dir"],
       "properties": {
-        "root": {"$ref": "#/$defs/absoluteRoot"},
+        "root": {"$ref": "#/$defs/absolutePath"},
         "remote": {"$ref": "#/$defs/remote"},
         "repository_url": {"$ref": "#/$defs/repositoryUrl"},
         "default_branch": {"$ref": "#/$defs/branch"},
         "branch": {"$ref": "#/$defs/branch"},
-        "head": {"$ref": "#/$defs/sha40"}
+        "head": {"$ref": "#/$defs/sha40"},
+        "gateway_state_dir": {"$ref": "#/$defs/absolutePath"}
       }
     },
     "worktreeProof": {
       "type": "object",
       "additionalProperties": false,
       "required": ["clean", "status_sha256"],
-      "properties": {
-        "clean": {"type": "boolean"},
-        "status_sha256": {"$ref": "#/$defs/sha256"}
-      }
+      "properties": {"clean": {"type": "boolean"}, "status_sha256": {"$ref": "#/$defs/sha256"}}
     },
     "sessionProof": {
       "type": "object",
@@ -182,32 +232,28 @@
       "required": ["required", "status"],
       "properties": {
         "required": {"type": "boolean"},
-        "session_key": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "status": {"enum": ["active", "not_required", "unverified"]},
+        "session_key": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$", "minLength": 1, "maxLength": 128},
+        "status": {"enum": ["active", "not_required"]},
         "controller_protocol_version": {"$ref": "#/$defs/positiveInteger"}
       },
       "allOf": [
         {
           "if": {"properties": {"required": {"const": true}}},
-          "then": {"required": ["session_key"]}
+          "then": {"required": ["session_key"], "properties": {"status": {"const": "active"}}}
         },
         {
           "if": {"properties": {"required": {"const": false}}},
-          "then": {"not": {"required": ["session_key"]}
-          }
+          "then": {"properties": {"status": {"const": "not_required"}}, "not": {"anyOf": [{"required": ["session_key"]}, {"required": ["controller_protocol_version"]}]}}
         }
       ]
     },
     "registryDigests": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["project_sha256", "plan_sha256", "identifiers_sha256"],
+      "required": ["managed_before_sha256", "managed_after_sha256", "project_sha256", "plan_sha256", "identifiers_sha256"],
       "properties": {
+        "managed_before_sha256": {"$ref": "#/$defs/sha256"},
+        "managed_after_sha256": {"$ref": "#/$defs/sha256"},
         "project_sha256": {"$ref": "#/$defs/sha256"},
         "plan_sha256": {"$ref": "#/$defs/sha256"},
         "identifiers_sha256": {"$ref": "#/$defs/sha256"}
@@ -220,12 +266,7 @@
       "properties": {
         "before": {"$ref": "#/$defs/sha40"},
         "after": {"$ref": "#/$defs/sha40"},
-        "paths": {
-          "type": "array",
-          "minItems": 1,
-          "uniqueItems": true,
-          "items": {"$ref": "#/$defs/relativePath"}
-        }
+        "paths": {"type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": {"$ref": "#/$defs/relativePath"}}
       }
     },
     "createdProject": {
@@ -236,7 +277,7 @@
         "project_id": {"$ref": "#/$defs/projectId"},
         "repository_url": {"$ref": "#/$defs/repositoryUrl"},
         "default_branch": {"$ref": "#/$defs/branch"},
-        "workflow_repository": {"type": "string", "minLength": 3, "maxLength": 255},
+        "workflow_repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", "minLength": 3, "maxLength": 255},
         "workflow_commit": {"$ref": "#/$defs/sha40"},
         "status": {"const": "active"}
       }
@@ -259,7 +300,7 @@
       "properties": {
         "schema_version": {"const": 1},
         "project_id": {"$ref": "#/$defs/projectId"},
-        "project_code": {"type": "string", "pattern": "^[A-Z]{3}$"},
+        "project_code": {"$ref": "#/$defs/projectCode"},
         "next_task_number": {"$ref": "#/$defs/positiveInteger"},
         "next_adr_number": {"$ref": "#/$defs/positiveInteger"}
       }
@@ -269,7 +310,7 @@
       "additionalProperties": false,
       "required": ["path", "repository_url", "head"],
       "properties": {
-        "path": {"$ref": "#/$defs/absoluteRoot"},
+        "path": {"$ref": "#/$defs/absolutePath"},
         "repository_url": {"$ref": "#/$defs/repositoryUrl"},
         "head": {"$ref": "#/$defs/sha40"}
       }
@@ -287,14 +328,36 @@
         "updated_at": {"$ref": "#/$defs/dateTime"}
       }
     },
+    "rollbackProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["managed_after_sha256"],
+      "properties": {
+        "managed_after_sha256": {"$ref": "#/$defs/sha256"},
+        "hub_revision": {"$ref": "#/$defs/sha40"},
+        "hub_paths": {"type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": {"$ref": "#/$defs/relativePath"}}
+      },
+      "allOf": [
+        {
+          "if": {"required": ["hub_revision"]},
+          "then": {"required": ["hub_paths"]}
+        },
+        {
+          "if": {"required": ["hub_paths"]},
+          "then": {"required": ["hub_revision"]}
+        }
+      ]
+    },
     "recovery": {
       "type": "object",
       "additionalProperties": false,
       "required": ["status"],
       "properties": {
         "status": {"enum": ["not_required", "required", "complete"]},
+        "last_completed_state": {"enum": ["prepared", "hub_committed", "activated"]},
         "reason": {"type": "string", "minLength": 1, "maxLength": 2048},
-        "rolled_back_at": {"$ref": "#/$defs/dateTime"}
+        "rolled_back_at": {"$ref": "#/$defs/dateTime"},
+        "rollback_proof": {"$ref": "#/$defs/rollbackProof"}
       }
     }
   }

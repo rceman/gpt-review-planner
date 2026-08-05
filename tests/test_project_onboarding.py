@@ -157,6 +157,21 @@ class ProjectOnboardingTests(unittest.TestCase):
         document = copy.deepcopy(self.request)
         document["expected_hub_revision"] = "A" * 40
         self.assertRequestInvalid(document)
+        document = copy.deepcopy(self.request)
+        del document["project_code"]
+        self.assertRequestInvalid(document)
+        document = copy.deepcopy(self.request)
+        del document["gateway_state_dir"]
+        self.assertRequestInvalid(document)
+        document = copy.deepcopy(self.request)
+        document["repository_url"] = " git@github.com-therceman:owner/repo.git"
+        self.assertRequestInvalid(document)
+        document = copy.deepcopy(self.request)
+        document["repository_url"] = "owner/repo"
+        self.assertRequestInvalid(document)
+        document = copy.deepcopy(self.request)
+        document["gateway_state_dir"] = "/tmp/bad\x01path"
+        self.assertRequestInvalid(document)
 
     def test_request_session_and_workflow_binding(self):
         document = copy.deepcopy(self.request)
@@ -164,6 +179,9 @@ class ProjectOnboardingTests(unittest.TestCase):
         self.assertRequestInvalid(document)
         document = copy.deepcopy(self.request)
         document["airelay"] = {"session_required": True}
+        self.assertRequestInvalid(document)
+        document = copy.deepcopy(self.request)
+        document["airelay"]["session_key"] = "airelay:master"
         self.assertRequestInvalid(document)
         document = copy.deepcopy(self.request)
         document["workflow"]["commit"] = "0" * 39
@@ -184,6 +202,12 @@ class ProjectOnboardingTests(unittest.TestCase):
         self.assertRequestInvalid(document)
         document = copy.deepcopy(self.request)
         document["initial_plan"]["sections"] = [{"id": "s", "title": "S", "short_description": "ok", "revision": 0}]
+        self.assertRequestInvalid(document)
+        document = copy.deepcopy(self.request)
+        document["initial_plan"]["active_task_id"] = "task-1"
+        self.assertRequestInvalid(document)
+        document = copy.deepcopy(self.request)
+        document["initial_plan"]["active_run_id"] = "run-1"
         self.assertRequestInvalid(document)
 
     def test_receipt_state_matrix(self):
@@ -207,28 +231,43 @@ class ProjectOnboardingTests(unittest.TestCase):
         recovery = copy.deepcopy(self.receipt)
         recovery["state"] = "recovery_required"
         recovery.pop("mirror_proof")
-        recovery["recovery"] = {"status": "required", "reason": "target decoder rejected old state"}
+        recovery["timestamps"].pop("activated_at")
+        recovery["recovery"] = {
+            "status": "required",
+            "last_completed_state": "hub_committed",
+            "reason": "target decoder rejected old state",
+        }
         validator.validate_receipt(recovery)
 
         rolled_back = copy.deepcopy(self.receipt)
         rolled_back["state"] = "rolled_back"
-        rolled_back.pop("mirror_proof")
         rolled_back["timestamps"]["rolled_back_at"] = "2026-08-05T09:00:04Z"
+        rolled_back["timestamps"]["updated_at"] = "2026-08-05T09:00:04Z"
         rolled_back["recovery"] = {
             "status": "complete",
+            "last_completed_state": "activated",
             "reason": "rollback completed",
             "rolled_back_at": "2026-08-05T09:00:04Z",
+            "rollback_proof": {
+                "managed_after_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+                "hub_revision": "cccccccccccccccccccccccccccccccccccccccc",
+                "hub_paths": copy.deepcopy(self.receipt["hub"]["paths"]),
+            },
         }
         validator.validate_receipt(rolled_back)
 
         invalid = copy.deepcopy(self.receipt)
         invalid.pop("created_plan")
-        self.assertReceiptInvalid(invalid, schema=False)
+        self.assertReceiptInvalid(invalid)
         invalid = copy.deepcopy(self.receipt)
         invalid["recovery"] = {"status": "required", "reason": "oops"}
-        self.assertReceiptInvalid(invalid, schema=False)
+        invalid["state"] = "recovery_required"
+        self.assertReceiptInvalid(invalid)
         invalid = copy.deepcopy(rolled_back)
         invalid["recovery"].pop("rolled_back_at")
+        self.assertReceiptInvalid(invalid)
+        invalid = copy.deepcopy(rolled_back)
+        invalid["recovery"]["rollback_proof"]["managed_after_sha256"] = "6666666666666666666666666666666666666666666666666666666666666666"
         self.assertReceiptInvalid(invalid, schema=False)
 
     def test_receipt_proof_identity_and_path_rules(self):
@@ -242,7 +281,25 @@ class ProjectOnboardingTests(unittest.TestCase):
         invalid["session_proof"] = {"required": False, "status": "active", "session_key": "bad"}
         self.assertReceiptInvalid(invalid)
         invalid = copy.deepcopy(self.receipt)
+        invalid["session_proof"] = {"required": False, "status": "not_required", "controller_protocol_version": 1}
+        self.assertReceiptInvalid(invalid)
+        invalid = copy.deepcopy(self.receipt)
+        invalid["session_proof"]["status"] = "unverified"
+        self.assertReceiptInvalid(invalid)
+        invalid = copy.deepcopy(self.receipt)
         invalid["created_plan"]["path"] = "plan/current.json"
+        self.assertReceiptInvalid(invalid, schema=False)
+        invalid = copy.deepcopy(self.receipt)
+        invalid["repository_proof"]["repository_url"] = " owner/repo "
+        self.assertReceiptInvalid(invalid)
+        invalid = copy.deepcopy(self.receipt)
+        invalid["mirror_proof"]["path"] = "/home/therceman/.local/share/gpt-tunnel-gateway/mirrors/airelay.git"
+        self.assertReceiptInvalid(invalid, schema=False)
+        invalid = copy.deepcopy(self.receipt)
+        invalid["hub"]["paths"].append("gpt-tunnel/v1/projects/airelay/extra.json")
+        self.assertReceiptInvalid(invalid)
+        invalid = copy.deepcopy(self.receipt)
+        invalid["registry_digests"]["managed_after_sha256"] = invalid["registry_digests"]["managed_before_sha256"]
         self.assertReceiptInvalid(invalid, schema=False)
 
     def test_json_schema_integer_semantics(self):
@@ -262,6 +319,54 @@ class ProjectOnboardingTests(unittest.TestCase):
             receipt["created_plan"]["revision"] = value
             with self.assertRaises(validator.ValidationError):
                 validator.validate_receipt(receipt)
+
+    def test_recovery_retained_state_matrix_and_timestamp_identity(self):
+        for last_state in ("prepared", "hub_committed", "activated"):
+            recovery = copy.deepcopy(self.receipt)
+            recovery["state"] = "recovery_required"
+            recovery["recovery"] = {
+                "status": "required",
+                "last_completed_state": last_state,
+                "reason": "preflight failed",
+            }
+            if last_state == "prepared":
+                recovery["hub"].pop("after")
+                recovery["timestamps"].pop("hub_committed_at")
+                recovery["timestamps"].pop("activated_at")
+                for key in ("created_project", "created_plan", "created_identifiers", "mirror_proof"):
+                    recovery.pop(key, None)
+            elif last_state == "hub_committed":
+                recovery.pop("mirror_proof")
+                recovery["timestamps"].pop("activated_at")
+            validator.validate_receipt(recovery)
+
+        invalid = copy.deepcopy(self.receipt)
+        invalid["timestamps"]["activated_at"] = "2026-08-05T08:59:00Z"
+        self.assertReceiptInvalid(invalid, schema=False)
+        invalid = copy.deepcopy(self.receipt)
+        invalid["state"] = "rolled_back"
+        invalid["timestamps"]["rolled_back_at"] = "2026-08-05T09:00:04Z"
+        invalid["recovery"] = {
+            "status": "complete",
+            "last_completed_state": "activated",
+            "reason": "rollback",
+            "rolled_back_at": "2026-08-05T09:00:05Z",
+            "rollback_proof": {"managed_after_sha256": "3333333333333333333333333333333333333333333333333333333333333333", "hub_revision": "c" * 40, "hub_paths": copy.deepcopy(self.receipt["hub"]["paths"])},
+        }
+        self.assertReceiptInvalid(invalid, schema=False)
+        invalid = copy.deepcopy(self.receipt)
+        invalid["state"] = "rolled_back"
+        invalid["recovery"] = {
+            "status": "complete",
+            "last_completed_state": "hub_committed",
+            "reason": "rollback",
+            "rolled_back_at": "2026-08-05T09:00:04Z",
+            "rollback_proof": {"managed_after_sha256": "3333333333333333333333333333333333333333333333333333333333333333"},
+        }
+        invalid["timestamps"]["rolled_back_at"] = "2026-08-05T09:00:04Z"
+        invalid["timestamps"]["updated_at"] = "2026-08-05T09:00:04Z"
+        invalid.pop("mirror_proof")
+        self.assertReceiptInvalid(invalid, schema=False)
 
     def test_duplicate_keys_and_file_safety(self):
         with tempfile.TemporaryDirectory() as directory:
