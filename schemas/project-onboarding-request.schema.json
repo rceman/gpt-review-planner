@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gpt-review-planner.invalid/schemas/project-onboarding-request.schema.json",
+  "title": "GPT Tunnel project onboarding request",
+  "description": "Strict planner-owned input for one journaled project onboarding transaction.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project_id",
+    "root",
+    "remote",
+    "repository_url",
+    "default_branch",
+    "airelay",
+    "initial_plan",
+    "expected_hub_revision"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "project_id": {"$ref": "#/$defs/projectId"},
+    "root": {"$ref": "#/$defs/absoluteRoot"},
+    "remote": {"$ref": "#/$defs/remote"},
+    "repository_url": {"$ref": "#/$defs/repositoryUrl"},
+    "default_branch": {"$ref": "#/$defs/branch"},
+    "airelay": {"$ref": "#/$defs/airelay"},
+    "project_code": {"$ref": "#/$defs/projectCode"},
+    "workflow": {"$ref": "#/$defs/workflow"},
+    "initial_plan": {"$ref": "#/$defs/initialPlan"},
+    "expected_hub_revision": {"$ref": "#/$defs/sha40"}
+  },
+  "$defs": {
+    "sha40": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "projectId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "projectCode": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "objectId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "absoluteRoot": {
+      "type": "string",
+      "pattern": "^/(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*//)(?:[^/\\\\\\u0000]+(?:/[^/\\\\\\u0000]+)*)$",
+      "minLength": 2
+    },
+    "remote": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "repositoryUrl": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "branch": {
+      "type": "string",
+      "pattern": "^(?!-)(?!.*\\.\\.)(?!.*[ ~^:?*\\[\\]\\\\\\u0000\\r\\n])(?!.*/$).+$",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "airelay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["session_required"],
+      "properties": {
+        "session_required": {"type": "boolean"},
+        "session_key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"session_required": {"const": true}}},
+          "then": {"required": ["session_key"]}
+        },
+        {
+          "if": {"properties": {"session_required": {"const": false}}},
+          "then": {"not": {"required": ["session_key"]}}
+        }
+      ]
+    },
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit"],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+          "minLength": 3,
+          "maxLength": 255
+        },
+        "commit": {"$ref": "#/$defs/sha40"}
+      }
+    },
+    "positiveInteger": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "initialPlanSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "short_description", "revision"],
+      "properties": {
+        "id": {"$ref": "#/$defs/objectId"},
+        "title": {"type": "string", "minLength": 1, "maxLength": 300},
+        "short_description": {"type": "string", "minLength": 1, "maxLength": 500},
+        "revision": {"$ref": "#/$defs/positiveInteger"}
+      }
+    },
+    "initialPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "project_id",
+        "revision",
+        "title",
+        "summary",
+        "current_objective",
+        "queue",
+        "sections",
+        "updated_by",
+        "updated_at"
+      ],
+      "properties": {
+        "schema_version": {"const": 2},
+        "project_id": {"$ref": "#/$defs/projectId"},
+        "revision": {"$ref": "#/$defs/positiveInteger"},
+        "title": {"type": "string", "minLength": 1, "maxLength": 300},
+        "summary": {"type": "string", "minLength": 1, "maxLength": 500},
+        "current_objective": {"type": "string", "maxLength": 20000},
+        "queue": {
+          "type": "array",
+          "maxItems": 200,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/objectId"}
+        },
+        "sections": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {"$ref": "#/$defs/initialPlanSection"}
+        },
+        "active_task_id": {"$ref": "#/$defs/objectId"},
+        "active_run_id": {"$ref": "#/$defs/objectId"},
+        "updated_by": {"type": "string", "minLength": 1, "maxLength": 255},
+        "updated_at": {"type": "string", "format": "date-time"}
+      }
+    }
+  }
+}

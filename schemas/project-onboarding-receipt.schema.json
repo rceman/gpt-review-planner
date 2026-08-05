@@ -1,0 +1,301 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gpt-review-planner.invalid/schemas/project-onboarding-receipt.schema.json",
+  "title": "GPT Tunnel project onboarding receipt",
+  "description": "Strict proof record for one journaled project onboarding transaction.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "operation_id",
+    "request_sha256",
+    "state",
+    "project_id",
+    "repository_proof",
+    "worktree_proof",
+    "session_proof",
+    "registry_digests",
+    "hub",
+    "timestamps",
+    "recovery"
+  ],
+  "allOf": [
+    {
+      "if": {"properties": {"state": {"const": "prepared"}}},
+      "then": {
+        "required": ["timestamps"],
+        "properties": {
+          "hub": {"not": {"required": ["after"]}},
+          "timestamps": {"required": ["prepared_at"]}
+        },
+        "not": {"anyOf": [
+          {"required": ["created_project"]},
+          {"required": ["created_plan"]},
+          {"required": ["created_identifiers"]},
+          {"required": ["mirror_proof"]}
+        ]}
+      }
+    },
+    {
+      "if": {"properties": {"state": {"const": "hub_committed"}}},
+      "then": {
+        "required": ["created_project", "created_plan", "created_identifiers"],
+        "properties": {
+          "hub": {"required": ["after"]},
+          "timestamps": {"required": ["hub_committed_at"]}
+        },
+        "not": {"required": ["mirror_proof"]}
+      }
+    },
+    {
+      "if": {"properties": {"state": {"const": "activated"}}},
+      "then": {
+        "required": ["created_project", "created_plan", "created_identifiers", "mirror_proof"],
+        "properties": {
+          "hub": {"required": ["after"]},
+          "timestamps": {"required": ["hub_committed_at", "activated_at"]},
+          "session_proof": {
+            "properties": {"status": {"const": "active"}}
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"state": {"const": "recovery_required"}}},
+      "then": {
+        "properties": {
+          "recovery": {
+            "required": ["reason"],
+            "properties": {"status": {"const": "required"}}
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"state": {"const": "rolled_back"}}},
+      "then": {
+        "properties": {
+          "recovery": {
+            "required": ["reason", "rolled_back_at"],
+            "properties": {"status": {"const": "complete"}}
+          },
+          "timestamps": {"required": ["rolled_back_at"]}
+        },
+        "not": {"required": ["mirror_proof"]}
+      }
+    }
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "operation_id": {"$ref": "#/$defs/uuid"},
+    "request_sha256": {"$ref": "#/$defs/sha256"},
+    "state": {
+      "enum": ["prepared", "hub_committed", "activated", "recovery_required", "rolled_back"]
+    },
+    "project_id": {"$ref": "#/$defs/projectId"},
+    "repository_proof": {"$ref": "#/$defs/repositoryProof"},
+    "worktree_proof": {"$ref": "#/$defs/worktreeProof"},
+    "session_proof": {"$ref": "#/$defs/sessionProof"},
+    "registry_digests": {"$ref": "#/$defs/registryDigests"},
+    "hub": {"$ref": "#/$defs/hubProof"},
+    "created_project": {"$ref": "#/$defs/createdProject"},
+    "created_plan": {"$ref": "#/$defs/createdPlan"},
+    "created_identifiers": {"$ref": "#/$defs/createdIdentifiers"},
+    "mirror_proof": {"$ref": "#/$defs/mirrorProof"},
+    "timestamps": {"$ref": "#/$defs/timestamps"},
+    "recovery": {"$ref": "#/$defs/recovery"}
+  },
+  "$defs": {
+    "sha40": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "projectId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "objectId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "absoluteRoot": {
+      "type": "string",
+      "pattern": "^/(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*//)(?:[^/\\\\\\u0000]+(?:/[^/\\\\\\u0000]+)*)$",
+      "minLength": 2
+    },
+    "remote": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "repositoryUrl": {"type": "string", "minLength": 1, "maxLength": 2048},
+    "branch": {
+      "type": "string",
+      "pattern": "^(?!-)(?!.*\\.\\.)(?!.*[ ~^:?*\\[\\]\\\\\\u0000\\r\\n])(?!.*/$).+$",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "relativePath": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*\\u0000)[^/]+(?:/[^/]+)*$",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "dateTime": {"type": "string", "format": "date-time"},
+    "positiveInteger": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "repositoryProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "remote", "repository_url", "default_branch", "branch", "head"],
+      "properties": {
+        "root": {"$ref": "#/$defs/absoluteRoot"},
+        "remote": {"$ref": "#/$defs/remote"},
+        "repository_url": {"$ref": "#/$defs/repositoryUrl"},
+        "default_branch": {"$ref": "#/$defs/branch"},
+        "branch": {"$ref": "#/$defs/branch"},
+        "head": {"$ref": "#/$defs/sha40"}
+      }
+    },
+    "worktreeProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["clean", "status_sha256"],
+      "properties": {
+        "clean": {"type": "boolean"},
+        "status_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "sessionProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "status"],
+      "properties": {
+        "required": {"type": "boolean"},
+        "session_key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "status": {"enum": ["active", "not_required", "unverified"]},
+        "controller_protocol_version": {"$ref": "#/$defs/positiveInteger"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"required": {"const": true}}},
+          "then": {"required": ["session_key"]}
+        },
+        {
+          "if": {"properties": {"required": {"const": false}}},
+          "then": {"not": {"required": ["session_key"]}
+          }
+        }
+      ]
+    },
+    "registryDigests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["project_sha256", "plan_sha256", "identifiers_sha256"],
+      "properties": {
+        "project_sha256": {"$ref": "#/$defs/sha256"},
+        "plan_sha256": {"$ref": "#/$defs/sha256"},
+        "identifiers_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "hubProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["before", "paths"],
+      "properties": {
+        "before": {"$ref": "#/$defs/sha40"},
+        "after": {"$ref": "#/$defs/sha40"},
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/relativePath"}
+        }
+      }
+    },
+    "createdProject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["project_id", "repository_url", "default_branch", "status"],
+      "properties": {
+        "project_id": {"$ref": "#/$defs/projectId"},
+        "repository_url": {"$ref": "#/$defs/repositoryUrl"},
+        "default_branch": {"$ref": "#/$defs/branch"},
+        "workflow_repository": {"type": "string", "minLength": 3, "maxLength": 255},
+        "workflow_commit": {"$ref": "#/$defs/sha40"},
+        "status": {"const": "active"}
+      }
+    },
+    "createdPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "project_id", "revision", "path"],
+      "properties": {
+        "schema_version": {"const": 2},
+        "project_id": {"$ref": "#/$defs/projectId"},
+        "revision": {"$ref": "#/$defs/positiveInteger"},
+        "path": {"$ref": "#/$defs/relativePath"}
+      }
+    },
+    "createdIdentifiers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "project_id", "project_code", "next_task_number", "next_adr_number"],
+      "properties": {
+        "schema_version": {"const": 1},
+        "project_id": {"$ref": "#/$defs/projectId"},
+        "project_code": {"type": "string", "pattern": "^[A-Z]{3}$"},
+        "next_task_number": {"$ref": "#/$defs/positiveInteger"},
+        "next_adr_number": {"$ref": "#/$defs/positiveInteger"}
+      }
+    },
+    "mirrorProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "repository_url", "head"],
+      "properties": {
+        "path": {"$ref": "#/$defs/absoluteRoot"},
+        "repository_url": {"$ref": "#/$defs/repositoryUrl"},
+        "head": {"$ref": "#/$defs/sha40"}
+      }
+    },
+    "timestamps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["started_at", "updated_at"],
+      "properties": {
+        "started_at": {"$ref": "#/$defs/dateTime"},
+        "prepared_at": {"$ref": "#/$defs/dateTime"},
+        "hub_committed_at": {"$ref": "#/$defs/dateTime"},
+        "activated_at": {"$ref": "#/$defs/dateTime"},
+        "rolled_back_at": {"$ref": "#/$defs/dateTime"},
+        "updated_at": {"$ref": "#/$defs/dateTime"}
+      }
+    },
+    "recovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {"enum": ["not_required", "required", "complete"]},
+        "reason": {"type": "string", "minLength": 1, "maxLength": 2048},
+        "rolled_back_at": {"$ref": "#/$defs/dateTime"}
+      }
+    }
+  }
+}

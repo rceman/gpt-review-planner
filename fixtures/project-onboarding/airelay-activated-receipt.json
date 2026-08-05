@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "operation_id": "019faea5-f0b2-73a3-b286-ef54956ddd0f",
+  "request_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+  "state": "activated",
+  "project_id": "airelay",
+  "repository_proof": {
+    "root": "/home/therceman/git/airelay",
+    "remote": "origin",
+    "repository_url": "git@github.com-therceman:therceman/airelay.git",
+    "default_branch": "master",
+    "branch": "master",
+    "head": "3ec7d8ccaa61061f6530dc5e787f0d5e3e2e342e"
+  },
+  "worktree_proof": {
+    "clean": true,
+    "status_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "session_proof": {
+    "required": true,
+    "session_key": "airelay_master",
+    "status": "active",
+    "controller_protocol_version": 1
+  },
+  "registry_digests": {
+    "project_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+    "plan_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+    "identifiers_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+  },
+  "hub": {
+    "before": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "after": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "paths": [
+      "gpt-tunnel/v1/projects/airelay/project.json",
+      "gpt-tunnel/v1/projects/airelay/plan/current.json",
+      "gpt-tunnel/v1/projects/airelay/identifiers.json"
+    ]
+  },
+  "created_project": {
+    "project_id": "airelay",
+    "repository_url": "git@github.com-therceman:therceman/airelay.git",
+    "default_branch": "master",
+    "workflow_repository": "rceman/gpt-review-planner",
+    "workflow_commit": "5d2172df0239c6c43c317a2a51086d2ee419ebc7",
+    "status": "active"
+  },
+  "created_plan": {
+    "schema_version": 2,
+    "project_id": "airelay",
+    "revision": 1,
+    "path": "gpt-tunnel/v1/projects/airelay/plan/current.json"
+  },
+  "created_identifiers": {
+    "schema_version": 1,
+    "project_id": "airelay",
+    "project_code": "AIR",
+    "next_task_number": 1,
+    "next_adr_number": 1
+  },
+  "mirror_proof": {
+    "path": "/home/therceman/.local/share/gpt-tunnel-gateway/mirrors/airelay.git",
+    "repository_url": "git@github.com-therceman:therceman/airelay.git",
+    "head": "3ec7d8ccaa61061f6530dc5e787f0d5e3e2e342e"
+  },
+  "timestamps": {
+    "started_at": "2026-08-05T09:00:00Z",
+    "prepared_at": "2026-08-05T09:00:01Z",
+    "hub_committed_at": "2026-08-05T09:00:02Z",
+    "activated_at": "2026-08-05T09:00:03Z",
+    "updated_at": "2026-08-05T09:00:03Z"
+  },
+  "recovery": {
+    "status": "not_required"
+  }
+}
