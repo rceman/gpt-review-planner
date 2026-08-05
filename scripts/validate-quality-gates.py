@@ -21,8 +21,14 @@ ID_RE = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
 CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
 GLOB_META = set("*?[]")
 SHELL_NAMES = {"sh", "dash", "bash", "zsh", "ksh", "fish"}
-CMD_NAMES = {"cmd", "cmd.exe"}
-POWERSHELL_NAMES = {"powershell", "powershell.exe", "pwsh", "pwsh.exe"}
+UNSUPPORTED_WINDOWS_LAUNCHERS = {
+    "cmd",
+    "cmd.exe",
+    "powershell",
+    "powershell.exe",
+    "pwsh",
+    "pwsh.exe",
+}
 CODE_INTERPRETERS = {"python", "python2", "python3", "node", "nodejs", "ruby", "perl"}
 BROAD_CLEANUP = {".", "*", "**", "**/*", "/"}
 MAX_STRING = 4096
@@ -212,7 +218,7 @@ def _scan_posix_shell_prefix(argv: list[str], index: int, path: str) -> None:
 
 
 def _scan_python_prefix(argv: list[str], index: int, path: str) -> None:
-    value_options = {"-W", "-X"}
+    value_options = {"-W", "-X", "--check-hash-based-pycs"}
     while index < len(argv):
         token = argv[index]
         if token == "--":
@@ -240,6 +246,9 @@ def _scan_python_prefix(argv: list[str], index: int, path: str) -> None:
         if token.startswith("-W") or token.startswith("-X"):
             index += 1
             continue
+        if token.startswith("--check-hash-based-pycs="):
+            index += 1
+            continue
         index += 1
 
 
@@ -249,6 +258,7 @@ NODE_VALUE_OPTIONS = {
     "--loader",
     "--import",
     "--experimental-loader",
+    "-C",
     "--conditions",
     "--title",
     "--icu-data-dir",
@@ -259,6 +269,7 @@ NODE_VALUE_OPTIONS = {
     "--trace-event-categories",
     "--test-name-pattern",
     "--test-reporter",
+    "--test-reporter-destination",
     "--test-shard",
 }
 
@@ -321,34 +332,14 @@ def _scan_ruby_or_perl_prefix(name: str, argv: list[str], index: int, path: str)
         index += 1
 
 
-def _scan_powershell_prefix(argv: list[str], index: int, path: str) -> None:
-    command_switches = {"-command", "-c", "-encodedcommand", "-encodedarguments", "-enc", "-e"}
-    while index < len(argv):
-        token = argv[index]
-        lowered = token.lower()
-        if lowered == "-file":
-            _consume_launcher_value(argv, index, path)
-            return
-        if lowered in command_switches or lowered.startswith("-command:") or lowered.startswith("-encodedcommand:"):
-            _fail(path, "PowerShell command-string evaluation is forbidden")
-        if token == "--":
-            return
-        if not token.startswith("-"):
-            return
-        index += 1
-
-
 def _reject_shell_evaluation(argv: list[str], path: str) -> None:
     name, executable_index = _effective_executable(argv, path)
     prefix_start = executable_index + 1
-    if name in SHELL_NAMES:
+    if name in UNSUPPORTED_WINDOWS_LAUNCHERS:
+        _fail(path, "Windows shell launchers are unsupported on Linux")
+    elif name in SHELL_NAMES:
         _scan_posix_shell_prefix(argv, prefix_start, path)
-    elif name in CMD_NAMES:
-        if any(item.lower() in {"/c", "/k"} for item in argv[prefix_start:]):
-            _fail(path, "cmd command-string evaluation is forbidden")
-    elif name in POWERSHELL_NAMES:
-        _scan_powershell_prefix(argv, prefix_start, path)
-    elif name in {"python", "python3", "pypy", "pypy3"}:
+    elif name in {"python", "python2", "python3"}:
         _scan_python_prefix(argv, prefix_start, path)
     elif name in {"node", "nodejs"}:
         _scan_node_prefix(argv, prefix_start, path)

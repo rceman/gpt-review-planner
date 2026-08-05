@@ -16,6 +16,11 @@ The canonical template is
 Its top-level fields are exactly `schema_version`,
 `unmatched_changed_path`, `cleanup`, `generated`, `rules`, and `release`.
 
+Launcher validation is Linux-only. Supported launcher semantics cover POSIX
+shells, Python, Node/NodeJS, Ruby, and Perl. Known Windows shell launchers
+(`cmd`, `cmd.exe`, `powershell`, `powershell.exe`, `pwsh`, and `pwsh.exe`) are
+unsupported and rejected outright; their switches are not parsed.
+
 ## Selection and ordering
 
 Changed paths are matched against `rules` in declaration order. A changed path
@@ -38,9 +43,8 @@ one agent implementation commit; merge is performed only by the deterministic
 allowlist of normalized repository-relative globs and never authorize tracked,
 absolute, universal, or traversal paths. Generated rules declare input globs
 in `inputs` and exact output paths in `outputs`; only the generated-output boundary
-may mutate those outputs. No declaration command may use shell
-command-string evaluation such
-as `sh -c`, `cmd /c`, or PowerShell `-Command`; commands are direct argv.
+may mutate those outputs. For supported Linux launchers, no declaration
+command may use shell command-string evaluation; commands are direct argv.
 This check applies only to launcher options for the effective executable
 before its first script, module, or file operand. After that operand, tokens
 are treated as arguments to the checked script or file and are not re-scanned

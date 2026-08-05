@@ -213,15 +213,15 @@ class QualityGatesTests(unittest.TestCase):
             ["bash", "-c", "echo unsafe"],
             ["bash", "-lc", "echo unsafe"],
             ["bash", "-O", "extglob", "-c", "echo unsafe"],
-            ["cmd", "/c", "echo unsafe"],
-            ["pwsh", "-Command", "Write-Host unsafe"],
-            ["pwsh", "-NoProfile", "-Command", "Write-Host unsafe"],
             ["python3", "-c", "print('unsafe')"],
             ["python3", "-cprint('unsafe')"],
             ["python3", "-W", "ignore", "-c", "print('unsafe')"],
+            ["python3", "--check-hash-based-pycs", "always", "-c", "print('unsafe')"],
             ["node", "--trace-warnings", "--eval", "console.log('unsafe')"],
             ["node", "-econsole.log('unsafe')"],
             ["node", "-pconsole.log('unsafe')"],
+            ["node", "-C", "development", "--eval", "console.log('unsafe')"],
+            ["node", "--test-reporter-destination", "stdout", "--eval", "console.log('unsafe')"],
             ["ruby", "-eputs", "unsafe.rb"],
             ["perl", "-eprint", "unsafe.pl"],
         )
@@ -245,13 +245,29 @@ class QualityGatesTests(unittest.TestCase):
             ["bash", "scripts/check.sh", "-c"],
             ["python3", "scripts/check.py", "-e"],
             ["node", "scripts/check.js", "--eval"],
-            ["pwsh", "-File", "scripts/check.ps1", "-Command"],
+            ["python3", "--check-hash-based-pycs", "always", "scripts/check.py", "-c"],
+            ["node", "-C", "development", "scripts/check.js", "--eval"],
+            ["node", "--test-reporter-destination", "stdout", "scripts/check.js", "--eval"],
             ["ruby", "-Ivendor", "scripts/check.rb"],
             ["perl", "-MEncode", "scripts/check.pl"],
         ):
             value = self.valid()
             value["rules"][0]["prepare"][0]["argv"] = argv
             VALIDATOR.validate(value)
+
+    def test_windows_shell_launchers_are_unsupported(self):
+        for argv in (
+            ["cmd"],
+            ["cmd.exe", "/k", "echo unsafe"],
+            ["powershell", "-Command", "Write-Host unsafe"],
+            ["powershell.exe", "-EncodedCommand", "unsafe"],
+            ["pwsh", "-NoProfile"],
+            ["pwsh.exe", "-File", "check.ps1"],
+            ["env", "MODE=x", "pwsh", "-Command", "unsafe"],
+        ):
+            value = self.valid()
+            value["rules"][0]["prepare"][0]["argv"] = argv
+            self.assert_invalid(value, schema=False)
 
     def test_recognized_launcher_options_missing_values_fail_closed(self):
         for argv in (
@@ -260,9 +276,11 @@ class QualityGatesTests(unittest.TestCase):
             ["python3", "-W"],
             ["python3", "-X"],
             ["python3", "-m"],
+            ["python3", "--check-hash-based-pycs"],
             ["node", "--require"],
+            ["node", "-C"],
+            ["node", "--test-reporter-destination"],
             ["ruby", "-I"],
-            ["pwsh", "-File"],
         ):
             value = self.valid()
             value["rules"][0]["prepare"][0]["argv"] = argv
