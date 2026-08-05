@@ -254,6 +254,44 @@ class AirelayManagedUpgradeTests(unittest.TestCase):
         with self.assertRaises(AssertionError):
             schema_validate(bad_receipt, self.receipt_schema)
 
+    def test_argv_whitespace_is_rejected_by_all_three_schemas_and_validator(self):
+        recipe_pattern = self.recipe_schema["$defs"]["shellSafeToken"]["pattern"]
+        request_pattern = self.request_schema["$defs"]["argv"]["items"]["pattern"]
+        receipt_pattern = self.receipt_schema["$defs"]["argv"]["items"]["pattern"]
+        self.assertEqual(recipe_pattern, request_pattern)
+        self.assertEqual(recipe_pattern, receipt_pattern)
+        self.assertIn(r"\s", recipe_pattern)
+
+        recipe = load_fixture("airelay-master-recipe.json")
+        VALIDATOR.validate_recipe(recipe)
+        schema_validate(recipe, self.recipe_schema)
+        bad_recipe = copy.deepcopy(recipe)
+        bad_recipe["child"]["argv"].append("contains space")
+        with self.assertRaises(VALIDATOR.ValidationError):
+            VALIDATOR.validate_recipe(bad_recipe)
+        with self.assertRaises(AssertionError):
+            schema_validate(bad_recipe, self.recipe_schema)
+
+        request = load_fixture("rolling-upgrade-request.json")
+        VALIDATOR.validate_request(request)
+        schema_validate(request, self.request_schema)
+        bad_request = copy.deepcopy(request)
+        bad_request["selected_sessions"][0]["expected_child_argv"].append("contains space")
+        with self.assertRaises(VALIDATOR.ValidationError):
+            VALIDATOR.validate_request(bad_request)
+        with self.assertRaises(AssertionError):
+            schema_validate(bad_request, self.request_schema)
+
+        receipt = load_fixture("rolling-upgrade-success-receipt.json")
+        VALIDATOR.validate_receipt(receipt)
+        schema_validate(receipt, self.receipt_schema)
+        bad_receipt = copy.deepcopy(receipt)
+        bad_receipt["sessions"][0]["old_identity"]["child_argv"].append("contains space")
+        with self.assertRaises(VALIDATOR.ValidationError):
+            VALIDATOR.validate_receipt(bad_receipt)
+        with self.assertRaises(AssertionError):
+            schema_validate(bad_receipt, self.receipt_schema)
+
     def test_resolution_kind_is_closed_and_equality_is_proven(self):
         recipe = load_fixture("airelay-master-recipe.json")
         for kind in ("direct", "unknown"):
