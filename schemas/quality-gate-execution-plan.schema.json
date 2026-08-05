@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://gpt-review-planner.invalid/schemas/quality-gate-execution-plan.schema.json",
   "title": "Quality-gate execution plan",
+  "$comment": "Structural target-kind constraints are represented here; sibling-value equality and other cross-field semantics are enforced by the canonical dependency-free validator.",
   "type": "object",
   "additionalProperties": false,
   "required": [

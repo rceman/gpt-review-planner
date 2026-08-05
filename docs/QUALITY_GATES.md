@@ -67,6 +67,12 @@ outputs, invalid phase modes, invalid timeouts, malformed JSON, and unmatched
 changed paths. The validator performs no command execution and has no external
 dependencies. Compatibility scope is none.
 
+The execution-plan schema validates structural constraints representable in
+standard Draft 2020-12 JSON Schema. The canonical Python validator additionally
+enforces cross-field semantic relationships such as sibling-value equality,
+ordering, and count consistency; those relationships are not added as
+non-standard schema extensions.
+
 ## B1 read-only planning
 
 The bounded B1 selector validates an explicitly supplied declaration and emits

@@ -174,7 +174,7 @@ class QualityGateSelectionTests(unittest.TestCase):
             index = self.repo / index
         return (
             git(self.repo, "rev-parse", "HEAD"),
-            git(self.repo, "for-each-ref", "--format=%(refname) %(objectname)", "refs/heads", "refs/tags"),
+            git(self.repo, "for-each-ref", "--format=%(refname) %(objectname)"),
             index.read_bytes(),
             (self.repo / ".git" / "config").read_bytes(),
             git(self.repo, "status", "--porcelain=v1", "--untracked-files=all"),
@@ -399,6 +399,27 @@ class QualityGateSelectionTests(unittest.TestCase):
         with self.assertRaises(PLANNER.QualityGatePlanError):
             PLANNER.validate_execution_plan(empty_rule_paths)
         self.assertFalse(schema_accepts(empty_rule_paths, self.schema))
+
+    def test_worktree_revision_must_equal_head_revision_in_canonical_validator(self):
+        (self.repo / "src" / "a.py").write_text("changed\n", encoding="utf-8")
+        result, output = self.run_plan()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        invalid = self.read_plan(output)
+        invalid["target"]["revision"] = "0" * 40
+        with self.assertRaises(PLANNER.QualityGatePlanError):
+            PLANNER.validate_execution_plan(invalid)
+        # Draft 2020-12 structural schema validation accepts this shape; the
+        # canonical dependency-free validator owns this sibling-value equality.
+        self.assertTrue(schema_accepts(invalid, self.schema))
+
+    def test_schema_documents_structural_and_semantic_validation_boundary(self):
+        comment = self.schema.get("$comment", "")
+        self.assertIn("canonical dependency-free validator", comment)
+        self.assertIn("sibling", comment)
+        documentation = (ROOT / "docs/QUALITY_GATES.md").read_text(encoding="utf-8")
+        self.assertIn("structural constraints representable", documentation)
+        self.assertIn("standard Draft 2020-12 JSON Schema", documentation)
+        self.assertIn("canonical Python validator", documentation)
 
     def test_declaration_hash_and_validation_use_one_byte_snapshot(self):
         original = (self.repo / "quality-gates.json").read_bytes()
