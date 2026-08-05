@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gpt-review-planner.invalid/schemas/quality-gate-execution-plan.schema.json",
+  "title": "Quality-gate execution plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "phase",
+    "declaration",
+    "base_revision",
+    "target",
+    "changed",
+    "selected_rules",
+    "selected_rule_ids",
+    "selected_generated",
+    "cleanup",
+    "selected_commands",
+    "counts"
+  ],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "phase": {"enum": ["prepare", "merge"]},
+    "declaration": {"$ref": "#/$defs/declaration"},
+    "base_revision": {"$ref": "#/$defs/sha"},
+    "target": {"$ref": "#/$defs/target"},
+    "changed": {"$ref": "#/$defs/changed"},
+    "selected_rules": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/selectedRule"}
+    },
+    "selected_rule_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/id"}
+    },
+    "selected_generated": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/generated"}
+    },
+    "cleanup": {"$ref": "#/$defs/cleanup"},
+    "selected_commands": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/command"}
+    },
+    "counts": {"$ref": "#/$defs/counts"}
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "pattern": "^(?!/)(?!.*\\\\)(?!.*[\\u0000-\\u001f\\u007f])(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*/$)(?!.*(?:^|/)\\.git(?:/|$)).+$"
+    },
+    "glob": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "pattern": "^(?!/)(?!.*\\\\)(?!.*[\\u0000-\\u001f\\u007f])(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*/$)(?!.*(?:^|/)\\.git(?:/|$)).+$"
+    },
+    "argv": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+      }
+    },
+    "declaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/path"},
+        "sha256": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "revision", "head_revision", "worktree_fingerprint", "status_projection"],
+      "properties": {
+        "kind": {"enum": ["worktree", "commit"]},
+        "revision": {"$ref": "#/$defs/sha"},
+        "head_revision": {"$ref": "#/$defs/sha"},
+        "worktree_fingerprint": {
+          "anyOf": [
+            {"const": ""},
+            {"$ref": "#/$defs/digest"}
+          ]
+        },
+        "status_projection": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+          }
+        }
+      }
+    },
+    "changed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["records", "material_paths"],
+      "properties": {
+        "records": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["status", "path"],
+                "properties": {
+                  "status": {"enum": ["A", "M", "D", "T"]},
+                  "path": {"$ref": "#/$defs/path"}
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["status", "source", "path"],
+                "properties": {
+                  "status": {"const": "R"},
+                  "source": {"$ref": "#/$defs/path"},
+                  "path": {"$ref": "#/$defs/path"}
+                }
+              }
+            ]
+          }
+        },
+        "material_paths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/path"}
+        }
+      }
+    },
+    "selectedRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "matched_paths"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "matched_paths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/path"}
+        }
+      }
+    },
+    "generated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "matched_inputs", "outputs", "argv", "timeout_seconds"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "matched_inputs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/path"}
+        },
+        "outputs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/path"}
+        },
+        "argv": {"$ref": "#/$defs/argv"},
+        "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 3600}
+      }
+    },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["untracked_only", "paths", "performed"],
+      "properties": {
+        "untracked_only": {"const": true},
+        "paths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/glob"}
+        },
+        "performed": {"const": false}
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "argv", "mode", "file_args", "timeout_seconds", "matched_paths", "invocations"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "argv": {"$ref": "#/$defs/argv"},
+        "mode": {"enum": ["check", "fix"]},
+        "file_args": {"enum": ["none", "append", "each"]},
+        "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 3600},
+        "matched_paths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/path"}
+        },
+        "invocations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/argv"}
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["changed_records", "material_paths", "selected_rules", "selected_generated", "selected_commands", "invocations"],
+      "properties": {
+        "changed_records": {"type": "integer", "minimum": 0},
+        "material_paths": {"type": "integer", "minimum": 0},
+        "selected_rules": {"type": "integer", "minimum": 0},
+        "selected_generated": {"type": "integer", "minimum": 0},
+        "selected_commands": {"type": "integer", "minimum": 0},
+        "invocations": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

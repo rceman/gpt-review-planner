@@ -1,9 +1,10 @@
 # Quality gates declaration
 
 `quality-gates.json` is a repository-relative, dependency-free declaration for
-the later deterministic prepare, merge, and release runners. This slice defines
-the contract and validator only; it does not execute commands, clean files,
-write generated outputs, or adopt a root declaration.
+deterministic prepare, merge, and release workflows. The declaration contract
+and validator are complete. This planner checkout has adopted its root
+`quality-gates.json`; adoption by another project remains an explicit project
+decision.
 
 Validate a declaration with:
 
@@ -64,6 +65,31 @@ sentinel, not a proven file operand, and is rejected.
 The declaration fails closed on unknown fields, unsafe paths, duplicate IDs or
 outputs, invalid phase modes, invalid timeouts, malformed JSON, and unmatched
 changed paths. The validator performs no command execution and has no external
-dependencies. Compatibility scope is none. Adoption, a runner, a root
-`quality-gates.json`, and generated-file mutation belong to a later explicitly
-authorized slice.
+dependencies. Compatibility scope is none.
+
+## B1 read-only planning
+
+The bounded B1 selector validates an explicitly supplied declaration and emits
+one deterministic execution plan without running any declared command:
+
+```bash
+python3 scripts/plan-quality-gates.py \
+  --repo <repository> \
+  --declaration quality-gates.json \
+  --base <40-character-commit> \
+  --phase prepare|merge \
+  --target WORKTREE|<40-character-commit> \
+  --output /external/quality-gate-plan.json
+```
+
+B1 derives committed or complete worktree changes, including non-ignored
+untracked files, applies the case-sensitive repository-relative glob matcher,
+projects selected commands and prepare-only generated actions, and records the
+validated cleanup allowlist with `performed: false`. It performs no formatting,
+testing, cleanup, generated-file write, index/worktree/ref mutation, network
+operation, commit, or push. Output is written atomically outside the target
+repository and contains no timestamp.
+
+The B1 plan is an input for a later explicitly authorized B2 executor. B2 may
+execute commands only under its own safety contract; B1 never executes the
+declaration and does not claim that any gate completed.

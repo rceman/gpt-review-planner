@@ -103,7 +103,7 @@ class QualityGatesTests(unittest.TestCase):
         VALIDATOR.validate(value)
         self.assertTrue(schema_accepts(value, self.schema))
         self.assertEqual(set(value), {"schema_version", "unmatched_changed_path", "cleanup", "generated", "rules", "release"})
-        self.assertFalse((ROOT / "quality-gates.json").exists())
+        self.assertTrue((ROOT / "quality-gates.json").is_file())
 
     def test_duplicate_json_keys_and_symlink_input_are_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
