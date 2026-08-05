@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "operation_id": "019faea5-f0b2-73a3-b286-ef54956ddd10",
+  "request_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "state": "succeeded",
+  "target_release": {
+    "version": "0.1.55",
+    "release_path": "/home/therceman/.local/share/airelay/releases/0.1.55",
+    "build_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "sessions": [
+    {
+      "session_key": "airelay_worker",
+      "state": "ready",
+      "old_identity": {
+        "recipe_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "version": "0.1.54",
+        "pid": 42001,
+        "controller_protocol_version": "0.5.0",
+        "working_directory": "/home/therceman/git/airelay",
+        "resume_identity": "airelay_worker"
+      },
+      "new_identity": {
+        "recipe_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "version": "0.1.55",
+        "pid": 43001,
+        "controller_protocol_version": "0.5.0",
+        "working_directory": "/home/therceman/git/airelay",
+        "resume_identity": "airelay_worker"
+      },
+      "readiness": {
+        "status": "ready",
+        "checked_at": "2026-08-05T10:00:05Z",
+        "identity": {
+          "recipe_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "version": "0.1.55",
+          "pid": 43001,
+          "controller_protocol_version": "0.5.0",
+          "working_directory": "/home/therceman/git/airelay",
+          "resume_identity": "airelay_worker"
+        }
+      },
+      "timestamps": {
+        "started_at": "2026-08-05T09:59:10Z",
+        "drained_at": "2026-08-05T09:59:20Z",
+        "stopped_at": "2026-08-05T09:59:21Z",
+        "starting_at": "2026-08-05T09:59:22Z",
+        "ready_at": "2026-08-05T10:00:05Z",
+        "updated_at": "2026-08-05T10:00:05Z"
+      }
+    },
+    {
+      "session_key": "airelay_master",
+      "state": "ready",
+      "old_identity": {
+        "recipe_sha256": "9aaa3c49c7950854463c1491797f5c9baf167819efe3a26ab3063112320777ef",
+        "version": "0.1.54",
+        "pid": 42002,
+        "controller_protocol_version": "0.5.0",
+        "working_directory": "/home/therceman/git/airelay",
+        "resume_identity": "airelay_master"
+      },
+      "new_identity": {
+        "recipe_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+        "version": "0.1.55",
+        "pid": 43002,
+        "controller_protocol_version": "0.5.0",
+        "working_directory": "/home/therceman/git/airelay",
+        "resume_identity": "airelay_master"
+      },
+      "readiness": {
+        "status": "ready",
+        "checked_at": "2026-08-05T10:00:05Z",
+        "identity": {
+          "recipe_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "version": "0.1.55",
+          "pid": 43002,
+          "controller_protocol_version": "0.5.0",
+          "working_directory": "/home/therceman/git/airelay",
+          "resume_identity": "airelay_master"
+        }
+      },
+      "timestamps": {
+        "started_at": "2026-08-05T09:59:10Z",
+        "drained_at": "2026-08-05T09:59:20Z",
+        "stopped_at": "2026-08-05T09:59:21Z",
+        "starting_at": "2026-08-05T09:59:22Z",
+        "ready_at": "2026-08-05T10:00:05Z",
+        "updated_at": "2026-08-05T10:00:05Z"
+      }
+    }
+  ],
+  "prompt_rejection_window": {
+    "started_at": "2026-08-05T10:00:00Z",
+    "ended_at": "2026-08-05T10:00:10Z",
+    "rejected_count": 2
+  },
+  "timestamps": {
+    "started_at": "2026-08-05T09:59:00Z",
+    "prepared_at": "2026-08-05T09:59:01Z",
+    "completed_at": "2026-08-05T10:00:10Z",
+    "updated_at": "2026-08-05T10:00:10Z"
+  }
+}

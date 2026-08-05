@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "operation_id": "019faea5-f0b2-73a3-b286-ef54956ddd10",
+  "target_release": {
+    "version": "0.1.55",
+    "release_path": "/home/therceman/.local/share/airelay/releases/0.1.55",
+    "build_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "selected_sessions": [
+    {
+      "session_key": "airelay_worker",
+      "expected_version": "0.1.54",
+      "expected_recipe_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "expected_pid": 42001,
+      "expected_controller_protocol_version": "0.5.0",
+      "expected_working_directory": "/home/therceman/git/airelay",
+      "expected_resume_identity": "airelay_worker"
+    },
+    {
+      "session_key": "airelay_master",
+      "expected_version": "0.1.54",
+      "expected_recipe_sha256": "9aaa3c49c7950854463c1491797f5c9baf167819efe3a26ab3063112320777ef",
+      "expected_pid": 42002,
+      "expected_controller_protocol_version": "0.5.0",
+      "expected_working_directory": "/home/therceman/git/airelay",
+      "expected_resume_identity": "airelay_master"
+    }
+  ],
+  "graceful_timeout_seconds": 30,
+  "force_stop_policy": {
+    "mode": "never"
+  },
+  "authorizations": {
+    "install": {
+      "authorized": true,
+      "source": "owner:airelay-upgrade"
+    },
+    "restart": {
+      "authorized": true,
+      "source": "owner:airelay-upgrade"
+    },
+    "force_stop": {
+      "authorized": false,
+      "source": null
+    }
+  }
+}

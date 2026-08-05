@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "recipe_sha256": "9aaa3c49c7950854463c1491797f5c9baf167819efe3a26ab3063112320777ef",
+  "session_key": "airelay_master",
+  "profile": "default",
+  "working_directory": "/home/therceman/git/airelay",
+  "executable": {
+    "path": "/home/therceman/.local/bin/airelay",
+    "version": "0.1.54",
+    "controller_protocol_version": "0.5.0"
+  },
+  "child": {
+    "program": "/usr/local/bin/codex",
+    "argv": [
+      "resume",
+      "airelay_master",
+      "--no-alt-screen"
+    ]
+  },
+  "resume": {
+    "identity": "airelay_master"
+  },
+  "approved_flags": [
+    "--no-alt-screen"
+  ],
+  "environment_references": [
+    "HOME",
+    "PATH",
+    "TERM"
+  ]
+}

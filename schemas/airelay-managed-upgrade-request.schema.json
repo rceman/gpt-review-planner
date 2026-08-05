@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gpt-review-planner.invalid/schemas/airelay-managed-upgrade-request.schema.json",
+  "title": "Airelay managed upgrade request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "operation_id",
+    "target_release",
+    "selected_sessions",
+    "graceful_timeout_seconds",
+    "force_stop_policy",
+    "authorizations"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "operation_id": {"$ref": "#/$defs/uuid"},
+    "target_release": {"$ref": "#/$defs/targetRelease"},
+    "selected_sessions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {"$ref": "#/$defs/selectedSession"}
+    },
+    "graceful_timeout_seconds": {"$ref": "#/$defs/positiveInteger"},
+    "force_stop_policy": {"$ref": "#/$defs/forceStopPolicy"},
+    "authorizations": {"$ref": "#/$defs/authorizations"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "uuid": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
+    "sessionKey": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$", "minLength": 1, "maxLength": 128},
+    "identifier": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$", "minLength": 1, "maxLength": 128},
+    "semver": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"},
+    "absolutePath": {
+      "type": "string",
+      "pattern": "^/(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*//)(?!.*[\\u0000-\\u001f\\u007f\\\\])[^/]+(?:/[^/]+)*$",
+      "minLength": 2,
+      "maxLength": 4096
+    },
+    "positiveInteger": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+    "targetRelease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "release_path", "build_sha256"],
+      "properties": {
+        "version": {"$ref": "#/$defs/semver"},
+        "release_path": {"$ref": "#/$defs/absolutePath"},
+        "build_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "selectedSession": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["session_key", "expected_version", "expected_recipe_sha256", "expected_pid", "expected_controller_protocol_version", "expected_working_directory", "expected_resume_identity"],
+      "properties": {
+        "session_key": {"$ref": "#/$defs/sessionKey"},
+        "expected_version": {"$ref": "#/$defs/semver"},
+        "expected_recipe_sha256": {"$ref": "#/$defs/sha256"},
+        "expected_pid": {"$ref": "#/$defs/positiveInteger"},
+        "expected_controller_protocol_version": {"$ref": "#/$defs/semver"},
+        "expected_working_directory": {"$ref": "#/$defs/absolutePath"},
+        "expected_resume_identity": {"$ref": "#/$defs/identifier"}
+      }
+    },
+    "forceStopPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {"mode": {"enum": ["never", "owner_authorized"]}}
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authorized"],
+      "properties": {
+        "authorized": {"type": "boolean"},
+        "source": {"type": ["string", "null"], "minLength": 1, "maxLength": 1024}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"authorized": {"const": true}}, "required": ["authorized"]},
+          "then": {"required": ["source"], "properties": {"source": {"type": "string", "minLength": 1, "maxLength": 1024}}}
+        },
+        {
+          "if": {"properties": {"authorized": {"const": false}}, "required": ["authorized"]},
+          "then": {"properties": {"source": {"type": "null"}}}
+        }
+      ]
+    },
+    "authorizations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["install", "restart", "force_stop"],
+      "properties": {
+        "install": {"$ref": "#/$defs/authorization"},
+        "restart": {"$ref": "#/$defs/authorization"},
+        "force_stop": {"$ref": "#/$defs/authorization"}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"force_stop_policy": {"properties": {"mode": {"const": "owner_authorized"}}, "required": ["mode"]}}, "required": ["force_stop_policy"]},
+      "then": {"properties": {"authorizations": {"properties": {"force_stop": {"properties": {"authorized": {"const": true}}, "required": ["authorized"]}}, "required": ["force_stop"]}}, "required": ["authorizations"]}
+    },
+    {
+      "if": {"properties": {"force_stop_policy": {"properties": {"mode": {"const": "never"}}, "required": ["mode"]}}, "required": ["force_stop_policy"]},
+      "then": {"properties": {"authorizations": {"properties": {"force_stop": {"properties": {"authorized": {"const": false}}, "required": ["authorized"]}}, "required": ["force_stop"]}}, "required": ["authorizations"]}
+    }
+  ]
+}

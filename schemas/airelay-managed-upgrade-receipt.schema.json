@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gpt-review-planner.invalid/schemas/airelay-managed-upgrade-receipt.schema.json",
+  "title": "Airelay managed upgrade receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "operation_id", "request_sha256", "state", "target_release", "sessions", "prompt_rejection_window", "timestamps"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "operation_id": {"$ref": "#/$defs/uuid"},
+    "request_sha256": {"$ref": "#/$defs/sha256"},
+    "state": {"enum": ["prepared", "running", "succeeded", "rollback_required", "rolled_back", "failed"]},
+    "target_release": {"$ref": "#/$defs/targetRelease"},
+    "sessions": {"type": "array", "minItems": 1, "maxItems": 64, "items": {"$ref": "#/$defs/sessionReceipt"}},
+    "prompt_rejection_window": {"$ref": "#/$defs/promptRejectionWindow"},
+    "timestamps": {"$ref": "#/$defs/timestamps"},
+    "failure": {"$ref": "#/$defs/failure"},
+    "rollback": {"$ref": "#/$defs/rollback"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"state": {"const": "failed"}}},
+      "then": {"required": ["failure"]}
+    },
+    {
+      "if": {"properties": {"state": {"enum": ["rollback_required", "rolled_back"]}}},
+      "then": {"required": ["rollback"]}
+    },
+    {
+      "if": {"properties": {"state": {"const": "rolled_back"}}},
+      "then": {"properties": {"timestamps": {"required": ["rollback_started_at", "rolled_back_at"]}}}
+    },
+    {
+      "if": {"properties": {"state": {"const": "succeeded"}}},
+      "then": {"properties": {"timestamps": {"required": ["started_at", "prepared_at", "completed_at"]}}}
+    }
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "uuid": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
+    "identifier": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$", "minLength": 1, "maxLength": 128},
+    "sessionKey": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$", "minLength": 1, "maxLength": 128},
+    "semver": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"},
+    "absolutePath": {
+      "type": "string",
+      "pattern": "^/(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*//)(?!.*[\\u0000-\\u001f\\u007f\\\\])[^/]+(?:/[^/]+)*$",
+      "minLength": 2,
+      "maxLength": 4096
+    },
+    "positiveInteger": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+    "nonnegativeInteger": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+    "targetRelease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "release_path", "build_sha256"],
+      "properties": {"version": {"$ref": "#/$defs/semver"}, "release_path": {"$ref": "#/$defs/absolutePath"}, "build_sha256": {"$ref": "#/$defs/sha256"}}
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recipe_sha256", "version", "pid", "controller_protocol_version", "working_directory", "resume_identity"],
+      "properties": {
+        "recipe_sha256": {"$ref": "#/$defs/sha256"},
+        "version": {"$ref": "#/$defs/semver"},
+        "pid": {"$ref": "#/$defs/positiveInteger"},
+        "controller_protocol_version": {"$ref": "#/$defs/semver"},
+        "working_directory": {"$ref": "#/$defs/absolutePath"},
+        "resume_identity": {"$ref": "#/$defs/identifier"}
+      }
+    },
+    "promptRejectionWindow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["started_at", "ended_at", "rejected_count"],
+      "properties": {"started_at": {"type": "string", "format": "date-time"}, "ended_at": {"type": "string", "format": "date-time"}, "rejected_count": {"$ref": "#/$defs/nonnegativeInteger"}}
+    },
+    "readiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "checked_at"],
+      "properties": {
+        "status": {"enum": ["ready", "pending", "failed"]},
+        "checked_at": {"type": "string", "format": "date-time"},
+        "identity": {"$ref": "#/$defs/identity"}
+      }
+    },
+    "failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "at"],
+      "properties": {"code": {"$ref": "#/$defs/identifier"}, "message": {"type": "string", "minLength": 1, "maxLength": 2048}, "at": {"type": "string", "format": "date-time"}}
+    },
+    "rollbackProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["old_identity", "restored_at"],
+      "properties": {"old_identity": {"$ref": "#/$defs/identity"}, "restored_at": {"type": "string", "format": "date-time"}}
+    },
+    "sessionReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["session_key", "state", "old_identity", "timestamps"],
+      "properties": {
+        "session_key": {"$ref": "#/$defs/sessionKey"},
+        "state": {"enum": ["pending", "drained", "stopped", "starting", "ready", "rollback_starting", "rolled_back", "failed"]},
+        "old_identity": {"$ref": "#/$defs/identity"},
+        "new_identity": {"$ref": "#/$defs/identity"},
+        "readiness": {"$ref": "#/$defs/readiness"},
+        "timestamps": {"$ref": "#/$defs/sessionTimestamps"},
+        "failure": {"$ref": "#/$defs/failure"},
+        "rollback_proof": {"$ref": "#/$defs/rollbackProof"}
+      },
+      "allOf": [
+        {"if": {"properties": {"state": {"enum": ["starting", "ready"]}}}, "then": {"required": ["new_identity"]}},
+        {"if": {"properties": {"state": {"const": "ready"}}}, "then": {"required": ["readiness"]}},
+        {"if": {"properties": {"state": {"const": "failed"}}}, "then": {"required": ["failure"]}},
+        {"if": {"properties": {"state": {"const": "rolled_back"}}}, "then": {"required": ["rollback_proof"]}}
+      ]
+    },
+    "sessionTimestamps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["started_at", "updated_at"],
+      "properties": {
+        "started_at": {"type": "string", "format": "date-time"},
+        "drained_at": {"type": "string", "format": "date-time"},
+        "stopped_at": {"type": "string", "format": "date-time"},
+        "starting_at": {"type": "string", "format": "date-time"},
+        "ready_at": {"type": "string", "format": "date-time"},
+        "rollback_started_at": {"type": "string", "format": "date-time"},
+        "rolled_back_at": {"type": "string", "format": "date-time"},
+        "updated_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "timestamps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["started_at", "updated_at"],
+      "properties": {
+        "started_at": {"type": "string", "format": "date-time"},
+        "prepared_at": {"type": "string", "format": "date-time"},
+        "completed_at": {"type": "string", "format": "date-time"},
+        "rollback_started_at": {"type": "string", "format": "date-time"},
+        "rolled_back_at": {"type": "string", "format": "date-time"},
+        "updated_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason", "started_at"],
+      "properties": {"reason": {"type": "string", "minLength": 1, "maxLength": 2048}, "started_at": {"type": "string", "format": "date-time"}, "completed_at": {"type": "string", "format": "date-time"}}
+    }
+  }
+}
