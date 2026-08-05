@@ -37,20 +37,21 @@ connector refresh.
 When tool changes apply, use exactly these groups and one plain-language line
 per changed tool:
 
+Each group is a mutually exclusive choice: keep one or more
+`- <tool>: <plain-language behavior/impact>` entries, or exactly `- None`.
+Delete the unused alternative before delivery; never retain both.
+
 ### New tools
 
-- `<tool>`: `<plain-language behavior/impact>`
-- `None` when the group is empty.
+`- <tool>: <plain-language behavior/impact>` entries, or `- None`.
 
 ### Updated tools
 
-- `<tool>`: `<plain-language behavior/impact>`
-- `None` when the group is empty.
+`- <tool>: <plain-language behavior/impact>` entries, or `- None`.
 
 ### Removed tools
 
-- `<tool>`: `<plain-language behavior/impact>`
-- `None` when the group is empty.
+`- <tool>: <plain-language behavior/impact>` entries, or `- None`.
 
 Bare comma-separated endpoint lists are not a report. The per-tool line is
 required even when the behavior is unchanged apart from the stated update.
@@ -68,6 +69,8 @@ Failures and blocks use a separate projection, in this order:
 Do not bury the blocker after logs or a long gate inventory. Use `blocked` as
 the state and do not imply implementation, merge, release, installation,
 running, or activation unless that state was independently established.
+`Required decision` MUST contain one exact owner decision, recovery action, or
+external dependency/action required to progress. `None` is not valid there.
 
 ## Prose and technical record boundary
 
@@ -87,6 +90,14 @@ This planner slice does not install or claim a versioned GPT Tunnel Operator Gui
 
 ## Technical record
 
-The technical record is always last in the owner projection. Keep machine
-evidence in its canonical records and refer to it rather than pasting raw JSON,
-logs, or duplicated fields into the owner report.
+The technical record is always last in the owner projection. Every
+state-specific template MUST include, as applicable:
+
+- final, accepted, source, or runtime identity;
+- relevant CI, evidence, or diagnostic reference;
+- `Task/run`: a compact identity when useful, or `None`;
+- `Deviations`: `None` or a concise deviation;
+- `Prohibited operations`: confirmation of the applicable prohibition status.
+
+Keep machine evidence in its canonical records and refer to it rather than
+pasting raw JSON, logs, or duplicated fields into the owner report.

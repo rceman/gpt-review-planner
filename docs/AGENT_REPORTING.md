@@ -114,10 +114,11 @@ CI result, and read-only verifier result. Read [`RELEASE_PUBLICATION.md`](RELEAS
 do not report a GitHub Release or assets when the declaration says `none` or
 `tag_only`.
 
-## Separate owner-state reporting
+## Machine evidence lifecycle facts
 
-Owner-facing reports keep these states separate and ordered; none may be
-collapsed into a generic “release succeeded” claim:
+Machine evidence records these lifecycle states separately; none may be
+collapsed into a generic “release succeeded” claim. This section describes
+machine evidence only. It is not a second owner-report contract: owner-facing projection order, wording, templates, and blocked-report rules are defined only by [`OWNER_COMPLETION_REPORT.md`](OWNER_COMPLETION_REPORT.md).
 
 1. implementation merged
 2. release commit

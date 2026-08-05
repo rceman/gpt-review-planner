@@ -24,7 +24,8 @@ or: `None — no owner action required`
 
 ## Technical record
 
-- Merge SHA: `<SHA>`
-- Ordered parents/CI: `<compact reference>`
+- Final/accepted/source/runtime identity: `<merge identity and ordered parents>`
+- Relevant CI/evidence/diagnostic: `<compact CI or evidence reference>`
+- Task/run: `<compact ID when useful or None>`
 - Deviations: `<None or concise deviation>`
 - Prohibited operations: `<confirmation>`

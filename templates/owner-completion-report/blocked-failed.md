@@ -8,7 +8,7 @@ Outcome: `BLOCKED` — `<plain-language failure or blocker>`; state: `blocked`.
 
 ## Required decision
 
-<One exact owner decision, authorization, or `None` if no decision can unblock it>.
+<One exact owner decision, recovery action, or external dependency/action required to progress>.
 
 ## Preserved state
 
@@ -16,7 +16,8 @@ Outcome: `BLOCKED` — `<plain-language failure or blocker>`; state: `blocked`.
 
 ## Technical record
 
-- Accepted/final SHA: `<SHA or None>`
-- Relevant CI/diagnostic: `<compact reference>`
+- Final/accepted/source/runtime identity: `<accepted or preserved identity, if available>`
+- Relevant CI/evidence/diagnostic: `<compact reference>`
+- Task/run: `<compact ID when useful or None>`
 - Deviations: `<None or concise deviation>`
 - Prohibited operations: `<confirmation>`

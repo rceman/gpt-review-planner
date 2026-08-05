@@ -45,7 +45,7 @@ class ProcedureIndexAndReportingTests(unittest.TestCase):
     def test_owner_report_keeps_operational_states_separate(self):
         text = self.read('docs/AGENT_REPORTING.md')
         lower = text.lower()
-        lower = lower[lower.index('## separate owner-state reporting'):]
+        lower = lower[lower.index('## machine evidence lifecycle facts'):]
         expected = (
             'implementation merged', 'release commit', 'main', 'tag created',
             'tag pushed', 'tag ci', 'auto workflow', 'github release', 'assets',

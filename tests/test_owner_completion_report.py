@@ -95,6 +95,15 @@ class OwnerCompletionReportTests(unittest.TestCase):
         self.assertIn("OWNER_COMPLETION_REPORT.md", self.read("docs/AGENT_REPORTING.md"))
         self.assertIn("machine/agent execution-evidence authority", self.read("docs/AGENT_REPORTING.md"))
 
+    def test_owner_projection_has_one_normative_authority(self) -> None:
+        owner = self.read("docs/OWNER_COMPLETION_REPORT.md")
+        reporting = self.read("docs/AGENT_REPORTING.md")
+        self.assertIn("sole normative authority", owner)
+        self.assertIn("Machine evidence lifecycle facts", reporting)
+        self.assertIn("not a second owner-report contract", reporting)
+        self.assertNotIn("## Separate owner-state reporting", reporting)
+        self.assertIn("owner-facing projection order", reporting)
+
     def test_state_vocabulary_and_independent_availability(self) -> None:
         text = self.read("docs/OWNER_COMPLETION_REPORT.md")
         for state in (
@@ -124,9 +133,47 @@ class OwnerCompletionReportTests(unittest.TestCase):
         for text in (normative, self.template("release-complete.md"), self.template("runtime-activation-complete.md")):
             for group in ("New tools", "Updated tools", "Removed tools"):
                 self.assertIn(f"### {group}", text)
-            self.assertIn("- `<tool>`: `<plain-language behavior/impact>`", text)
+            self.assertIn("<tool>", text)
             self.assertIn("None", text)
+            self.assertIn("mutually exclusive", text)
+            self.assertIn("Delete the unused alternative before delivery", text)
+            self.assertIn("never retain both", text)
         self.assertIn("Bare comma-separated endpoint lists are not a report", normative)
+
+    def test_all_templates_have_complete_technical_record(self) -> None:
+        required_fields = (
+            "Final/accepted/source/runtime identity:",
+            "Relevant CI/evidence/diagnostic:",
+            "Task/run:",
+            "Deviations:",
+            "Prohibited operations:",
+        )
+        for name in (
+            "implementation-complete.md",
+            "review-correction-required.md",
+            "merge-complete.md",
+            "release-complete.md",
+            "runtime-activation-complete.md",
+            "blocked-failed.md",
+        ):
+            text = self.template(name)
+            technical = text.index("## Technical record")
+            self.assertEqual(text.rfind("## Technical record"), technical, name)
+            for field in required_fields:
+                self.assertGreater(text.index(field), technical, (name, field))
+
+    def test_blocked_required_decision_is_actionable(self) -> None:
+        for name in ("review-correction-required.md", "blocked-failed.md"):
+            text = self.template(name)
+            start = text.index("## Required decision")
+            end = text.index("## Preserved state")
+            decision = text[start:end]
+            self.assertNotIn("None", decision, name)
+            self.assertRegex(
+                decision,
+                r"decision|authorization|recovery action|external dependency",
+                name,
+            )
 
     def test_all_required_authorities_link_the_owner_contract(self) -> None:
         for relative in (

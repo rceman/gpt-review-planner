@@ -23,7 +23,8 @@ or: `None — no owner action required`
 
 ## Technical record
 
-- Final or accepted SHA: `<SHA>`
-- Relevant CI/evidence: `<compact reference or None>`
+- Final/accepted/source/runtime identity: `<final or accepted implementation identity>`
+- Relevant CI/evidence/diagnostic: `<compact reference or None>`
+- Task/run: `<compact ID when useful or None>`
 - Deviations: `<None or concise deviation>`
 - Prohibited operations: `<confirmation>`

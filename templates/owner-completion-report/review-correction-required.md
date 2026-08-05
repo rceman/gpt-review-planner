@@ -16,6 +16,8 @@ Outcome: `BLOCKED` — `<plain-language correction reason>`; state: `blocked`.
 
 ## Technical record
 
-- Accepted SHA: `<SHA>`
-- Diagnostic: `<bounded diagnostic>`
+- Final/accepted/source/runtime identity: `<accepted correction identity>`
+- Relevant CI/evidence/diagnostic: `<bounded diagnostic or compact reference>`
+- Task/run: `<compact ID when useful or None>`
 - Deviations: `<None or concise deviation>`
+- Prohibited operations: `<confirmation>`
