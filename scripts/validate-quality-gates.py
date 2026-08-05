@@ -20,8 +20,9 @@ class QualityGatesError(ValueError):
 ID_RE = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
 CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
 GLOB_META = set("*?[]")
-SHELL_NAMES = {"sh", "dash", "bash", "zsh", "ksh", "fish"}
-UNSUPPORTED_WINDOWS_LAUNCHERS = {
+SHELL_NAMES = {"sh", "dash", "bash", "zsh", "ksh"}
+UNSUPPORTED_LAUNCHERS = {
+    "fish",
     "cmd",
     "cmd.exe",
     "powershell",
@@ -174,12 +175,10 @@ def _effective_executable(argv: list[str], path: str) -> tuple[str, int]:
 
 
 def _has_short_command_switch(token: str) -> bool:
-    if token == "-c":
-        return True
-    return token.startswith("-") and not token.startswith("--") and len(token) > 2 and token.endswith("c")
+    return token.startswith("-") and not token.startswith("--") and "c" in token[1:]
 
 
-def _consume_launcher_value(argv: list[str], index: int, path: str, *, forbidden=None) -> int:
+def _consume_launcher_value(argv: list[str], index: int, path: str, *, forbidden=None, allowed=None) -> int:
     """Consume one value for a recognized launcher option.
 
     A value is consumed as part of the launcher prefix, even when it begins
@@ -189,6 +188,10 @@ def _consume_launcher_value(argv: list[str], index: int, path: str, *, forbidden
     if index + 1 >= len(argv):
         _fail(path, "launcher option is missing its value")
     value = argv[index + 1]
+    if value.startswith("-"):
+        _fail(path, "launcher option value cannot be another option")
+    if allowed is not None and value not in allowed:
+        _fail(path, "launcher option value is invalid")
     if forbidden is not None and forbidden(value):
         _fail(path, "launcher option value cannot hide an evaluation switch")
     return index + 2
@@ -235,6 +238,16 @@ def _scan_python_prefix(argv: list[str], index: int, path: str) -> None:
                 forbidden=lambda value: value == "-c" or (value.startswith("-c") and not value.startswith("--")),
             )
             return
+        if token == "--check-hash-based-pycs":
+            index = _consume_launcher_value(
+                argv,
+                index,
+                path,
+                allowed={"default", "always", "never"},
+            )
+            continue
+        if token.startswith("--check-hash-based-pycs="):
+            _fail(path, "--check-hash-based-pycs requires a separate value")
         if token in value_options:
             index = _consume_launcher_value(
                 argv,
@@ -244,9 +257,6 @@ def _scan_python_prefix(argv: list[str], index: int, path: str) -> None:
             )
             continue
         if token.startswith("-W") or token.startswith("-X"):
-            index += 1
-            continue
-        if token.startswith("--check-hash-based-pycs="):
             index += 1
             continue
         index += 1
@@ -335,8 +345,8 @@ def _scan_ruby_or_perl_prefix(name: str, argv: list[str], index: int, path: str)
 def _reject_shell_evaluation(argv: list[str], path: str) -> None:
     name, executable_index = _effective_executable(argv, path)
     prefix_start = executable_index + 1
-    if name in UNSUPPORTED_WINDOWS_LAUNCHERS:
-        _fail(path, "Windows shell launchers are unsupported on Linux")
+    if name in UNSUPPORTED_LAUNCHERS:
+        _fail(path, "launcher is unsupported on Linux")
     elif name in SHELL_NAMES:
         _scan_posix_shell_prefix(argv, prefix_start, path)
     elif name in {"python", "python2", "python3"}:

@@ -49,7 +49,9 @@ This check applies only to launcher options for the effective executable
 before its first script, module, or file operand. After that operand, tokens
 are treated as arguments to the checked script or file and are not re-scanned
 as launcher options; recognized launcher options that require a value are
-consumed before the operand. A missing value for such an option fails closed.
+consumed before the operand. Missing values and option-looking values fail
+closed; if a legitimate value names a file beginning with `-`, use its
+repository-relative `./-name` form.
 
 The declaration fails closed on unknown fields, unsafe paths, duplicate IDs or
 outputs, invalid phase modes, invalid timeouts, malformed JSON, and unmatched
