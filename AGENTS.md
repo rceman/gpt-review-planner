@@ -6,20 +6,20 @@
 > Canonical repository: [`https://github.com/rceman/gpt-review-planner`](https://github.com/rceman/gpt-review-planner)
 >
 > Pinned workflow document:
-> [`GPT_REVIEW_PLANNER.md`](https://github.com/rceman/gpt-review-planner/blob/db3942a03a6a8fbbd98203b3daff81cf9a9f687d/GPT_REVIEW_PLANNER.md)
+> [`GPT_REVIEW_PLANNER.md`](https://github.com/rceman/gpt-review-planner/blob/74059a423d7dd280bd536b91a177bdb12823c879/GPT_REVIEW_PLANNER.md)
 >
-> Pinned workflow: `db3942a03a6a8fbbd98203b3daff81cf9a9f687d` at commit `db3942a03a6a8fbbd98203b3daff81cf9a9f687d`
+> Pinned workflow: `74059a423d7dd280bd536b91a177bdb12823c879` at commit `74059a423d7dd280bd536b91a177bdb12823c879`
 > Execution mode: `gpt_tunnel_managed` (explicit; no autodetection or fallback)
 >
 > Attached code-project reviews default to:
-> [`prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md`](https://github.com/rceman/gpt-review-planner/blob/db3942a03a6a8fbbd98203b3daff81cf9a9f687d/prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md)
+> [`prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md`](https://github.com/rceman/gpt-review-planner/blob/74059a423d7dd280bd536b91a177bdb12823c879/prompts/GPT_PROJECT_ARCHIVE_REVIEW_AND_IMPLEMENT.md)
 > Review-only mode is used only when explicitly requested:
-> [`prompts/GPT_PROJECT_ARCHIVE_REVIEW_ONLY.md`](https://github.com/rceman/gpt-review-planner/blob/db3942a03a6a8fbbd98203b3daff81cf9a9f687d/prompts/GPT_PROJECT_ARCHIVE_REVIEW_ONLY.md)
+> [`prompts/GPT_PROJECT_ARCHIVE_REVIEW_ONLY.md`](https://github.com/rceman/gpt-review-planner/blob/74059a423d7dd280bd536b91a177bdb12823c879/prompts/GPT_PROJECT_ARCHIVE_REVIEW_ONLY.md)
 > Archive preparation uses the pinned official tooling and prompt:
-> [`prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md`](https://github.com/rceman/gpt-review-planner/blob/db3942a03a6a8fbbd98203b3daff81cf9a9f687d/prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md)
-> Archive guide: [`docs/PROJECT_ARCHIVE_REVIEW.md`](https://github.com/rceman/gpt-review-planner/blob/db3942a03a6a8fbbd98203b3daff81cf9a9f687d/docs/PROJECT_ARCHIVE_REVIEW.md)
-> Release process: [`docs/RELEASE_PROCESS.md`](https://github.com/rceman/gpt-review-planner/blob/db3942a03a6a8fbbd98203b3daff81cf9a9f687d/docs/RELEASE_PROCESS.md)
-> Release lifecycle: [`docs/RELEASE_LIFECYCLE.md`](https://github.com/rceman/gpt-review-planner/blob/db3942a03a6a8fbbd98203b3daff81cf9a9f687d/docs/RELEASE_LIFECYCLE.md)
+> [`prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md`](https://github.com/rceman/gpt-review-planner/blob/74059a423d7dd280bd536b91a177bdb12823c879/prompts/AGENT_PREPARE_PROJECT_ARCHIVE.md)
+> Archive guide: [`docs/PROJECT_ARCHIVE_REVIEW.md`](https://github.com/rceman/gpt-review-planner/blob/74059a423d7dd280bd536b91a177bdb12823c879/docs/PROJECT_ARCHIVE_REVIEW.md)
+> Release process: [`docs/RELEASE_PROCESS.md`](https://github.com/rceman/gpt-review-planner/blob/74059a423d7dd280bd536b91a177bdb12823c879/docs/RELEASE_PROCESS.md)
+> Release lifecycle: [`docs/RELEASE_LIFECYCLE.md`](https://github.com/rceman/gpt-review-planner/blob/74059a423d7dd280bd536b91a177bdb12823c879/docs/RELEASE_LIFECYCLE.md)
 >
 > If `engineering-profile.json` is present, validate it with the exact pinned
 > planner checkout and follow the selected profile and relevant documents.
@@ -44,6 +44,7 @@
 > - Release-commit CI must pass before tagging; final tag CI is external metadata.
 > - Never force-push or use broad `git push --tags`.
 > - Before release task authoring, load and validate the explicit project declaration with `python3 scripts/validate-release-publication.py release-publication.json --repo .`.
+> - Before task authoring, read and validate the root `project-workflow.json` and `quality-gates.json` declarations. Do not execute declaration commands outside future deterministic tooling.
 > - After `git push origin refs/tags/v<TARGET_VERSION>:refs/tags/v<TARGET_VERSION>`, derive the post-tag proof from that declaration: `none` has no publication task, `tag_only` verifies declared tag CI, and `github_actions` verifies the declared publication workflow plus GitHub Release/assets when expected.
 > - Owner authorization to push the exact tag includes only declaration-authorized automatic workflow side effects; it does not authorize manual API/CLI publication, installation, activation, restart, or connector refresh.
 > - Local `gh`, curl, wget, `GH_TOKEN`, and `GITHUB_TOKEN` publication is forbidden.

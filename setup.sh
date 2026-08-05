@@ -25,6 +25,10 @@ Options:
   --commit SHA         Exact commit. Otherwise resolved with git ls-remote.
   --release-publication-file PATH
                        Explicit project release-publication.json to validate and install.
+  --project-workflow-file PATH
+                       Explicit project project-workflow.json to validate and install.
+  --quality-gates-file PATH
+                       Explicit project quality-gates.json to validate and install.
   --agents-file PATH   AGENTS.md path relative to project. Default: AGENTS.md
   --force              Replace an existing lock even if repository differs.
   -h, --help           Show this help.
@@ -141,6 +145,7 @@ ${BLOCK_BEGIN}
 > - Release-commit CI must pass before tagging; final tag CI is external metadata.
 > - Never force-push or use broad \`git push --tags\`.
 > - Before release task authoring, load and validate the explicit project declaration with \`python3 scripts/validate-release-publication.py release-publication.json --repo .\`.
+> - Before task authoring, read and validate the root \`project-workflow.json\` and \`quality-gates.json\` declarations. Do not execute declaration commands outside future deterministic tooling.
 > - After \`git push origin refs/tags/v<TARGET_VERSION>:refs/tags/v<TARGET_VERSION>\`, derive the post-tag proof from that declaration: \`none\` has no publication task, \`tag_only\` verifies declared tag CI, and \`github_actions\` verifies the declared publication workflow plus GitHub Release/assets when expected.
 > - Owner authorization to push the exact tag includes only declaration-authorized automatic workflow side effects; it does not authorize manual API/CLI publication, installation, activation, restart, or connector refresh.
 > - Local \`gh\`, curl, wget, \`GH_TOKEN\`, and \`GITHUB_TOKEN\` publication is forbidden.
@@ -155,6 +160,8 @@ commit=""
 execution_mode=""
 agents_file="AGENTS.md"
 release_publication_file=""
+project_workflow_file=""
+quality_gates_file=""
 force=0
 
 while [[ $# -gt 0 ]]; do
@@ -182,6 +189,16 @@ while [[ $# -gt 0 ]]; do
     --release-publication-file)
       [[ $# -ge 2 ]] || die "--release-publication-file requires a value"
       release_publication_file="$2"
+      shift 2
+      ;;
+    --project-workflow-file)
+      [[ $# -ge 2 ]] || die "--project-workflow-file requires a value"
+      project_workflow_file="$2"
+      shift 2
+      ;;
+    --quality-gates-file)
+      [[ $# -ge 2 ]] || die "--quality-gates-file requires a value"
+      quality_gates_file="$2"
       shift 2
       ;;
     --execution-mode)
@@ -219,14 +236,43 @@ project="$(cd "$project" && pwd)"
 planner_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 [[ -n "$release_publication_file" ]] || die "--release-publication-file is required; no publication mode is inferred"
-if [[ "$release_publication_file" != /* ]]; then
-  release_publication_file="$(cd "$(dirname "$release_publication_file")" && pwd)/$(basename "$release_publication_file")"
-fi
-[[ -f "$release_publication_file" && ! -L "$release_publication_file" ]] ||
-  die "release-publication input must be a regular non-symlink file"
+[[ -n "$project_workflow_file" ]] || die "--project-workflow-file is required; no workflow declaration is inferred"
+[[ -n "$quality_gates_file" ]] || die "--quality-gates-file is required; no quality-gates declaration is inferred"
+
+normalize_input_path() {
+  local input="$1"
+  local parent
+  if [[ "$input" == /* ]]; then
+    printf '%s\n' "$input"
+    return
+  fi
+  parent="$(dirname -- "$input")"
+  [[ -d "$parent" ]] || die "input parent directory does not exist: $parent"
+  printf '%s/%s\n' "$(cd "$parent" && pwd)" "$(basename -- "$input")"
+}
+
+require_declaration_file() {
+  local label="$1"
+  local path="$2"
+  [[ -f "$path" && ! -L "$path" ]] || die "$label input must be a regular non-symlink file"
+}
+
+release_publication_file="$(normalize_input_path "$release_publication_file")"
+project_workflow_file="$(normalize_input_path "$project_workflow_file")"
+quality_gates_file="$(normalize_input_path "$quality_gates_file")"
+require_declaration_file "release-publication" "$release_publication_file"
+require_declaration_file "project-workflow" "$project_workflow_file"
+require_declaration_file "quality-gates" "$quality_gates_file"
+
 python3 "$planner_root/scripts/validate-release-publication.py" \
   "$release_publication_file" --repo "$project" >/dev/null ||
   die "release-publication input failed canonical validation"
+python3 "$planner_root/scripts/validate-project-workflow.py" \
+  "$project_workflow_file" >/dev/null ||
+  die "project-workflow input failed canonical validation"
+python3 "$planner_root/scripts/validate-quality-gates.py" \
+  "$quality_gates_file" >/dev/null ||
+  die "quality-gates input failed canonical validation"
 
 [[ "$agents_file" != /* ]] || die "--agents-file must be relative to the project"
 [[ "$agents_file" != ".." && "$agents_file" != ../* && "$agents_file" != *"/../"* ]] ||
@@ -306,9 +352,20 @@ cat > "$lock_file" <<EOF
 EOF
 
 publication_declaration="$project/release-publication.json"
-if [[ "$release_publication_file" != "$publication_declaration" ]]; then
-  cp "$release_publication_file" "$publication_declaration"
-fi
+project_workflow_declaration="$project/project-workflow.json"
+quality_gates_declaration="$project/quality-gates.json"
+
+install_declaration() {
+  local source="$1"
+  local destination="$2"
+  if [[ "$source" != "$destination" ]]; then
+    cp -- "$source" "$destination"
+  fi
+}
+
+install_declaration "$release_publication_file" "$publication_declaration"
+install_declaration "$project_workflow_file" "$project_workflow_declaration"
+install_declaration "$quality_gates_file" "$quality_gates_declaration"
 
 printf 'Installed GPT Review Planner integration.\n'
 printf 'Project: %s\n' "$project"

@@ -24,6 +24,16 @@ def _publication_validator():
     return module
 
 
+def _load_validator(filename: str, module_name: str):
+    path = Path(__file__).with_name(filename)
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"{filename} is unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def _unique_pairs(pairs):
     result = {}
     for key, value in pairs:
@@ -60,6 +70,8 @@ def main() -> int:
     project_publication_validator = project / "scripts" / "validate-release-publication.py"
     project_publication_verifier = project / "scripts" / "verify-release-publication.py"
     publication_declaration = project / "release-publication.json"
+    project_workflow_declaration = project / "project-workflow.json"
+    quality_gates_declaration = project / "quality-gates.json"
     release_config = project / "release-config.json"
     planner_release = Path(__file__).resolve().with_name("release.py")
     conformance = Path(__file__).resolve().with_name("validate-release-tool-conformance.py")
@@ -74,6 +86,21 @@ def main() -> int:
             publication_mode = publication["mode"]
         except (OSError, UnicodeError, ValueError, RuntimeError):
             errors.append("invalid release-publication declaration")
+
+    for label, path, filename, module_name in (
+        ("project-workflow", project_workflow_declaration, "validate-project-workflow.py", "project_workflow_validator"),
+        ("quality-gates", quality_gates_declaration, "validate-quality-gates.py", "quality_gates_validator"),
+    ):
+        if path.is_symlink() or not path.is_file():
+            errors.append(f"missing or non-regular {label}.json")
+            continue
+        try:
+            validator = _load_validator(filename, module_name)
+            value = validator.load_json(path)
+            if filename == "validate-project-workflow.py":
+                validator.validate(value)
+        except (OSError, UnicodeError, ValueError, RuntimeError):
+            errors.append(f"invalid {label} declaration")
 
     release_surfaces = {
         "scripts/release.py": project_release,

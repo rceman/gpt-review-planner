@@ -16,13 +16,21 @@ the four canonical release/publication scripts. `tag_only` and
 `scripts/verify-release-publication.py`; all four scripts must pass planner
 conformance. See [`RELEASE_PUBLICATION.md`](RELEASE_PUBLICATION.md).
 
+Every integrated project also carries regular, non-symlink
+`project-workflow.json` and `quality-gates.json` declarations. Setup validates
+both with the pinned planner validators before mutation; agents read and
+validate them before task authoring and must not execute declaration commands
+outside future deterministic tooling.
+
 ## Install
 
 ```bash
 bash setup.sh \
   --project /path/to/project \
   --version <VERSION> \
-  --release-publication-file /path/to/release-publication.json
+  --release-publication-file /path/to/release-publication.json \
+  --project-workflow-file /path/to/project-workflow.json \
+  --quality-gates-file /path/to/quality-gates.json
 ```
 
 ## Update
@@ -31,10 +39,12 @@ bash setup.sh \
 bash update.sh --project /path/to/project --version <VERSION>
 ```
 
-The setup declaration input is mandatory and is validated before the managed
-block or lock is written. Update reuses the project's already-installed
-declaration and fails closed when it is missing or invalid. Agents must not
-infer a mode or silently create a `none` declaration.
+All three setup declaration inputs are mandatory and are validated before the
+managed block, lock, or declaration files are written. Update forwards
+explicit inputs when supplied; otherwise it uses only the project's existing
+root `release-publication.json`, `project-workflow.json`, and `quality-gates.json`
+files and fails closed when any is missing or invalid. Agents must not infer a
+mode or silently create a declaration.
 
 Both scripts are idempotent. The managed block is replaced rather than duplicated.
 

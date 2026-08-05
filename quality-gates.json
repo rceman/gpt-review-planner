@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "unmatched_changed_path": "reject",
+  "cleanup": {
+    "untracked_only": true,
+    "paths": []
+  },
+  "generated": [],
+  "rules": [
+    {
+      "id": "all-files",
+      "paths": ["*", "**/*"],
+      "prepare": [
+        {
+          "id": "prepare-diff-check",
+          "argv": ["git", "diff", "--check"],
+          "mode": "check",
+          "file_args": "none",
+          "timeout_seconds": 300
+        },
+        {
+          "id": "prepare-python-compile",
+          "argv": ["python3", "-m", "compileall", "-q", "scripts", "tests", "examples"],
+          "mode": "check",
+          "file_args": "none",
+          "timeout_seconds": 300
+        }
+      ],
+      "merge": [
+        {
+          "id": "merge-diff-check",
+          "argv": ["git", "diff", "--check"],
+          "mode": "check",
+          "file_args": "none",
+          "timeout_seconds": 300
+        },
+        {
+          "id": "merge-python-compile",
+          "argv": ["python3", "-m", "compileall", "-q", "scripts", "tests", "examples"],
+          "mode": "check",
+          "file_args": "none",
+          "timeout_seconds": 300
+        }
+      ]
+    }
+  ],
+  "release": [
+    {
+      "id": "release-unittest",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "tests", "-v"],
+      "mode": "check",
+      "file_args": "none",
+      "timeout_seconds": 1800
+    },
+    {
+      "id": "release-pytest",
+      "argv": ["python3", "-m", "pytest", "-q"],
+      "mode": "check",
+      "file_args": "none",
+      "timeout_seconds": 1800
+    },
+    {
+      "id": "release-compile",
+      "argv": ["python3", "-m", "compileall", "-q", "scripts", "tests", "examples"],
+      "mode": "check",
+      "file_args": "none",
+      "timeout_seconds": 300
+    },
+    {
+      "id": "release-selftest",
+      "argv": ["python3", "scripts/selftest-gpt-patch-pack-v2.py"],
+      "mode": "check",
+      "file_args": "none",
+      "timeout_seconds": 1800
+    },
+    {
+      "id": "release-consistency",
+      "argv": ["python3", "scripts/release.py", "check"],
+      "mode": "check",
+      "file_args": "none",
+      "timeout_seconds": 300
+    }
+  ]
+}

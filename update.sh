@@ -14,6 +14,10 @@ Options:
   --commit SHA         Exact commit. Otherwise resolved with git ls-remote.
   --release-publication-file PATH
                        Existing explicit project publication declaration.
+  --project-workflow-file PATH
+                       Explicit project workflow declaration; otherwise use the installed root file.
+  --quality-gates-file PATH
+                       Explicit quality-gates declaration; otherwise use the installed root file.
   --agents-file PATH   AGENTS.md path relative to project. Default: AGENTS.md
   -h, --help           Show this help.
 EOF
@@ -31,6 +35,8 @@ commit=""
 execution_mode=""
 agents_file="AGENTS.md"
 release_publication_file=""
+project_workflow_file=""
+quality_gates_file=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -57,6 +63,16 @@ while [[ $# -gt 0 ]]; do
     --release-publication-file)
       [[ $# -ge 2 ]] || die "--release-publication-file requires a value"
       release_publication_file="$2"
+      shift 2
+      ;;
+    --project-workflow-file)
+      [[ $# -ge 2 ]] || die "--project-workflow-file requires a value"
+      project_workflow_file="$2"
+      shift 2
+      ;;
+    --quality-gates-file)
+      [[ $# -ge 2 ]] || die "--quality-gates-file requires a value"
+      quality_gates_file="$2"
       shift 2
       ;;
     --execution-mode)
@@ -107,6 +123,8 @@ args=(
   --agents-file "$agents_file"
   --force
   --release-publication-file "${release_publication_file:-$project/release-publication.json}"
+  --project-workflow-file "${project_workflow_file:-$project/project-workflow.json}"
+  --quality-gates-file "${quality_gates_file:-$project/quality-gates.json}"
 )
 
 if [[ -n "$commit" ]]; then

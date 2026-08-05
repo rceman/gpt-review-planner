@@ -13,9 +13,20 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FAKE_COMMIT = "a" * 40
+PROJECT_WORKFLOW_FIXTURE = ROOT / "fixtures/project-workflow/gpt-review-planner/project-workflow.json"
+QUALITY_GATES_FIXTURE = ROOT / "fixtures/quality-gates/gpt-review-planner/quality-gates.json"
 
 
 class RepositoryTest(unittest.TestCase):
+    @staticmethod
+    def declaration_args() -> list[str]:
+        return [
+            "--project-workflow-file",
+            str(PROJECT_WORKFLOW_FIXTURE),
+            "--quality-gates-file",
+            str(QUALITY_GATES_FIXTURE),
+        ]
+
     def test_required_files_exist(self) -> None:
         for relative in (
             "GPT_REVIEW_PLANNER.md",
@@ -57,6 +68,10 @@ class RepositoryTest(unittest.TestCase):
             "templates/project/release-publication.none.json",
             "templates/project/release-publication.tag_only.json",
             "templates/project/release-publication.github_actions.json",
+            "project-workflow.json",
+            "quality-gates.json",
+            "fixtures/project-workflow/gpt-review-planner/project-workflow.json",
+            "fixtures/quality-gates/gpt-review-planner/quality-gates.json",
         ):
             self.assertTrue((ROOT / relative).is_file(), relative)
 
@@ -97,7 +112,7 @@ class RepositoryTest(unittest.TestCase):
         self.assertNotRegex(prompt, r"\b\d{8,}\b")
 
     def test_planner_self_adoption_setup_and_generated_state(self) -> None:
-        authority = "db3942a03a6a8fbbd98203b3daff81cf9a9f687d"
+        authority = "74059a423d7dd280bd536b91a177bdb12823c879"
         lifecycle_sentence = (
             "> Release-surface tasks declare exactly one lifecycle mode and target version in the task-specific handoff. "
             "Use `check-source` for `implementation_unreleased`; use the ordered "
@@ -124,6 +139,7 @@ class RepositoryTest(unittest.TestCase):
                     "repository_evidence",
                     "--release-publication-file",
                     str(ROOT / "templates/project/release-publication.none.json"),
+                    *self.declaration_args(),
                 ],
                 capture_output=True,
                 text=True,
@@ -176,6 +192,7 @@ class RepositoryTest(unittest.TestCase):
                     "repository_evidence",
                     "--release-publication-file",
                     str(ROOT / "templates/project/release-publication.none.json"),
+                    *self.declaration_args(),
                 ],
                 capture_output=True,
                 text=True,
@@ -196,6 +213,51 @@ class RepositoryTest(unittest.TestCase):
         declaration = ROOT / "release-publication.json"
         fixture = ROOT / "fixtures/release-publication/gpt-review-planner/release-publication.json"
         self.assertEqual(declaration.read_bytes(), fixture.read_bytes())
+        self.assertEqual(
+            (ROOT / "project-workflow.json").read_bytes(),
+            PROJECT_WORKFLOW_FIXTURE.read_bytes(),
+        )
+        self.assertEqual(
+            (ROOT / "quality-gates.json").read_bytes(),
+            QUALITY_GATES_FIXTURE.read_bytes(),
+        )
+        quality = json.loads((ROOT / "quality-gates.json").read_text(encoding="utf-8"))
+        self.assertEqual(quality["schema_version"], 1)
+        self.assertEqual(quality["unmatched_changed_path"], "reject")
+        self.assertEqual(quality["cleanup"], {"untracked_only": True, "paths": []})
+        self.assertEqual(quality["generated"], [])
+        self.assertEqual(quality["rules"][0]["paths"], ["*", "**/*"])
+        self.assertEqual(
+            [command["argv"] for command in quality["rules"][0]["prepare"]],
+            [
+                ["git", "diff", "--check"],
+                ["python3", "-m", "compileall", "-q", "scripts", "tests", "examples"],
+            ],
+        )
+        self.assertEqual(
+            [command["argv"] for command in quality["rules"][0]["merge"]],
+            [
+                ["git", "diff", "--check"],
+                ["python3", "-m", "compileall", "-q", "scripts", "tests", "examples"],
+            ],
+        )
+        self.assertEqual(
+            [command["argv"] for command in quality["release"]],
+            [
+                ["python3", "-m", "unittest", "discover", "-s", "tests", "-v"],
+                ["python3", "-m", "pytest", "-q"],
+                ["python3", "-m", "compileall", "-q", "scripts", "tests", "examples"],
+                ["python3", "scripts/selftest-gpt-patch-pack-v2.py"],
+                ["python3", "scripts/release.py", "check"],
+            ],
+        )
+        command_ids = [
+            command["id"]
+            for command in quality["rules"][0]["prepare"]
+            + quality["rules"][0]["merge"]
+            + quality["release"]
+        ]
+        self.assertEqual(len(command_ids), len(set(command_ids)))
         declaration_data = json.loads(declaration.read_text(encoding="utf-8"))
         workflow = ROOT / ".github/workflows/build-offline-rust.yml"
         self.assertEqual(
@@ -237,6 +299,9 @@ class RepositoryTest(unittest.TestCase):
             "\n",
         )
         self.assertIn(lifecycle_sentence, agents)
+        self.assertIn("project-workflow.json", agents)
+        self.assertIn("quality-gates.json", agents)
+        self.assertIn("do not execute declaration commands", agents.lower())
         self.assertIn(f"blob/{authority}/GPT_REVIEW_PLANNER.md", agents)
         self.assertIn(f"Pinned workflow: `{authority}` at commit `{authority}`", agents)
 
@@ -376,6 +441,7 @@ class RepositoryTest(unittest.TestCase):
                 str(ROOT / "templates/project/release-publication.none.json"),
                 "--commit",
                 FAKE_COMMIT,
+                *self.declaration_args(),
             ]
             subprocess.run(command, check=True, capture_output=True, text=True)
             agents = (project / "AGENTS.md").read_text(encoding="utf-8")
@@ -440,6 +506,7 @@ class RepositoryTest(unittest.TestCase):
                     FAKE_COMMIT,
                     "--execution-mode",
                     "repository_evidence",
+                    *self.declaration_args(),
                 ],
                 capture_output=True,
                 text=True,
@@ -654,6 +721,7 @@ class RepositoryTest(unittest.TestCase):
                 str(ROOT / "templates/project/release-publication.none.json"),
                 "--commit",
                 FAKE_COMMIT,
+                *self.declaration_args(),
             ]
             subprocess.run(command, check=True, capture_output=True, text=True)
             subprocess.run(command, check=True, capture_output=True, text=True)
@@ -668,6 +736,152 @@ class RepositoryTest(unittest.TestCase):
             )
             self.assertEqual(lock["commit"], FAKE_COMMIT)
             self.assertEqual(lock["version"], "v1.0.0")
+
+    def test_setup_requires_valid_explicit_declarations_before_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            project = Path(temp_dir) / "project"
+            project.mkdir()
+            unknown = subprocess.run(
+                ["bash", str(ROOT / "setup.sh"), "--project", str(project), "--unknown"],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(unknown.returncode, 0)
+            self.assertFalse((project / "AGENTS.md").exists())
+            self.assertFalse((project / ".gpt-workflow.lock").exists())
+
+            existing_agents = project / "AGENTS.md"
+            existing_agents.write_text("unchanged\n", encoding="utf-8")
+            invalid_quality = Path(temp_dir) / "invalid-quality.json"
+            invalid_quality.write_text("{ invalid\n", encoding="utf-8")
+            command = [
+                "bash",
+                str(ROOT / "setup.sh"),
+                "--project",
+                str(project),
+                "--repository",
+                "https://example.invalid/workflow.git",
+                "--version",
+                "vX.Y.Z",
+                "--commit",
+                FAKE_COMMIT,
+                "--execution-mode",
+                "repository_evidence",
+                "--release-publication-file",
+                str(ROOT / "templates/project/release-publication.none.json"),
+                "--project-workflow-file",
+                str(PROJECT_WORKFLOW_FIXTURE),
+                "--quality-gates-file",
+                str(invalid_quality),
+            ]
+            invalid = subprocess.run(command, capture_output=True, text=True)
+            self.assertNotEqual(invalid.returncode, 0)
+            self.assertEqual(existing_agents.read_text(encoding="utf-8"), "unchanged\n")
+            self.assertFalse((project / ".gpt-workflow.lock").exists())
+            self.assertFalse((project / "project-workflow.json").exists())
+            self.assertFalse((project / "quality-gates.json").exists())
+
+            symlink = Path(temp_dir) / "workflow-link.json"
+            symlink.symlink_to(PROJECT_WORKFLOW_FIXTURE)
+            symlink_command = command.copy()
+            symlink_command[symlink_command.index(str(PROJECT_WORKFLOW_FIXTURE))] = str(symlink)
+            symlink_command[symlink_command.index(str(invalid_quality))] = str(QUALITY_GATES_FIXTURE)
+            symlink_result = subprocess.run(symlink_command, capture_output=True, text=True)
+            self.assertNotEqual(symlink_result.returncode, 0)
+            self.assertEqual(existing_agents.read_text(encoding="utf-8"), "unchanged\n")
+
+    def test_setup_self_copy_and_update_root_forwarding_are_safe(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            project = Path(temp_dir) / "project"
+            project.mkdir()
+            initial = [
+                "bash",
+                str(ROOT / "setup.sh"),
+                "--project",
+                str(project),
+                "--repository",
+                "https://example.invalid/workflow.git",
+                "--version",
+                "v1.0.0",
+                "--execution-mode",
+                "repository_evidence",
+                "--release-publication-file",
+                str(ROOT / "templates/project/release-publication.none.json"),
+                "--commit",
+                FAKE_COMMIT,
+                *self.declaration_args(),
+            ]
+            subprocess.run(initial, check=True, capture_output=True, text=True)
+            declaration_bytes = {
+                name: (project / name).read_bytes()
+                for name in ("release-publication.json", "project-workflow.json", "quality-gates.json")
+            }
+
+            self_copy = [
+                "bash",
+                str(ROOT / "setup.sh"),
+                "--project",
+                str(project),
+                "--repository",
+                "https://example.invalid/workflow.git",
+                "--version",
+                "v1.0.0",
+                "--execution-mode",
+                "repository_evidence",
+                "--commit",
+                FAKE_COMMIT,
+                "--force",
+                "--release-publication-file",
+                str(project / "release-publication.json"),
+                "--project-workflow-file",
+                str(project / "project-workflow.json"),
+                "--quality-gates-file",
+                str(project / "quality-gates.json"),
+            ]
+            subprocess.run(self_copy, check=True, capture_output=True, text=True)
+            for name, content in declaration_bytes.items():
+                self.assertEqual((project / name).read_bytes(), content)
+
+            update = subprocess.run(
+                [
+                    "bash",
+                    str(ROOT / "update.sh"),
+                    "--project",
+                    str(project),
+                    "--version",
+                    "v1.1.0",
+                    "--execution-mode",
+                    "repository_evidence",
+                    "--commit",
+                    "b" * 40,
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(update.stderr, "")
+            for name, content in declaration_bytes.items():
+                self.assertEqual((project / name).read_bytes(), content)
+
+            (project / "quality-gates.json").unlink()
+            missing = subprocess.run(
+                [
+                    "bash",
+                    str(ROOT / "update.sh"),
+                    "--project",
+                    str(project),
+                    "--version",
+                    "v1.2.0",
+                    "--execution-mode",
+                    "repository_evidence",
+                    "--commit",
+                    "c" * 40,
+                ],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(missing.returncode, 0)
+            self.assertIn("quality-gates", missing.stderr)
 
     def test_update_replaces_pin_without_duplicate_block(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -689,6 +903,7 @@ class RepositoryTest(unittest.TestCase):
                     str(ROOT / "templates/project/release-publication.none.json"),
                     "--commit",
                     first_commit,
+                    *self.declaration_args(),
                 ],
                 check=True,
                 capture_output=True,
@@ -742,6 +957,7 @@ class RepositoryTest(unittest.TestCase):
                     str(ROOT / "templates/project/release-publication.none.json"),
                     "--commit",
                     FAKE_COMMIT,
+                    *self.declaration_args(),
                 ],
                 check=True,
                 capture_output=True,
@@ -773,6 +989,7 @@ class RepositoryTest(unittest.TestCase):
                     str(ROOT / "templates/project/release-publication.none.json"),
                     "--commit",
                     FAKE_COMMIT,
+                    *self.declaration_args(),
                 ],
                 capture_output=True,
                 text=True,
