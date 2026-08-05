@@ -395,6 +395,52 @@ class ProjectOnboardingTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn(f"VALID {label}:", result.stdout)
 
+    def test_r2_receipt_identity_bindings_and_strict_phases(self):
+        invalid = copy.deepcopy(self.receipt)
+        invalid["worktree_proof"]["clean"] = False
+        self.assertReceiptInvalid(invalid)
+
+        invalid = copy.deepcopy(self.receipt)
+        del invalid["session_proof"]["controller_protocol_version"]
+        self.assertReceiptInvalid(invalid)
+
+        invalid = copy.deepcopy(self.receipt)
+        invalid["repository_proof"]["branch"] = "feature/other"
+        self.assertReceiptInvalid(invalid, schema=False)
+
+        invalid = copy.deepcopy(self.receipt)
+        invalid["created_project"]["repository_url"] = "git@github.com-therceman:other/repo.git"
+        self.assertReceiptInvalid(invalid, schema=False)
+        invalid = copy.deepcopy(self.receipt)
+        invalid["created_project"]["default_branch"] = "main"
+        self.assertReceiptInvalid(invalid, schema=False)
+
+        invalid = copy.deepcopy(self.receipt)
+        invalid["mirror_proof"]["repository_url"] = "git@github.com-therceman:other/repo.git"
+        self.assertReceiptInvalid(invalid, schema=False)
+        invalid = copy.deepcopy(self.receipt)
+        invalid["mirror_proof"]["head"] = "f" * 40
+        self.assertReceiptInvalid(invalid, schema=False)
+
+        invalid = copy.deepcopy(self.receipt)
+        invalid["created_identifiers"]["project_id"] = "other"
+        self.assertReceiptInvalid(invalid, schema=False)
+        invalid = copy.deepcopy(self.receipt)
+        invalid["created_project"]["project_id"] = "other"
+        self.assertReceiptInvalid(invalid, schema=False)
+
+        invalid = copy.deepcopy(self.receipt)
+        invalid["hub"]["after"] = invalid["hub"]["before"]
+        self.assertReceiptInvalid(invalid, schema=False)
+
+        invalid = copy.deepcopy(self.receipt)
+        invalid["timestamps"]["prepared_at"] = invalid["timestamps"]["started_at"]
+        self.assertReceiptInvalid(invalid, schema=False)
+
+        valid = copy.deepcopy(self.receipt)
+        valid["timestamps"]["updated_at"] = valid["timestamps"]["activated_at"]
+        validator.validate_receipt(valid)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -224,7 +224,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["clean", "status_sha256"],
-      "properties": {"clean": {"type": "boolean"}, "status_sha256": {"$ref": "#/$defs/sha256"}}
+      "properties": {"clean": {"const": true}, "status_sha256": {"$ref": "#/$defs/sha256"}}
     },
     "sessionProof": {
       "type": "object",
@@ -239,7 +239,7 @@
       "allOf": [
         {
           "if": {"properties": {"required": {"const": true}}},
-          "then": {"required": ["session_key"], "properties": {"status": {"const": "active"}}}
+          "then": {"required": ["session_key", "controller_protocol_version"], "properties": {"status": {"const": "active"}}}
         },
         {
           "if": {"properties": {"required": {"const": false}}},

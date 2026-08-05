@@ -297,8 +297,10 @@ def _validate_repository_proof(value: Any, project_id: str) -> dict[str, Any]:
     _absolute_path(item["root"], "receipt.repository_proof.root")
     _remote(item["remote"], "receipt.repository_proof.remote")
     _repository_url(item["repository_url"], "receipt.repository_proof.repository_url")
-    _branch(item["default_branch"], "receipt.repository_proof.default_branch")
-    _branch(item["branch"], "receipt.repository_proof.branch")
+    default_branch = _branch(item["default_branch"], "receipt.repository_proof.default_branch")
+    branch = _branch(item["branch"], "receipt.repository_proof.branch")
+    if branch != default_branch:
+        raise ValidationError("receipt.repository_proof.branch must equal default_branch")
     _sha40(item["head"], "receipt.repository_proof.head")
     _absolute_path(item["gateway_state_dir"], "receipt.repository_proof.gateway_state_dir")
     return item
@@ -309,11 +311,10 @@ def _validate_session_proof(value: Any) -> None:
     required = _boolean(item["required"], "receipt.session_proof.required")
     status = _string(item["status"], "receipt.session_proof.status")
     if required:
-        if "session_key" not in item or status != "active":
-            raise ValidationError("required session proof needs session_key and active status")
+        if "session_key" not in item or "controller_protocol_version" not in item or status != "active":
+            raise ValidationError("required session proof needs session_key, protocol version, and active status")
         _session_key(item["session_key"], "receipt.session_proof.session_key")
-        if "controller_protocol_version" in item:
-            _integer(item["controller_protocol_version"], "receipt.session_proof.controller_protocol_version")
+        _integer(item["controller_protocol_version"], "receipt.session_proof.controller_protocol_version")
     else:
         if status != "not_required" or "session_key" in item or "controller_protocol_version" in item:
             raise ValidationError("optional session proof must be not_required without session fields")
@@ -344,8 +345,11 @@ def _validate_created_records(value: dict[str, Any], project_id: str, effective_
     project = _object(value["created_project"], "receipt.created_project", ["project_id", "repository_url", "default_branch", "status"], ["workflow_repository", "workflow_commit"])
     if _project_id(project["project_id"], "receipt.created_project.project_id") != project_id:
         raise ValidationError("receipt.created_project.project_id must match project_id")
-    _repository_url(project["repository_url"], "receipt.created_project.repository_url")
-    _branch(project["default_branch"], "receipt.created_project.default_branch")
+    project_url = _repository_url(project["repository_url"], "receipt.created_project.repository_url")
+    project_branch = _branch(project["default_branch"], "receipt.created_project.default_branch")
+    repository = value["repository_proof"]
+    if project_url != repository["repository_url"] or project_branch != repository["default_branch"]:
+        raise ValidationError("receipt.created_project repository identity must equal repository_proof")
     if project["status"] != "active":
         raise ValidationError("receipt.created_project.status must be active")
     if ("workflow_repository" in project) != ("workflow_commit" in project):
@@ -401,8 +405,8 @@ def _validate_timestamps(value: Any, state: str, effective_state: str) -> dict[s
     previous: _dt.datetime | None = None
     for key in phase_order:
         if key in parsed:
-            if previous is not None and parsed[key] < previous:
-                raise ValidationError("receipt timestamps are not chronological")
+            if previous is not None and parsed[key] <= previous:
+                raise ValidationError("receipt phase timestamps must strictly increase")
             previous = parsed[key]
     if parsed["updated_at"] < previous if previous is not None else False:
         raise ValidationError("receipt.timestamps.updated_at precedes the last phase")
@@ -449,14 +453,16 @@ def _validate_recovery(value: Any, state: str, project_id: str, managed_before: 
     return last, item
 
 
-def _validate_mirror(value: Any, project_id: str, gateway_state_dir: str) -> None:
+def _validate_mirror(value: Any, project_id: str, gateway_state_dir: str, repository: dict[str, Any]) -> None:
     item = _object(value, "receipt.mirror_proof", ["path", "repository_url", "head"])
     path = _absolute_path(item["path"], "receipt.mirror_proof.path")
     expected = f"{gateway_state_dir}/git-mirrors/{project_id}.git"
     if path != expected:
         raise ValidationError("receipt.mirror_proof.path is not the gateway-derived mirror path")
-    _repository_url(item["repository_url"], "receipt.mirror_proof.repository_url")
-    _sha40(item["head"], "receipt.mirror_proof.head")
+    mirror_url = _repository_url(item["repository_url"], "receipt.mirror_proof.repository_url")
+    mirror_head = _sha40(item["head"], "receipt.mirror_proof.head")
+    if mirror_url != repository["repository_url"] or mirror_head != repository["head"]:
+        raise ValidationError("receipt.mirror_proof identity must equal repository_proof")
 
 
 def validate_receipt(document: Any) -> dict[str, Any]:
@@ -475,7 +481,8 @@ def validate_receipt(document: Any) -> dict[str, Any]:
     project_id = _project_id(value["project_id"], "receipt.project_id")
     repository = _validate_repository_proof(value["repository_proof"], project_id)
     worktree = _object(value["worktree_proof"], "receipt.worktree_proof", ["clean", "status_sha256"])
-    _boolean(worktree["clean"], "receipt.worktree_proof.clean")
+    if not _boolean(worktree["clean"], "receipt.worktree_proof.clean"):
+        raise ValidationError("onboarding receipt requires a clean worktree")
     _sha256(worktree["status_sha256"], "receipt.worktree_proof.status_sha256")
     _validate_session_proof(value["session_proof"])
     _validate_registry_digests(value["registry_digests"])
@@ -491,11 +498,13 @@ def validate_receipt(document: Any) -> dict[str, Any]:
     else:
         if "after" not in hub:
             raise ValidationError(f"{effective_state} proof requires hub.after")
-        _sha40(hub["after"], "receipt.hub.after")
+        after = _sha40(hub["after"], "receipt.hub.after")
+        if after == hub["before"]:
+            raise ValidationError("committed hub before and after revisions must differ")
     if effective_state == "activated":
         if "mirror_proof" not in value:
             raise ValidationError("activated proof requires mirror_proof")
-        _validate_mirror(value["mirror_proof"], project_id, repository["gateway_state_dir"])
+        _validate_mirror(value["mirror_proof"], project_id, repository["gateway_state_dir"], repository)
     elif "mirror_proof" in value:
         raise ValidationError(f"{effective_state} proof cannot contain mirror_proof")
     parsed_timestamps = _validate_timestamps(value["timestamps"], state, effective_state)

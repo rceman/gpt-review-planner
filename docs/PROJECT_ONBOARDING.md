@@ -65,3 +65,10 @@ name their `last_completed_state` and retain the proof for that state. A
 digest equals the original managed-before digest; rollback from a committed
 hub state includes the hub rollback revision and exact path set. All timestamps
 are chronological, and recovery and receipt rollback timestamps are identical.
+Every prepared-or-later receipt proves `worktree_proof.clean: true`, an active
+session includes its positive controller protocol version, and an optional
+session is explicitly `not_required`. Repository branch and default branch,
+created-project repository identity, and mirror repository identity must match
+the repository proof exactly. Committed hub revisions and all phase timestamps
+are strictly increasing; `updated_at` may equal, but never precede, the latest
+phase.
