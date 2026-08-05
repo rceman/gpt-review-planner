@@ -13,6 +13,9 @@ Before changing anything, read and follow `docs/RELEASE_LIFECYCLE.md` and
 exactly one `Release lifecycle mode: implementation_unreleased` or `Release
 lifecycle mode: release_publication` declaration and one `Release target
 version: X.Y.Z` declaration.
+Load `docs/OWNER_COMPLETION_REPORT.md` as the owner-facing projection policy.
+After machine release evidence is reviewed, GPT emits that projection; the
+local agent does not author the owner's conversational report.
 
 For a runtime-affecting release also read `docs/RUNTIME_UPGRADE_POLICY.md` and
 `docs/PERSISTED_STATE_MIGRATION_POLICY.md`; validate the declared upgrade task

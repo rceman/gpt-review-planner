@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class ProcedureIndexAndReportingTests(unittest.TestCase):
     def read(self, path): return (ROOT / path).read_text(encoding='utf-8')
     def test_documents_exist(self):
-        for p in ('docs/PROCEDURE_INDEX.md','docs/AGENT_REPORTING.md','prompts/AGENT_FINALIZE_MERGE.md'): self.assertTrue((ROOT/p).exists())
+        for p in ('docs/PROCEDURE_INDEX.md','docs/AGENT_REPORTING.md','docs/OWNER_COMPLETION_REPORT.md','prompts/AGENT_FINALIZE_MERGE.md'): self.assertTrue((ROOT/p).exists())
     def test_discovery_links_are_early(self):
         for p in ('README.md','GPT_REVIEW_PLANNER.md','templates/project/AGENTS.managed-block.md'):
             text=self.read(p); self.assertLess(text.find('PROCEDURE_INDEX.md'), 1200, p)
@@ -40,6 +40,7 @@ class ProcedureIndexAndReportingTests(unittest.TestCase):
         self.assertIn('Merge CI: success | sha=<SHA> | run=<RUN_ID>',text)
         self.assertIn('Successful helper JSON is not pasted before repeated fields.',text)
         self.assertIn('no_run | blocking=false',text)
+        self.assertIn('OWNER_COMPLETION_REPORT.md', text)
 
     def test_owner_report_keeps_operational_states_separate(self):
         text = self.read('docs/AGENT_REPORTING.md')

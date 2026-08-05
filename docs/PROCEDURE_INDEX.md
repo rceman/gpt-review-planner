@@ -20,6 +20,11 @@ GPT_DELTA_REVIEW
 └── MERGE_READY
     → GPT_MERGE_HANDOFF → MERGE_EXECUTION
     → MERGE_FINALIZED | MERGE_CLEANUP_BLOCKED | MERGE_BLOCKED
+
+Any terminal implementation, review, merge, release, runtime, or blocked
+outcome
+→ MACHINE_EVIDENCE_READ
+→ OWNER_COMPLETION_REPORT
 ```
 
 | ID | Trigger | Role | Contract | Prompt | Inputs | Terminal statuses | Next |
@@ -43,10 +48,17 @@ GPT_DELTA_REVIEW
 | PROC-DIRECT-SESSION | bounded status/continue request | Local agent | [direct session policy](DIRECT_AGENT_SESSION_CONTROL_POLICY.md) | [session implementation](../prompts/AGENT_DIRECT_SESSION_CONTROL_IMPLEMENTATION.md) | registered project/session, bounded payload | delivered/rejected | current authorized operation |
 | PROC-TOOL-AUDIT | protocol/tool release gate | Local agent/GPT | [tool integrity](TOOL_CONTRACT_INTEGRITY_POLICY.md) | [tool audit](../prompts/AGENT_TOOL_CONTRACT_AUDIT.md) | live tools/list, handlers, schemas | parity/failed | release checkpoint |
 | PROC-CHAT-HANDOFF | conversation transition | GPT/local agent | [handoff checkpoint](CHAT_HANDOFF_CHECKPOINT.md) | [chat handoff](../prompts/AGENT_CHAT_HANDOFF.md) | exact refs, runtime state, plan, next action | frozen/blocked | next conversation |
+| PROC-OWNER-REPORT | terminal outcome after machine evidence is read | GPT | [owner completion report](OWNER_COMPLETION_REPORT.md) | GPT owner projection after machine review | terminal result, machine evidence, applicable state | projected/blocked | owner decision or task-specific next transition |
 
 Ownership is explicit: GPT owns architecture, principal implementation, tests, correction patches, and delta review. The local agent owns integration, runtime gates, evidence, merge execution, and cleanup. `IMPLEMENTATION_COMPLETE` returns control to GPT. `CORRECTION_REQUIRED` requires a GPT-authored correction handoff or patch and returns through implementation to delta review; it does not automatically lead to merge. `OWNER_DECISION_REQUIRED` waits for the owner and follows only a task-specific approved transition. `MERGE_READY` requires GPT to provide `GPT_MERGE_HANDOFF`; it does not mean merge execution is complete. `MERGE_FINALIZED` closes the current feature task. Backlog work and release work start only as separate tasks, with release requiring explicit owner instruction.
 
 Load the linked normative contract and reusable prompt before execution; this index is a map, not a replacement for them.
+
+Every terminal implementation, review, merge, release, runtime, or blocked
+outcome must be read from its machine evidence first and then projected through
+[`OWNER_COMPLETION_REPORT.md`](OWNER_COMPLETION_REPORT.md). GPT authors that
+owner-facing projection; the local agent supplies machine evidence and does not
+author the owner's conversational report.
 
 Release work has exactly two modes, `implementation_unreleased` and
 `release_publication`; load [`RELEASE_LIFECYCLE.md`](RELEASE_LIFECYCLE.md) and

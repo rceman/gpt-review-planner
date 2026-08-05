@@ -18,6 +18,11 @@ then generate evidence with `scripts/generate-agent-evidence.py`; render compact
 handoff facts with `scripts/render-agent-report.py`.
 Before runtime gates or evidence creation, read [`docs/AGENT_REPORTING.md`](docs/AGENT_REPORTING.md)
 and follow its bounded agent execution rules.
+Before reporting terminal work to the owner, read
+[`docs/OWNER_COMPLETION_REPORT.md`](docs/OWNER_COMPLETION_REPORT.md) and have
+GPT project the machine evidence into its required owner-facing order. The
+local agent supplies execution evidence; it does not author the owner's
+conversational report.
 When the workflow runner exists, the agent provides one semantic task specification
 and invokes only run or resume; it must
 not invoke underlying CI, gate, preparation, evidence, verification, commit,

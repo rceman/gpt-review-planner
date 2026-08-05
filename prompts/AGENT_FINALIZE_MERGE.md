@@ -3,6 +3,9 @@
 Load the exact pinned `docs/PROCEDURE_INDEX.md`, `docs/AGENT_REPORTING.md`, and
 `docs/POST_MERGE_BRANCH_CLEANUP.md` before execution. Substitute all parameters
 from the owner handoff; do not infer identities from HEAD.
+Also load the exact pinned `docs/OWNER_COMPLETION_REPORT.md`. After the machine
+finalization result is reviewed, GPT emits the owner-facing projection; the
+local agent does not author the owner's conversational report.
 
 If the merge contains runtime-affecting policy or release work, also load
 `docs/RUNTIME_UPGRADE_POLICY.md` and verify that the release rehearsal, installed

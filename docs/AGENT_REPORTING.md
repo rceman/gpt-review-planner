@@ -1,4 +1,9 @@
-# Agent Reporting Contract
+# Machine and Agent Evidence Reporting Contract
+
+This document is the normative machine/agent execution-evidence authority. It
+does not define the human-facing owner report. After machine evidence is read,
+GPT applies the separate [owner completion report contract](OWNER_COMPLETION_REPORT.md)
+to project the result for the owner.
 
 ## Bounded agent execution
 
@@ -44,7 +49,8 @@ Do not ask the owner for approval or clarification. Finalize the blocker through
 the gateway. If a model turn ends without finalization, the gateway may issue one
 bounded corrective reprompt and then publish a synthetic failed result.
 
-This contract is the human/GPT projection of machine-verifiable execution evidence.
+Machine evidence remains authoritative for execution verification; it is not a
+substitute for the owner-facing conversational projection.
 
 1. Report each fact once.
 2. Omit raw command output when a concise result is sufficient.
@@ -70,7 +76,12 @@ Merge CI: failed | blocking=true | sha=<SHA> | run=<RUN_OR_NULL> | job=<JOB_OR_N
 
 Raw JSON is included once only for blocking, invalid, internally inconsistent, diagnostically important unavailable results, or explicit owner request. Permitted absence is reported as `Implementation CI: no_run | blocking=false | policy=auto | sha=<SHA> | message=<SUMMARY>` and is never called success.
 
-Final reports normally contain terminal status, identity, changed scope, grouped gates, one CI record per observed SHA, evidence identity, final Git/ref/worktree state, and prohibited-operation confirmation. Machine evidence must retain all required fields in manifests, evidence, schemas, and helper output.
+Agent execution summaries normally contain terminal status, identity, changed
+scope, grouped gates, one CI record per observed SHA, evidence identity, final
+Git/ref/worktree state, and prohibited-operation confirmation. Machine evidence
+must retain all required fields in manifests, evidence, schemas, and helper
+output. The owner-facing report is projected separately by GPT according to
+[`OWNER_COMPLETION_REPORT.md`](OWNER_COMPLETION_REPORT.md).
 # Workflow 2.0.0 completion projection
 
 For `gpt_tunnel_managed`, write exactly one completion object with

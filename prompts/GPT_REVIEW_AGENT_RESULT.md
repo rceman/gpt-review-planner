@@ -2,6 +2,11 @@
 
 Load the workflow pinned by `.gpt-workflow.lock`.
 
+After reading the machine result and its evidence, load
+`docs/OWNER_COMPLETION_REPORT.md` and have GPT emit the owner-facing projection
+in that contract's state-specific order. The local agent supplies machine
+evidence and must not author the owner's conversational report.
+
 Review the submitted branch, commit, archive, diff, agent report, and test evidence
 against the task behavior contract and patch specification.
 
