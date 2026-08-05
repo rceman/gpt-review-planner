@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "unmatched_changed_path": "reject",
+  "cleanup": {
+    "untracked_only": true,
+    "paths": [".quality-gates/tmp/*"]
+  },
+  "generated": [
+    {
+      "id": "project-index",
+      "input_globs": ["templates/project/*.json"],
+      "output_paths": ["build/generated/project-index.json"],
+      "argv": ["python3", "scripts/generate-project-index.py"],
+      "timeout_seconds": 60
+    }
+  ],
+  "rules": [
+    {
+      "id": "python-sources",
+      "paths": ["scripts/*.py", "tests/*.py"],
+      "prepare": [
+        {
+          "id": "python-compile-prepare",
+          "argv": ["python3", "-m", "compileall", "-q", "scripts", "tests"],
+          "mode": "check",
+          "file_args": "none",
+          "timeout_seconds": 300
+        }
+      ],
+      "merge": [
+        {
+          "id": "python-compile-merge",
+          "argv": ["python3", "-m", "compileall", "-q", "scripts", "tests"],
+          "mode": "check",
+          "file_args": "none",
+          "timeout_seconds": 300
+        }
+      ]
+    },
+    {
+      "id": "documentation",
+      "paths": ["docs/**/*.md"],
+      "prepare": [
+        {
+          "id": "documentation-check",
+          "argv": ["python3", "scripts/validate-documentation.py"],
+          "mode": "check",
+          "file_args": "none",
+          "timeout_seconds": 120
+        }
+      ],
+      "merge": []
+    }
+  ],
+  "release": [
+    {
+      "id": "release-unit-suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "tests", "-v"],
+      "mode": "check",
+      "file_args": "none",
+      "timeout_seconds": 1800
+    }
+  ]
+}

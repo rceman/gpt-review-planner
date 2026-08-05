@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gpt-review-planner.invalid/schemas/quality-gates.schema.json",
+  "title": "Quality gates declaration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "unmatched_changed_path",
+    "cleanup",
+    "generated",
+    "rules",
+    "release"
+  ],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "unmatched_changed_path": {"const": "reject"},
+    "cleanup": {"$ref": "#/$defs/cleanup"},
+    "generated": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {"$ref": "#/$defs/generatedRule"}
+    },
+    "rules": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {"$ref": "#/$defs/changedPathRule"}
+    },
+    "release": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {"$ref": "#/$defs/releaseCommand"}
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "relativeGlob": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!/)(?!.*\\\\)(?!.*[\\u0000-\\u001f\\u007f])(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*/$).+$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!/)(?!.*\\\\)(?!.*[\\u0000-\\u001f\\u007f])(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*/$)(?!.*[*?\\[\\]]).+$"
+    },
+    "cleanupGlob": {
+      "allOf": [
+        {"$ref": "#/$defs/relativeGlob"},
+        {"not": {"enum": [".", "*", "**", "**/*", "/"]}}
+      ]
+    },
+    "argv": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4096,
+        "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+      }
+    },
+    "timeout": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3600
+    },
+    "fileArgs": {"enum": ["none", "append", "each"]},
+    "commandBase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "argv", "mode", "file_args", "timeout_seconds"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "argv": {"$ref": "#/$defs/argv"},
+        "mode": {"enum": ["check", "fix"]},
+        "file_args": {"$ref": "#/$defs/fileArgs"},
+        "timeout_seconds": {"$ref": "#/$defs/timeout"}
+      }
+    },
+    "prepareCommand": {
+      "allOf": [
+        {"$ref": "#/$defs/commandBase"},
+        {"properties": {"mode": {"enum": ["check", "fix"]}}}
+      ]
+    },
+    "mergeCommand": {
+      "allOf": [
+        {"$ref": "#/$defs/commandBase"},
+        {"properties": {"mode": {"const": "check"}}}
+      ]
+    },
+    "releaseCommand": {
+      "allOf": [
+        {"$ref": "#/$defs/commandBase"},
+        {"properties": {"mode": {"const": "check"}, "file_args": {"const": "none"}}}
+      ]
+    },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["untracked_only", "paths"],
+      "properties": {
+        "untracked_only": {"const": true},
+        "paths": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/cleanupGlob"}
+        }
+      }
+    },
+    "generatedRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "input_globs", "output_paths", "argv", "timeout_seconds"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "input_globs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/relativeGlob"}
+        },
+        "output_paths": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/relativePath"}
+        },
+        "argv": {"$ref": "#/$defs/argv"},
+        "timeout_seconds": {"$ref": "#/$defs/timeout"}
+      }
+    },
+    "changedPathRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "paths", "prepare", "merge"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/relativeGlob"}
+        },
+        "prepare": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {"$ref": "#/$defs/prepareCommand"}
+        },
+        "merge": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {"$ref": "#/$defs/mergeCommand"}
+        }
+      },
+      "anyOf": [
+        {"properties": {"prepare": {"minItems": 1}}},
+        {"properties": {"merge": {"minItems": 1}}}
+      ]
+    }
+  }
+}
