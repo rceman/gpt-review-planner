@@ -52,12 +52,14 @@ in `inputs` and exact output paths in `outputs`; only the generated-output bound
 may mutate those outputs. For supported Linux launchers, no declaration
 command may use shell command-string evaluation; commands are direct argv.
 This check applies only to launcher options for the effective executable
-before its first script, module, or file operand. After that operand, tokens
+before its first script, module, or file operand. At most one transparent `env`
+prefix is allowed; nested `env` launchers are rejected. After that operand, tokens
 are treated as arguments to the checked script or file and are not re-scanned
 as launcher options; recognized launcher options that require a value are
 consumed before the operand. Missing values and option-looking values fail
 closed; if a legitimate value names a file beginning with `-`, use its
-repository-relative `./-name` form.
+repository-relative `./-name` form. The exact `-` token after `--` is the stdin
+sentinel, not a proven file operand, and is rejected.
 
 The declaration fails closed on unknown fields, unsafe paths, duplicate IDs or
 outputs, invalid phase modes, invalid timeouts, malformed JSON, and unmatched

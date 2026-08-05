@@ -225,7 +225,7 @@ def _scan_posix_shell_prefix(argv: list[str], index: int, path: str) -> bool:
     while index < len(argv):
         token = argv[index]
         if token == "--":
-            return self_contained or index + 1 < len(argv)
+            return self_contained or (index + 1 < len(argv) and argv[index + 1] != "-")
         if not token.startswith("-"):
             return True
         if _has_short_command_switch(token) or token == "--command" or token.startswith("--command="):
@@ -280,7 +280,7 @@ def _scan_python_prefix(argv: list[str], index: int, path: str) -> bool:
     while index < len(argv):
         token = argv[index]
         if token == "--":
-            return self_contained or index + 1 < len(argv)
+            return self_contained or (index + 1 < len(argv) and argv[index + 1] != "-")
         if not token.startswith("-"):
             return True
         if token == "-c" or (token.startswith("-c") and not token.startswith("--")):
@@ -368,7 +368,7 @@ def _scan_node_prefix(argv: list[str], index: int, path: str) -> bool:
     while index < len(argv):
         token = argv[index]
         if token == "--":
-            return self_contained or index + 1 < len(argv)
+            return self_contained or (index + 1 < len(argv) and argv[index + 1] != "-")
         if not token.startswith("-"):
             return True
         if _node_inline_switch(token):
@@ -390,6 +390,8 @@ def _scan_node_prefix(argv: list[str], index: int, path: str) -> bool:
 
 def _reject_shell_evaluation(argv: list[str], path: str) -> None:
     name, executable_index = _effective_executable(argv, path)
+    if name == "env":
+        _fail(path, "nested env prefixes are unsupported")
     prefix_start = executable_index + 1
     if name in UNSUPPORTED_LAUNCHERS:
         _fail(path, "launcher is unsupported on Linux")
