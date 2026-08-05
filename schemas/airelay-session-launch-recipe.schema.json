@@ -25,19 +25,21 @@
     "executable": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path", "version", "controller_protocol_version"],
+      "required": ["invocation_path", "resolved_path", "version", "controller_protocol_version"],
       "properties": {
-        "path": {"$ref": "#/$defs/absolutePath"},
+        "invocation_path": {"$ref": "#/$defs/absolutePath"},
+        "resolved_path": {"$ref": "#/$defs/absolutePath"},
         "version": {"$ref": "#/$defs/semver"},
-        "controller_protocol_version": {"$ref": "#/$defs/semver"}
+        "controller_protocol_version": {"$ref": "#/$defs/positiveInteger"}
       }
     },
     "child": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["program", "argv"],
+      "required": ["invocation_path", "resolved_path", "argv"],
       "properties": {
-        "program": {"$ref": "#/$defs/absolutePath"},
+        "invocation_path": {"$ref": "#/$defs/absolutePath"},
+        "resolved_path": {"$ref": "#/$defs/absolutePath"},
         "argv": {"$ref": "#/$defs/argv"}
       }
     },
@@ -46,7 +48,7 @@
       "additionalProperties": false,
       "required": ["identity"],
       "properties": {
-        "identity": {"$ref": "#/$defs/identifier"}
+        "identity": {"$ref": "#/$defs/uuid"}
       }
     },
     "approved_flags": {
@@ -64,9 +66,11 @@
   },
   "$defs": {
     "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "uuid": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
     "identifier": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$", "minLength": 1, "maxLength": 128},
     "sessionKey": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$", "minLength": 1, "maxLength": 128},
     "semver": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"},
+    "positiveInteger": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
     "absolutePath": {
       "type": "string",
       "pattern": "^/(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*//)(?!.*[\\u0000-\\u001f\\u007f\\\\])[^/]+(?:/[^/]+)*$",

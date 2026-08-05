@@ -8,12 +8,22 @@ mutate gateway state.
 ## Inputs and authority
 
 The session launch recipe is the only imported launch identity. It contains
-the absolute working directory and executable, exact executable and controller
-versions, the child program and argv, a separate Codex resume identity,
-approved flags, and environment references. A shell command string, secret
-value, relative path, duplicate argv item, or unapproved flag is forbidden.
+the absolute working directory, the executable invocation path and its
+resolved path, exact executable and controller versions, the child invocation
+path and its resolved path, child argv, a separate Codex resume UUID, approved
+flags, and environment references. A shell command string, secret value,
+relative path, duplicate argv item, session key substituted for the resume
+UUID, or unapproved flag is forbidden.
+The controller protocol version is a positive safe JSON integer, independently
+validated from the SemVer runtime version.
 recipe_sha256 is the SHA-256 of the canonical sorted JSON recipe after
 removing the recipe_sha256 field itself.
+
+Invocation and resolved paths are separate proofs. The external supervisor
+executes the invocation path pinned by a versioned release recipe and verifies
+the resolved target and build digest before stopping the old controller. A
+mutable global symlink alone is not sufficient authority; the resolved target
+must be recorded and checked.
 
 An upgrade request names the exact target release path and build digest,
 ordered selected sessions, expected current identities, graceful timeout, and

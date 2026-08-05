@@ -123,6 +123,21 @@ class AirelayManagedUpgradeTests(unittest.TestCase):
         VALIDATOR.validate_recipe(recipe)
         schema_validate(recipe, self.recipe_schema)
         self.assertEqual(recipe["recipe_sha256"], VALIDATOR._recipe_digest(recipe))
+        self.assertEqual(recipe["profile"], "codex")
+        self.assertEqual(recipe["working_directory"], "/home/therceman/git/airelay")
+        self.assertEqual(recipe["executable"]["invocation_path"], "/usr/local/bin/airelay")
+        self.assertEqual(recipe["executable"]["resolved_path"], "/home/therceman/git/airelay/dist/airelay.cjs")
+        self.assertEqual(recipe["executable"]["version"], "0.1.54")
+        self.assertEqual(recipe["executable"]["controller_protocol_version"], 1)
+        self.assertEqual(recipe["child"]["invocation_path"], "/usr/local/bin/codex")
+        self.assertEqual(recipe["child"]["resolved_path"], "/usr/local/lib/node_modules/@openai/codex/bin/codex.js")
+        self.assertEqual(recipe["child"]["argv"], [
+            "resume",
+            "019df731-52d4-7833-b0d7-fd00a172fd23",
+            "--dangerously-bypass-approvals-and-sandbox",
+        ])
+        self.assertEqual(recipe["resume"]["identity"], "019df731-52d4-7833-b0d7-fd00a172fd23")
+        self.assertEqual(recipe["approved_flags"], ["--dangerously-bypass-approvals-and-sandbox"])
 
     def test_canonical_request_and_schema(self):
         request = load_fixture("rolling-upgrade-request.json")
@@ -138,7 +153,7 @@ class AirelayManagedUpgradeTests(unittest.TestCase):
     def test_recipe_rejects_shell_secret_duplicates_and_unknown_fields(self):
         recipe = load_fixture("airelay-master-recipe.json")
         bad = copy.deepcopy(recipe)
-        bad["child"]["argv"] = ["resume", "airelay_master", "--no-alt-screen", "--no-alt-screen"]
+        bad["child"]["argv"].append("--dangerously-bypass-approvals-and-sandbox")
         self.assert_invalid(VALIDATOR.validate_recipe, bad)
         bad = copy.deepcopy(recipe)
         bad["child"]["argv"][0] = "token=secret"
@@ -153,7 +168,7 @@ class AirelayManagedUpgradeTests(unittest.TestCase):
     def test_recipe_authority_binds_resume_and_approved_flags(self):
         recipe = load_fixture("airelay-master-recipe.json")
         bad = copy.deepcopy(recipe)
-        bad["resume"]["identity"] = "other"
+        bad["resume"]["identity"] = "airelay_master"
         self.assert_invalid(VALIDATOR.validate_recipe, bad)
         bad = copy.deepcopy(recipe)
         bad["approved_flags"] = []
@@ -161,6 +176,47 @@ class AirelayManagedUpgradeTests(unittest.TestCase):
         bad = copy.deepcopy(recipe)
         bad["child"]["argv"].append("--unapproved")
         self.assert_invalid(VALIDATOR.validate_recipe, bad)
+
+    def test_runtime_fixture_rejects_all_fabricated_prior_values(self):
+        recipe = load_fixture("airelay-master-recipe.json")
+        for field, value in (
+            (("profile",), "default"),
+            (("resume", "identity"), "airelay_master"),
+            (("executable", "invocation_path"), "/home/therceman/.local/bin/airelay"),
+            (("executable", "resolved_path"), "/home/therceman/.local/bin/airelay"),
+            (("child", "resolved_path"), "/usr/local/bin/codex"),
+            (("executable", "controller_protocol_version"), "0.5.0"),
+        ):
+            bad = copy.deepcopy(recipe)
+            cursor = bad
+            for key in field[:-1]:
+                cursor = cursor[key]
+            cursor[field[-1]] = value
+            self.assert_invalid(VALIDATOR.validate_recipe, bad)
+        bad = copy.deepcopy(recipe)
+        bad["child"]["argv"] = ["resume", "airelay_master", "--no-alt-screen"]
+        bad["resume"]["identity"] = "airelay_master"
+        bad["approved_flags"] = ["--no-alt-screen"]
+        self.assert_invalid(VALIDATOR.validate_recipe, bad)
+
+    def test_request_and_receipt_bind_real_master_identity(self):
+        request = load_fixture("rolling-upgrade-request.json")
+        master = request["selected_sessions"][-1]
+        self.assertEqual(master["session_key"], "airelay_master")
+        self.assertEqual(master["expected_profile"], "codex")
+        self.assertEqual(master["expected_pid"], 1294570)
+        self.assertEqual(master["expected_controller_protocol_version"], 1)
+        self.assertEqual(master["expected_resume_identity"], "019df731-52d4-7833-b0d7-fd00a172fd23")
+        self.assertEqual(master["expected_child_argv"][2], "--dangerously-bypass-approvals-and-sandbox")
+        VALIDATOR.validate_request(request)
+        receipt = load_fixture("rolling-upgrade-success-receipt.json")
+        old = receipt["sessions"][-1]["old_identity"]
+        self.assertEqual(old["profile"], "codex")
+        self.assertEqual(old["pid"], 1294570)
+        self.assertEqual(old["controller_protocol_version"], 1)
+        self.assertEqual(old["resume_identity"], master["expected_resume_identity"])
+        self.assertEqual(old["child_argv"], master["expected_child_argv"])
+        VALIDATOR.validate_receipt(receipt)
 
     def test_request_authorization_and_ordering(self):
         request = load_fixture("rolling-upgrade-request.json")

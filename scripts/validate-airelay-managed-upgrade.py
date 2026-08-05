@@ -160,6 +160,35 @@ def _safe_token(value: Any, path: str) -> str:
     return value
 
 
+def _validate_argv(value: Any, path: str) -> list[str]:
+    argv = _array(value, path, min_items=1)
+    for index, token in enumerate(argv):
+        _safe_token(token, f"{path}[{index}]")
+    return argv
+
+
+def _validate_argv_binding(argv: list[str], resume_identity: str, flags: list[str], path: str) -> None:
+    resume_positions = [index for index, token in enumerate(argv) if token == "resume"]
+    if len(resume_positions) != 1:
+        _fail(path, "must contain exactly one resume token")
+    resume_index = resume_positions[0]
+    if resume_index + 1 >= len(argv) or argv[resume_index + 1] != resume_identity:
+        _fail(path, "resume identity must immediately follow the resume token")
+    for index, flag in enumerate(flags):
+        if flag not in argv:
+            _fail(f"{path}.approved_flags[{index}]", "must occur in argv")
+    for index, token in enumerate(argv):
+        if token.startswith("--") and token not in flags:
+            _fail(f"{path}[{index}]", "flag is not listed in approved_flags")
+
+
+def _validate_flags(value: Any, path: str, argv: list[str]) -> list[str]:
+    flags = _array(value, path, max_items=64)
+    for index, flag in enumerate(flags):
+        _match(flag, f"{path}[{index}]", FLAG_RE)
+    return flags
+
+
 def _array(value: Any, path: str, *, min_items: int = 0, max_items: int = 128) -> list[Any]:
     if not isinstance(value, list):
         _fail(path, "must be an array")
@@ -235,28 +264,21 @@ def validate_recipe(document: Any) -> dict[str, Any]:
     session_key = _session_key(recipe["session_key"], "recipe.session_key")
     _identifier(recipe["profile"], "recipe.profile")
     _absolute_path(recipe["working_directory"], "recipe.working_directory")
-    executable = _object(recipe["executable"], "recipe.executable", {"path", "version", "controller_protocol_version"}, {"path", "version", "controller_protocol_version"})
-    _absolute_path(executable["path"], "recipe.executable.path")
+    executable = _object(recipe["executable"], "recipe.executable", {"invocation_path", "resolved_path", "version", "controller_protocol_version"}, {"invocation_path", "resolved_path", "version", "controller_protocol_version"})
+    _absolute_path(executable["invocation_path"], "recipe.executable.invocation_path")
+    _absolute_path(executable["resolved_path"], "recipe.executable.resolved_path")
     _semver(executable["version"], "recipe.executable.version")
-    _semver(executable["controller_protocol_version"], "recipe.executable.controller_protocol_version")
-    child = _object(recipe["child"], "recipe.child", {"program", "argv"}, {"program", "argv"})
-    _absolute_path(child["program"], "recipe.child.program")
-    argv = _array(child["argv"], "recipe.child.argv", min_items=1)
-    for index, token in enumerate(argv):
-        _safe_token(token, f"recipe.child.argv[{index}]")
-    if argv.count(session_key) != 1:
-        _fail("recipe.child.argv", "must contain the resume identity exactly once")
+    _positive_integer(executable["controller_protocol_version"], "recipe.executable.controller_protocol_version")
+    child = _object(recipe["child"], "recipe.child", {"invocation_path", "resolved_path", "argv"}, {"invocation_path", "resolved_path", "argv"})
+    _absolute_path(child["invocation_path"], "recipe.child.invocation_path")
+    _absolute_path(child["resolved_path"], "recipe.child.resolved_path")
+    argv = _validate_argv(child["argv"], "recipe.child.argv")
     resume = _object(recipe["resume"], "recipe.resume", {"identity"}, {"identity"})
-    if _identifier(resume["identity"], "recipe.resume.identity") != session_key:
-        _fail("recipe.resume.identity", "must equal session_key")
-    flags = _array(recipe["approved_flags"], "recipe.approved_flags", max_items=64)
-    for index, flag in enumerate(flags):
-        _match(flag, f"recipe.approved_flags[{index}]", FLAG_RE)
-        if flag not in argv:
-            _fail(f"recipe.approved_flags[{index}]", "must occur in child.argv")
-    for index, token in enumerate(argv):
-        if token.startswith("--") and token not in flags:
-            _fail(f"recipe.child.argv[{index}]", "flag is not listed in approved_flags")
+    resume_identity = _match(resume["identity"], "recipe.resume.identity", UUID_RE)
+    if resume_identity == session_key:
+        _fail("recipe.resume.identity", "must be a Codex resume UUID, not session_key")
+    flags = _validate_flags(recipe["approved_flags"], "recipe.approved_flags", argv)
+    _validate_argv_binding(argv, resume_identity, flags, "recipe.child.argv")
     environment = _array(recipe["environment_references"], "recipe.environment_references", max_items=64)
     for index, reference in enumerate(environment):
         _match(reference, f"recipe.environment_references[{index}]", ENV_RE)
@@ -267,15 +289,40 @@ def validate_recipe(document: Any) -> dict[str, Any]:
 
 def _validate_selected_session(value: Any, index: int) -> dict[str, Any]:
     path = f"request.selected_sessions[{index}]"
-    session = _object(value, path, {"session_key", "expected_version", "expected_recipe_sha256", "expected_pid", "expected_controller_protocol_version", "expected_working_directory", "expected_resume_identity"}, {"session_key", "expected_version", "expected_recipe_sha256", "expected_pid", "expected_controller_protocol_version", "expected_working_directory", "expected_resume_identity"})
+    keys = {
+        "session_key",
+        "expected_profile",
+        "expected_version",
+        "expected_recipe_sha256",
+        "expected_pid",
+        "expected_controller_protocol_version",
+        "expected_working_directory",
+        "expected_executable_invocation_path",
+        "expected_executable_resolved_path",
+        "expected_child_invocation_path",
+        "expected_child_resolved_path",
+        "expected_child_argv",
+        "expected_approved_flags",
+        "expected_resume_identity",
+    }
+    session = _object(value, path, keys, keys)
     key = _session_key(session["session_key"], f"{path}.session_key")
+    _identifier(session["expected_profile"], f"{path}.expected_profile")
     _semver(session["expected_version"], f"{path}.expected_version")
     _sha(session["expected_recipe_sha256"], f"{path}.expected_recipe_sha256")
     _positive_integer(session["expected_pid"], f"{path}.expected_pid")
-    _semver(session["expected_controller_protocol_version"], f"{path}.expected_controller_protocol_version")
+    _positive_integer(session["expected_controller_protocol_version"], f"{path}.expected_controller_protocol_version")
     _absolute_path(session["expected_working_directory"], f"{path}.expected_working_directory")
-    if _identifier(session["expected_resume_identity"], f"{path}.expected_resume_identity") != key:
-        _fail(f"{path}.expected_resume_identity", "must equal session_key")
+    _absolute_path(session["expected_executable_invocation_path"], f"{path}.expected_executable_invocation_path")
+    _absolute_path(session["expected_executable_resolved_path"], f"{path}.expected_executable_resolved_path")
+    _absolute_path(session["expected_child_invocation_path"], f"{path}.expected_child_invocation_path")
+    _absolute_path(session["expected_child_resolved_path"], f"{path}.expected_child_resolved_path")
+    argv = _validate_argv(session["expected_child_argv"], f"{path}.expected_child_argv")
+    flags = _validate_flags(session["expected_approved_flags"], f"{path}.expected_approved_flags", argv)
+    resume_identity = _match(session["expected_resume_identity"], f"{path}.expected_resume_identity", UUID_RE)
+    if resume_identity == key:
+        _fail(f"{path}.expected_resume_identity", "must be a Codex resume UUID, not session_key")
+    _validate_argv_binding(argv, resume_identity, flags, f"{path}.expected_child_argv")
     return session
 
 
@@ -308,18 +355,41 @@ def validate_request(document: Any) -> dict[str, Any]:
     return request
 
 
-IDENTITY_KEYS = {"recipe_sha256", "version", "pid", "controller_protocol_version", "working_directory", "resume_identity"}
+IDENTITY_KEYS = {
+    "recipe_sha256",
+    "profile",
+    "version",
+    "pid",
+    "controller_protocol_version",
+    "working_directory",
+    "executable_invocation_path",
+    "executable_resolved_path",
+    "child_invocation_path",
+    "child_resolved_path",
+    "child_argv",
+    "approved_flags",
+    "resume_identity",
+}
 
 
 def _validate_identity(value: Any, path: str, session_key: str) -> dict[str, Any]:
     identity = _object(value, path, IDENTITY_KEYS, IDENTITY_KEYS)
     _sha(identity["recipe_sha256"], f"{path}.recipe_sha256")
+    _identifier(identity["profile"], f"{path}.profile")
     _semver(identity["version"], f"{path}.version")
     _positive_integer(identity["pid"], f"{path}.pid")
-    _semver(identity["controller_protocol_version"], f"{path}.controller_protocol_version")
+    _positive_integer(identity["controller_protocol_version"], f"{path}.controller_protocol_version")
     _absolute_path(identity["working_directory"], f"{path}.working_directory")
-    if _identifier(identity["resume_identity"], f"{path}.resume_identity") != session_key:
-        _fail(f"{path}.resume_identity", "must equal session_key")
+    _absolute_path(identity["executable_invocation_path"], f"{path}.executable_invocation_path")
+    _absolute_path(identity["executable_resolved_path"], f"{path}.executable_resolved_path")
+    _absolute_path(identity["child_invocation_path"], f"{path}.child_invocation_path")
+    _absolute_path(identity["child_resolved_path"], f"{path}.child_resolved_path")
+    argv = _validate_argv(identity["child_argv"], f"{path}.child_argv")
+    flags = _validate_flags(identity["approved_flags"], f"{path}.approved_flags", argv)
+    resume_identity = _match(identity["resume_identity"], f"{path}.resume_identity", UUID_RE)
+    if resume_identity == session_key:
+        _fail(f"{path}.resume_identity", "must be a Codex resume UUID, not session_key")
+    _validate_argv_binding(argv, resume_identity, flags, f"{path}.child_argv")
     return identity
 
 

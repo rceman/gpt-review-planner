@@ -10,34 +10,64 @@
   },
   "sessions": [
     {
-      "session_key": "airelay_worker",
+      "session_key": "example_worker",
       "state": "ready",
       "old_identity": {
         "recipe_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "profile": "fixture",
         "version": "0.1.54",
         "pid": 42001,
-        "controller_protocol_version": "0.5.0",
-        "working_directory": "/home/therceman/git/airelay",
-        "resume_identity": "airelay_worker"
+        "controller_protocol_version": 1,
+        "working_directory": "/tmp/airelay-example-worker",
+        "executable_invocation_path": "/tmp/airelay-example-worker/bin/airelay",
+        "executable_resolved_path": "/tmp/airelay-example-worker/releases/0.1.54/airelay.cjs",
+        "child_invocation_path": "/tmp/airelay-example-worker/bin/codex",
+        "child_resolved_path": "/tmp/airelay-example-worker/releases/0.1.54/codex.js",
+        "child_argv": [
+          "resume",
+          "019faea5-f0b2-73a3-b286-ef54956ddd11"
+        ],
+        "approved_flags": [],
+        "resume_identity": "019faea5-f0b2-73a3-b286-ef54956ddd11"
       },
       "new_identity": {
         "recipe_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "profile": "fixture",
         "version": "0.1.55",
         "pid": 43001,
-        "controller_protocol_version": "0.5.0",
-        "working_directory": "/home/therceman/git/airelay",
-        "resume_identity": "airelay_worker"
+        "controller_protocol_version": 1,
+        "working_directory": "/tmp/airelay-example-worker",
+        "executable_invocation_path": "/tmp/airelay-example-worker/bin/airelay",
+        "executable_resolved_path": "/tmp/airelay-example-worker/releases/0.1.55/airelay.cjs",
+        "child_invocation_path": "/tmp/airelay-example-worker/bin/codex",
+        "child_resolved_path": "/tmp/airelay-example-worker/releases/0.1.55/codex.js",
+        "child_argv": [
+          "resume",
+          "019faea5-f0b2-73a3-b286-ef54956ddd11"
+        ],
+        "approved_flags": [],
+        "resume_identity": "019faea5-f0b2-73a3-b286-ef54956ddd11"
       },
       "readiness": {
         "status": "ready",
         "checked_at": "2026-08-05T10:00:05Z",
         "identity": {
           "recipe_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "profile": "fixture",
           "version": "0.1.55",
           "pid": 43001,
-          "controller_protocol_version": "0.5.0",
-          "working_directory": "/home/therceman/git/airelay",
-          "resume_identity": "airelay_worker"
+          "controller_protocol_version": 1,
+          "working_directory": "/tmp/airelay-example-worker",
+          "executable_invocation_path": "/tmp/airelay-example-worker/bin/airelay",
+          "executable_resolved_path": "/tmp/airelay-example-worker/releases/0.1.55/airelay.cjs",
+          "child_invocation_path": "/tmp/airelay-example-worker/bin/codex",
+          "child_resolved_path": "/tmp/airelay-example-worker/releases/0.1.55/codex.js",
+          "child_argv": [
+            "resume",
+            "019faea5-f0b2-73a3-b286-ef54956ddd11"
+          ],
+          "approved_flags": [],
+          "resume_identity": "019faea5-f0b2-73a3-b286-ef54956ddd11"
         }
       },
       "timestamps": {
@@ -53,31 +83,70 @@
       "session_key": "airelay_master",
       "state": "ready",
       "old_identity": {
-        "recipe_sha256": "9aaa3c49c7950854463c1491797f5c9baf167819efe3a26ab3063112320777ef",
+        "recipe_sha256": "e1160b8452c4f5afc81b21028df83f292d50c5e33850ce79edeb86ca334a8077",
+        "profile": "codex",
         "version": "0.1.54",
-        "pid": 42002,
-        "controller_protocol_version": "0.5.0",
+        "pid": 1294570,
+        "controller_protocol_version": 1,
         "working_directory": "/home/therceman/git/airelay",
-        "resume_identity": "airelay_master"
+        "executable_invocation_path": "/usr/local/bin/airelay",
+        "executable_resolved_path": "/home/therceman/git/airelay/dist/airelay.cjs",
+        "child_invocation_path": "/usr/local/bin/codex",
+        "child_resolved_path": "/usr/local/lib/node_modules/@openai/codex/bin/codex.js",
+        "child_argv": [
+          "resume",
+          "019df731-52d4-7833-b0d7-fd00a172fd23",
+          "--dangerously-bypass-approvals-and-sandbox"
+        ],
+        "approved_flags": [
+          "--dangerously-bypass-approvals-and-sandbox"
+        ],
+        "resume_identity": "019df731-52d4-7833-b0d7-fd00a172fd23"
       },
       "new_identity": {
         "recipe_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+        "profile": "codex",
         "version": "0.1.55",
         "pid": 43002,
-        "controller_protocol_version": "0.5.0",
+        "controller_protocol_version": 1,
         "working_directory": "/home/therceman/git/airelay",
-        "resume_identity": "airelay_master"
+        "executable_invocation_path": "/usr/local/bin/airelay",
+        "executable_resolved_path": "/home/therceman/.local/share/airelay/releases/0.1.55/airelay.cjs",
+        "child_invocation_path": "/usr/local/bin/codex",
+        "child_resolved_path": "/usr/local/lib/node_modules/@openai/codex/bin/codex.js",
+        "child_argv": [
+          "resume",
+          "019df731-52d4-7833-b0d7-fd00a172fd23",
+          "--dangerously-bypass-approvals-and-sandbox"
+        ],
+        "approved_flags": [
+          "--dangerously-bypass-approvals-and-sandbox"
+        ],
+        "resume_identity": "019df731-52d4-7833-b0d7-fd00a172fd23"
       },
       "readiness": {
         "status": "ready",
         "checked_at": "2026-08-05T10:00:05Z",
         "identity": {
           "recipe_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "profile": "codex",
           "version": "0.1.55",
           "pid": 43002,
-          "controller_protocol_version": "0.5.0",
+          "controller_protocol_version": 1,
           "working_directory": "/home/therceman/git/airelay",
-          "resume_identity": "airelay_master"
+          "executable_invocation_path": "/usr/local/bin/airelay",
+          "executable_resolved_path": "/home/therceman/.local/share/airelay/releases/0.1.55/airelay.cjs",
+          "child_invocation_path": "/usr/local/bin/codex",
+          "child_resolved_path": "/usr/local/lib/node_modules/@openai/codex/bin/codex.js",
+          "child_argv": [
+            "resume",
+            "019df731-52d4-7833-b0d7-fd00a172fd23",
+            "--dangerously-bypass-approvals-and-sandbox"
+          ],
+          "approved_flags": [
+            "--dangerously-bypass-approvals-and-sandbox"
+          ],
+          "resume_identity": "019df731-52d4-7833-b0d7-fd00a172fd23"
         }
       },
       "timestamps": {

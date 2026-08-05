@@ -32,6 +32,14 @@
     "uuid": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
     "sessionKey": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$", "minLength": 1, "maxLength": 128},
     "identifier": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$", "minLength": 1, "maxLength": 128},
+    "argv": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^(?!.*[\\u0000-\\u001f\\u007f;|&$\\x60<>]).+$"}
+    },
+    "flag": {"type": "string", "pattern": "^--[A-Za-z0-9][A-Za-z0-9-]{0,63}$"},
     "semver": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"},
     "absolutePath": {
       "type": "string",
@@ -53,15 +61,37 @@
     "selectedSession": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["session_key", "expected_version", "expected_recipe_sha256", "expected_pid", "expected_controller_protocol_version", "expected_working_directory", "expected_resume_identity"],
+      "required": [
+        "session_key",
+        "expected_profile",
+        "expected_version",
+        "expected_recipe_sha256",
+        "expected_pid",
+        "expected_controller_protocol_version",
+        "expected_working_directory",
+        "expected_executable_invocation_path",
+        "expected_executable_resolved_path",
+        "expected_child_invocation_path",
+        "expected_child_resolved_path",
+        "expected_child_argv",
+        "expected_approved_flags",
+        "expected_resume_identity"
+      ],
       "properties": {
         "session_key": {"$ref": "#/$defs/sessionKey"},
+        "expected_profile": {"$ref": "#/$defs/identifier"},
         "expected_version": {"$ref": "#/$defs/semver"},
         "expected_recipe_sha256": {"$ref": "#/$defs/sha256"},
         "expected_pid": {"$ref": "#/$defs/positiveInteger"},
-        "expected_controller_protocol_version": {"$ref": "#/$defs/semver"},
+        "expected_controller_protocol_version": {"$ref": "#/$defs/positiveInteger"},
         "expected_working_directory": {"$ref": "#/$defs/absolutePath"},
-        "expected_resume_identity": {"$ref": "#/$defs/identifier"}
+        "expected_executable_invocation_path": {"$ref": "#/$defs/absolutePath"},
+        "expected_executable_resolved_path": {"$ref": "#/$defs/absolutePath"},
+        "expected_child_invocation_path": {"$ref": "#/$defs/absolutePath"},
+        "expected_child_resolved_path": {"$ref": "#/$defs/absolutePath"},
+        "expected_child_argv": {"$ref": "#/$defs/argv"},
+        "expected_approved_flags": {"type": "array", "uniqueItems": true, "maxItems": 64, "items": {"$ref": "#/$defs/flag"}},
+        "expected_resume_identity": {"$ref": "#/$defs/uuid"}
       }
     },
     "forceStopPolicy": {
