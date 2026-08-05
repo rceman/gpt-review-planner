@@ -203,7 +203,7 @@ def _consume_launcher_value(argv: list[str], index: int, path: str, *, allowed=N
 
 
 SHELL_VALUE_OPTIONS = {"-o", "-O", "--rcfile", "--init-file"}
-SHELL_SAFE_SHORT_CHARS = set("abefhilmnprstuvxBCEHPT")
+SHELL_SAFE_SHORT_CHARS = set("abefhlmnprtuvxBCEHPT")
 SHELL_SAFE_LONG_OPTIONS = {
     "--debugger",
     "--help",
@@ -220,13 +220,14 @@ SHELL_SAFE_LONG_OPTIONS = {
 }
 
 
-def _scan_posix_shell_prefix(argv: list[str], index: int, path: str) -> None:
+def _scan_posix_shell_prefix(argv: list[str], index: int, path: str) -> bool:
+    self_contained = False
     while index < len(argv):
         token = argv[index]
         if token == "--":
-            return
+            return self_contained or index + 1 < len(argv)
         if not token.startswith("-"):
-            return
+            return True
         if _has_short_command_switch(token) or token == "--command" or token.startswith("--command="):
             _fail(path, "shell command-string evaluation is forbidden")
         if token in SHELL_VALUE_OPTIONS:
@@ -235,11 +236,14 @@ def _scan_posix_shell_prefix(argv: list[str], index: int, path: str) -> None:
         if token.startswith("--"):
             if token not in SHELL_SAFE_LONG_OPTIONS:
                 _fail(path, "unknown shell launcher option")
+            if token in {"--help", "--version"}:
+                self_contained = True
             index += 1
             continue
         if not all(character in SHELL_SAFE_SHORT_CHARS for character in token[1:]):
             _fail(path, "unknown shell launcher option")
         index += 1
+    return self_contained
 
 
 PYTHON_VALUE_OPTIONS = {"-W", "-X"}
@@ -255,6 +259,7 @@ PYTHON_NO_VALUE_OPTIONS = {
     "-S",
     "-u",
     "-v",
+    "-V",
     "-VV",
     "--dont-write-bytecode",
     "--help",
@@ -270,18 +275,19 @@ PYTHON_NO_VALUE_OPTIONS = {
 }
 
 
-def _scan_python_prefix(argv: list[str], index: int, path: str) -> None:
+def _scan_python_prefix(argv: list[str], index: int, path: str) -> bool:
+    self_contained = False
     while index < len(argv):
         token = argv[index]
         if token == "--":
-            return
+            return self_contained or index + 1 < len(argv)
         if not token.startswith("-"):
-            return
+            return True
         if token == "-c" or (token.startswith("-c") and not token.startswith("--")):
             _fail(path, "inline interpreter evaluation is forbidden")
         if token == "-m":
             index = _consume_launcher_value(argv, index, path)
-            return
+            return True
         if token == "--check-hash-based-pycs":
             index = _consume_launcher_value(argv, index, path, allowed={"default", "always", "never"})
             continue
@@ -294,9 +300,12 @@ def _scan_python_prefix(argv: list[str], index: int, path: str) -> None:
             index += 1
             continue
         if token in PYTHON_NO_VALUE_OPTIONS:
+            if token in {"-V", "-VV", "--help", "--version"}:
+                self_contained = True
             index += 1
             continue
         _fail(path, "unknown Python launcher option")
+    return self_contained
 
 
 NODE_VALUE_OPTIONS = {
@@ -354,13 +363,14 @@ def _node_inline_switch(token: str) -> bool:
     )
 
 
-def _scan_node_prefix(argv: list[str], index: int, path: str) -> None:
+def _scan_node_prefix(argv: list[str], index: int, path: str) -> bool:
+    self_contained = False
     while index < len(argv):
         token = argv[index]
         if token == "--":
-            return
+            return self_contained or index + 1 < len(argv)
         if not token.startswith("-"):
-            return
+            return True
         if _node_inline_switch(token):
             _fail(path, "inline interpreter evaluation is forbidden")
         if token in NODE_VALUE_OPTIONS:
@@ -370,9 +380,12 @@ def _scan_node_prefix(argv: list[str], index: int, path: str) -> None:
             index += 1
             continue
         if token in NODE_NO_VALUE_OPTIONS:
+            if token in {"--test", "-v", "--help", "--version"}:
+                self_contained = True
             index += 1
             continue
         _fail(path, "unknown Node launcher option")
+    return self_contained
 
 
 def _reject_shell_evaluation(argv: list[str], path: str) -> None:
@@ -381,11 +394,14 @@ def _reject_shell_evaluation(argv: list[str], path: str) -> None:
     if name in UNSUPPORTED_LAUNCHERS:
         _fail(path, "launcher is unsupported on Linux")
     elif name in SHELL_NAMES:
-        _scan_posix_shell_prefix(argv, prefix_start, path)
+        if not _scan_posix_shell_prefix(argv, prefix_start, path):
+            _fail(path, "shell launcher requires a script operand or informational mode")
     elif name in PYTHON_NAMES:
-        _scan_python_prefix(argv, prefix_start, path)
+        if not _scan_python_prefix(argv, prefix_start, path):
+            _fail(path, "Python launcher requires a script, module, or informational mode")
     elif name in NODE_NAMES:
-        _scan_node_prefix(argv, prefix_start, path)
+        if not _scan_node_prefix(argv, prefix_start, path):
+            _fail(path, "Node launcher requires a script, test mode, or informational mode")
 
 
 def _command(value: Any, path: str, phase: str) -> dict[str, Any]:

@@ -22,7 +22,10 @@ profiles are exact `sh`, `dash`, and `bash` POSIX launchers; exact `python` and
 option before the first script, module, or file operand must be recognized by
 its profile. Unknown options fail closed. `zsh`, `ksh`, `fish`, `python2`,
 `pypy`, `pypy3`, Ruby, Perl, and known Windows shell launchers are unsupported
-and rejected outright; their switches are not parsed.
+and rejected outright; their switches are not parsed. Each supported profile
+also requires a proven script, module, or file operand, unless it is in an
+explicitly declared self-contained informational or Node test mode. Implicit
+stdin and interactive/REPL execution are forbidden.
 
 ## Selection and ordering
 
