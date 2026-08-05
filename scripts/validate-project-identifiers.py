@@ -13,9 +13,9 @@ from typing import Any
 
 PROJECT_ID_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 PROJECT_CODE_RE = re.compile(r"^[A-Z]{3}$")
-TASK_RE = re.compile(r"^(?P<code>[A-Z]{3})-T(?P<number>[1-9][0-9]*)$")
-RUN_RE = re.compile(r"^(?P<task>[A-Z]{3}-T[1-9][0-9]*)-R(?P<number>[1-9][0-9]*)$")
-ADR_RE = re.compile(r"^(?P<code>[A-Z]{3})-A(?P<number>[1-9][0-9]*)$")
+TASK_RE = re.compile(r"^(?P<code>[A-Z]{3})-TSK(?P<number>[1-9][0-9]*)$")
+RUN_RE = re.compile(r"^(?P<task>[A-Z]{3}-TSK[1-9][0-9]*)-RUN(?P<number>[1-9][0-9]*)$")
+ADR_RE = re.compile(r"^(?P<code>[A-Z]{3})-ADR(?P<number>[1-9][0-9]*)$")
 MAX_IDENTIFIER_NUMBER = 9007199254740991
 MAX_IDENTIFIER_NUMBER_TEXT = str(MAX_IDENTIFIER_NUMBER)
 
@@ -146,7 +146,7 @@ def parse_task_id(identifier: str, project_code: str | None = None) -> dict[str,
         raise ProjectIdentifiersError("task ID must be a string")
     match = TASK_RE.fullmatch(identifier)
     if match is None:
-        raise ProjectIdentifiersError("task ID must match <CODE>-T<N> with no leading zero")
+        raise ProjectIdentifiersError("task ID must match <CODE>-TSK<N> with no leading zero")
     code = match.group("code")
     _check_code(code, project_code)
     return {"identifier": identifier, "code": code, "number": _number(match.group("number"), "task number")}
@@ -161,7 +161,7 @@ def parse_run_id(identifier: str, project_code: str | None = None) -> dict[str, 
         raise ProjectIdentifiersError("run ID must be a string")
     match = RUN_RE.fullmatch(identifier)
     if match is None:
-        raise ProjectIdentifiersError("run ID must match <CODE>-T<N>-R<N> with no leading zero")
+        raise ProjectIdentifiersError("run ID must match <TASK-ID>-RUN<N> with no leading zero")
     task = parse_task_id(match.group("task"), project_code)
     return {
         "identifier": identifier,
@@ -181,7 +181,7 @@ def parse_adr_id(identifier: str, project_code: str | None = None) -> dict[str, 
         raise ProjectIdentifiersError("ADR ID must be a string")
     match = ADR_RE.fullmatch(identifier)
     if match is None:
-        raise ProjectIdentifiersError("ADR ID must match <CODE>-A<N> with no leading zero")
+        raise ProjectIdentifiersError("ADR ID must match <CODE>-ADR<N> with no leading zero")
     code = match.group("code")
     _check_code(code, project_code)
     return {"identifier": identifier, "code": code, "number": _number(match.group("number"), "ADR number")}

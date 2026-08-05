@@ -167,13 +167,13 @@ class ProjectIdentifierTests(unittest.TestCase):
         value["next_task_number"] = float(maximum)
         value["next_adr_number"] = float(maximum)
         self.assert_valid(value)
-        self.assertEqual(validator.parse_task_id(f"GRP-T{maximum}", "GRP")["number"], maximum)
-        self.assertEqual(validator.parse_run_id(f"GRP-T1-R{maximum}", "GRP")["run_number"], maximum)
-        self.assertEqual(validator.parse_adr_id(f"GRP-A{maximum}", "GRP")["number"], maximum)
+        self.assertEqual(validator.parse_task_id(f"GRP-TSK{maximum}", "GRP")["number"], maximum)
+        self.assertEqual(validator.parse_run_id(f"GRP-TSK1-RUN{maximum}", "GRP")["run_number"], maximum)
+        self.assertEqual(validator.parse_adr_id(f"GRP-ADR{maximum}", "GRP")["number"], maximum)
         for identifier, parser in (
-            (f"GRP-T{maximum + 1}", validator.parse_task_id),
-            (f"GRP-T1-R{maximum + 1}", validator.parse_run_id),
-            (f"GRP-A{maximum + 1}", validator.parse_adr_id),
+            (f"GRP-TSK{maximum + 1}", validator.parse_task_id),
+            (f"GRP-TSK1-RUN{maximum + 1}", validator.parse_run_id),
+            (f"GRP-ADR{maximum + 1}", validator.parse_adr_id),
         ):
             with self.subTest(identifier=identifier):
                 with self.assertRaises(validator.ProjectIdentifiersError):
@@ -194,22 +194,38 @@ class ProjectIdentifierTests(unittest.TestCase):
                 validator.load_json(link)
 
     def test_canonical_task_run_adr_ids_and_code_binding(self):
-        self.assertEqual(validator.parse_task_id("GRP-T1", "GRP")["number"], 1)
-        self.assertEqual(validator.parse_run_id("GRP-T1-R27", "GRP")["run_number"], 27)
-        self.assertEqual(validator.parse_adr_id("GRP-A3", "GRP")["number"], 3)
-        self.assertEqual(validator.task_branch_name("GRP-T1", "compact-identifiers", "GRP"), "task/GRP-T1-compact-identifiers")
+        self.assertEqual(validator.parse_task_id("GRP-TSK1", "GRP")["number"], 1)
+        self.assertEqual(validator.parse_run_id("GRP-TSK1-RUN27", "GRP")["run_number"], 27)
+        self.assertEqual(validator.parse_adr_id("GRP-ADR3", "GRP")["number"], 3)
+        self.assertEqual(
+            validator.task_branch_name("GRP-TSK1", "compact-identifiers", "GRP"),
+            "task/GRP-TSK1-compact-identifiers",
+        )
         for identifier, parser in (
-            ("GRP-T01", validator.parse_task_id),
-            ("GRP-T1-R01", validator.parse_run_id),
-            ("GRP-A01", validator.parse_adr_id),
-            ("GTW-T1", validator.parse_task_id),
-            ("GRP_T1", validator.parse_task_id),
-            ("GRP-T1-R", validator.parse_run_id),
+            ("GRP-T1", validator.parse_task_id),
+            ("GRP-T1-R1", validator.parse_run_id),
+            ("GRP-A1", validator.parse_adr_id),
+            ("GRP-TSK01", validator.parse_task_id),
+            ("GRP-TSK1-RUN01", validator.parse_run_id),
+            ("GRP-ADR01", validator.parse_adr_id),
+            ("GTW-TSK1", validator.parse_task_id),
+            ("GRP_TSK1", validator.parse_task_id),
+            ("GRP-TSK", validator.parse_task_id),
+            ("GRP-TSK1-RUN", validator.parse_run_id),
+            ("GRP-ADR", validator.parse_adr_id),
             ("01234567-89ab-cdef-0123-456789abcdef", validator.parse_task_id),
         ):
             with self.subTest(identifier=identifier):
                 with self.assertRaises(validator.ProjectIdentifiersError):
                     parser(identifier, "GRP")
+        for task_id, slug in (
+            ("GRP-T1", "compact-identifiers"),
+            ("GRP-TSK1", "Compact-identifiers"),
+            ("GRP-TSK1", "compact_identifiers"),
+        ):
+            with self.subTest(task_id=task_id, slug=slug):
+                with self.assertRaises(validator.ProjectIdentifiersError):
+                    validator.task_branch_name(task_id, slug, "GRP")
 
     def test_project_code_and_identifiers_are_immutable_bindings(self):
         record = load_fixture(FIXTURES[0])
@@ -217,10 +233,11 @@ class ProjectIdentifierTests(unittest.TestCase):
         with self.assertRaises(validator.ProjectIdentifiersError):
             validator.validate_project_identifiers(record, expected_project_code="GTW")
         with self.assertRaises(validator.ProjectIdentifiersError):
-            validator.parse_task_id("GTW-T1", "GRP")
+            validator.parse_task_id("GTW-TSK1", "GRP")
 
     def test_documentation_states_all_allocation_and_cutover_rules(self):
-        text = " ".join((ROOT / "docs/DURABLE_IDENTIFIERS.md").read_text(encoding="utf-8").split())
+        documentation = (ROOT / "docs/DURABLE_IDENTIFIERS.md").read_text(encoding="utf-8")
+        text = " ".join(documentation.split())
         for phrase in (
             "atomic read-lock-validate-increment-write transaction",
             "do not scan history",
@@ -235,8 +252,24 @@ class ProjectIdentifierTests(unittest.TestCase):
             "mutation aliases",
             "dual operational paths",
             "fuzzy lookup",
+            "task: <CODE>-TSK<N>",
+            "run: <TASK-ID>-RUN<N>",
+            "ADR: <CODE>-ADR<N>",
+            "pre-activation single-letter-token records",
         ):
             self.assertIn(phrase, text)
+        self.assertNotIn("task: <CODE>-T<N>", documentation)
+        self.assertNotIn("run: <TASK-ID>-R<N>", documentation)
+        self.assertNotIn("ADR: <CODE>-A<N>", documentation)
+
+    def test_bounded_identifier_surfaces_declare_only_new_operational_tokens(self):
+        validator_source = VALIDATOR_PATH.read_text(encoding="utf-8")
+        self.assertIn("-TSK(?P<number>", validator_source)
+        self.assertIn("-RUN(?P<number>", validator_source)
+        self.assertIn("-ADR(?P<number>", validator_source)
+        self.assertNotIn("TASK_RE = re.compile(r\"^(?P<code>[A-Z]{3})-T(?P<number>", validator_source)
+        self.assertNotIn("RUN_RE = re.compile(r\"^(?P<task>[A-Z]{3}-T[1-9][0-9]*)-R", validator_source)
+        self.assertNotIn("ADR_RE = re.compile(r\"^(?P<code>[A-Z]{3})-A(?P<number>", validator_source)
 
 
 if __name__ == "__main__":

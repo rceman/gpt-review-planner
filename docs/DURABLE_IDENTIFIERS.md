@@ -21,9 +21,9 @@ abandoned task. The record's project code is immutable after adoption.
 Canonical identifiers are:
 
 ```text
-task:   <CODE>-T<N>
-run:    <TASK-ID>-R<N>
-ADR:    <CODE>-A<N>
+task:   <CODE>-TSK<N>
+run:    <TASK-ID>-RUN<N>
+ADR:    <CODE>-ADR<N>
 branch: task/<TASK-ID>-<slug>
 ```
 
@@ -36,6 +36,8 @@ is needed. Existing identifiers are not renamed or aliased.
 
 Already persisted UUID history remains readable as long as that history exists.
 That historical reader is read-only and is not a new operational identifier
-path. It does not authorize UUID creation, mutation aliases, fuzzy lookup, or
-dual operational paths. Historical UUID records remain immutable; new
-operational identifiers use the adopted project code and canonical syntax.
+path. Persisted pre-activation single-letter-token records are likewise
+immutable read-only history only; they are not canonical new operational
+syntax. Neither history class authorizes UUID creation, mutation aliases,
+fuzzy lookup, or dual operational paths. New operational identifiers use the
+adopted project code and canonical `TSK`/`RUN`/`ADR` syntax.
