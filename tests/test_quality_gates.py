@@ -211,9 +211,14 @@ class QualityGatesTests(unittest.TestCase):
     def test_shell_evaluation_forms_are_rejected_but_direct_bash_check_is_valid(self):
         cases = (
             ["bash", "-c", "echo unsafe"],
+            ["bash", "-lc", "echo unsafe"],
+            ["bash", "-O", "extglob", "-c", "echo unsafe"],
             ["cmd", "/c", "echo unsafe"],
             ["pwsh", "-Command", "Write-Host unsafe"],
+            ["pwsh", "-NoProfile", "-Command", "Write-Host unsafe"],
             ["python3", "-c", "print('unsafe')"],
+            ["python3", "-W", "ignore", "-c", "print('unsafe')"],
+            ["node", "--trace-warnings", "--eval", "console.log('unsafe')"],
         )
         for argv in cases:
             value = self.valid()
@@ -228,6 +233,30 @@ class QualityGatesTests(unittest.TestCase):
         value = self.valid()
         value["rules"][0]["prepare"][0]["argv"] = ["env", "MODE=x", "bash", "-c", "text"]
         self.assert_invalid(value, schema=False)
+        for argv in (
+            ["bash", "scripts/check.sh", "-c"],
+            ["python3", "scripts/check.py", "-e"],
+            ["node", "scripts/check.js", "--eval"],
+            ["pwsh", "-File", "scripts/check.ps1", "-Command"],
+        ):
+            value = self.valid()
+            value["rules"][0]["prepare"][0]["argv"] = argv
+            VALIDATOR.validate(value)
+
+    def test_recognized_launcher_options_missing_values_fail_closed(self):
+        for argv in (
+            ["bash", "-o"],
+            ["bash", "--rcfile"],
+            ["python3", "-W"],
+            ["python3", "-X"],
+            ["python3", "-m"],
+            ["node", "--require"],
+            ["ruby", "-I"],
+            ["pwsh", "-File"],
+        ):
+            value = self.valid()
+            value["rules"][0]["prepare"][0]["argv"] = argv
+            self.assert_invalid(value, schema=False)
 
     def test_timeout_bounds_and_integer_semantics_are_strict(self):
         for timeout in (0, -1, 3601, 1.5, True, float("inf")):

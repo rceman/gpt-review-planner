@@ -174,22 +174,159 @@ def _has_short_command_switch(token: str) -> bool:
     return lowered.startswith("-") and not lowered.startswith("--") and len(lowered) > 2 and lowered.endswith("c")
 
 
+def _consume_launcher_value(argv: list[str], index: int, path: str, *, forbidden=None) -> int:
+    """Consume one value for a recognized launcher option.
+
+    A value is consumed as part of the launcher prefix, even when it begins
+    with a dash. Known evaluation switches are rejected instead of being
+    hidden as an option value.
+    """
+    if index + 1 >= len(argv):
+        _fail(path, "launcher option is missing its value")
+    value = argv[index + 1]
+    if forbidden is not None and forbidden(value):
+        _fail(path, "launcher option value cannot hide an evaluation switch")
+    return index + 2
+
+
+def _scan_posix_shell_prefix(argv: list[str], index: int, path: str) -> None:
+    value_options = {"-o", "-O", "--rcfile", "--init-file"}
+    while index < len(argv):
+        token = argv[index]
+        if token == "--":
+            return
+        if not token.startswith("-"):
+            return
+        if _has_short_command_switch(token) or token == "--command" or token.startswith("--command="):
+            _fail(path, "shell command-string evaluation is forbidden")
+        if token in value_options:
+            index = _consume_launcher_value(
+                argv,
+                index,
+                path,
+                forbidden=lambda value: _has_short_command_switch(value)
+                or value == "--command"
+                or value.startswith("--command="),
+            )
+            continue
+        index += 1
+
+
+def _scan_python_prefix(argv: list[str], index: int, path: str) -> None:
+    value_options = {"-W", "-X"}
+    while index < len(argv):
+        token = argv[index]
+        if token == "--":
+            return
+        if not token.startswith("-"):
+            return
+        if token == "-c":
+            _fail(path, "inline interpreter evaluation is forbidden")
+        if token == "-m":
+            index = _consume_launcher_value(argv, index, path, forbidden=lambda value: value == "-c")
+            return
+        if token in value_options:
+            index = _consume_launcher_value(argv, index, path, forbidden=lambda value: value == "-c")
+            continue
+        if token.startswith("-W") or token.startswith("-X"):
+            index += 1
+            continue
+        index += 1
+
+
+NODE_VALUE_OPTIONS = {
+    "-r",
+    "--require",
+    "--loader",
+    "--import",
+    "--experimental-loader",
+    "--conditions",
+    "--title",
+    "--icu-data-dir",
+    "--openssl-config",
+    "--tls-cipher-list",
+    "--max-http-header-size",
+    "--redirect-warnings",
+    "--trace-event-categories",
+    "--test-name-pattern",
+    "--test-reporter",
+    "--test-shard",
+}
+
+
+def _node_inline_switch(token: str) -> bool:
+    lowered = token.lower()
+    return lowered in {"-e", "-p", "--eval", "--print"} or lowered.startswith("--eval=") or lowered.startswith("--print=")
+
+
+def _scan_node_prefix(argv: list[str], index: int, path: str) -> None:
+    while index < len(argv):
+        token = argv[index]
+        if token == "--":
+            return
+        if not token.startswith("-"):
+            return
+        if _node_inline_switch(token):
+            _fail(path, "inline interpreter evaluation is forbidden")
+        if token in NODE_VALUE_OPTIONS:
+            index = _consume_launcher_value(argv, index, path, forbidden=_node_inline_switch)
+            continue
+        if any(token.startswith(option + "=") for option in NODE_VALUE_OPTIONS if option.startswith("--")):
+            index += 1
+            continue
+        index += 1
+
+
+def _scan_ruby_or_perl_prefix(name: str, argv: list[str], index: int, path: str) -> None:
+    value_options = {"-I", "-r", "--require"} if name == "ruby" else {"-I", "-M", "-m"}
+    while index < len(argv):
+        token = argv[index]
+        if token == "--":
+            return
+        if not token.startswith("-"):
+            return
+        lowered = token.lower()
+        if lowered == "-e" or (not lowered.startswith("--") and "e" in lowered[1:]):
+            _fail(path, "inline interpreter evaluation is forbidden")
+        if token in value_options:
+            index = _consume_launcher_value(argv, index, path, forbidden=lambda value: value.lower() == "-e")
+            continue
+        index += 1
+
+
+def _scan_powershell_prefix(argv: list[str], index: int, path: str) -> None:
+    command_switches = {"-command", "-c", "-encodedcommand", "-encodedarguments", "-enc", "-e"}
+    while index < len(argv):
+        token = argv[index]
+        lowered = token.lower()
+        if lowered == "-file":
+            _consume_launcher_value(argv, index, path)
+            return
+        if lowered in command_switches or lowered.startswith("-command:") or lowered.startswith("-encodedcommand:"):
+            _fail(path, "PowerShell command-string evaluation is forbidden")
+        if token == "--":
+            return
+        if not token.startswith("-"):
+            return
+        index += 1
+
+
 def _reject_shell_evaluation(argv: list[str], path: str) -> None:
     name, executable_index = _effective_executable(argv, path)
-    arguments = argv[executable_index + 1 :]
+    prefix_start = executable_index + 1
     if name in SHELL_NAMES:
-        if any(_has_short_command_switch(item) or item == "--command" or item.startswith("--command=") for item in arguments):
-            _fail(path, "shell command-string evaluation is forbidden")
+        _scan_posix_shell_prefix(argv, prefix_start, path)
     elif name in CMD_NAMES:
-        if any(item.lower() in {"/c", "/k"} for item in arguments):
+        if any(item.lower() in {"/c", "/k"} for item in argv[prefix_start:]):
             _fail(path, "cmd command-string evaluation is forbidden")
     elif name in POWERSHELL_NAMES:
-        switches = {"-command", "-c", "-encodedcommand", "-encodedarguments", "-enc", "-e"}
-        if any(item.lower() in switches or item.lower().startswith("-command:") or item.lower().startswith("-encodedcommand:") for item in arguments):
-            _fail(path, "PowerShell command-string evaluation is forbidden")
-    elif name in CODE_INTERPRETERS:
-        if any(_has_short_command_switch(item) or item in {"-e", "--eval"} for item in arguments):
-            _fail(path, "inline interpreter evaluation is forbidden")
+        _scan_powershell_prefix(argv, prefix_start, path)
+    elif name in {"python", "python3", "pypy", "pypy3"}:
+        _scan_python_prefix(argv, prefix_start, path)
+    elif name in {"node", "nodejs"}:
+        _scan_node_prefix(argv, prefix_start, path)
+    elif name in {"ruby", "perl"}:
+        _scan_ruby_or_perl_prefix(name, argv, prefix_start, path)
 
 
 def _command(value: Any, path: str, phase: str) -> dict[str, Any]:
