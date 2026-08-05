@@ -217,8 +217,13 @@ class QualityGatesTests(unittest.TestCase):
             ["pwsh", "-Command", "Write-Host unsafe"],
             ["pwsh", "-NoProfile", "-Command", "Write-Host unsafe"],
             ["python3", "-c", "print('unsafe')"],
+            ["python3", "-cprint('unsafe')"],
             ["python3", "-W", "ignore", "-c", "print('unsafe')"],
             ["node", "--trace-warnings", "--eval", "console.log('unsafe')"],
+            ["node", "-econsole.log('unsafe')"],
+            ["node", "-pconsole.log('unsafe')"],
+            ["ruby", "-eputs", "unsafe.rb"],
+            ["perl", "-eprint", "unsafe.pl"],
         )
         for argv in cases:
             value = self.valid()
@@ -226,6 +231,9 @@ class QualityGatesTests(unittest.TestCase):
             self.assert_invalid(value, schema=False)
         value = self.valid()
         value["rules"][0]["prepare"][0]["argv"] = ["bash", "-n", "scripts/example.sh"]
+        VALIDATOR.validate(value)
+        value = self.valid()
+        value["rules"][0]["prepare"][0]["argv"] = ["bash", "-C", "scripts/example.sh"]
         VALIDATOR.validate(value)
         value = self.valid()
         value["rules"][0]["prepare"][0]["argv"] = ["echo", "bash", "-c", "text"]
@@ -238,6 +246,8 @@ class QualityGatesTests(unittest.TestCase):
             ["python3", "scripts/check.py", "-e"],
             ["node", "scripts/check.js", "--eval"],
             ["pwsh", "-File", "scripts/check.ps1", "-Command"],
+            ["ruby", "-Ivendor", "scripts/check.rb"],
+            ["perl", "-MEncode", "scripts/check.pl"],
         ):
             value = self.valid()
             value["rules"][0]["prepare"][0]["argv"] = argv

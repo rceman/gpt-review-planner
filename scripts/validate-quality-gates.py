@@ -168,10 +168,9 @@ def _effective_executable(argv: list[str], path: str) -> tuple[str, int]:
 
 
 def _has_short_command_switch(token: str) -> bool:
-    lowered = token.lower()
-    if lowered == "-c":
+    if token == "-c":
         return True
-    return lowered.startswith("-") and not lowered.startswith("--") and len(lowered) > 2 and lowered.endswith("c")
+    return token.startswith("-") and not token.startswith("--") and len(token) > 2 and token.endswith("c")
 
 
 def _consume_launcher_value(argv: list[str], index: int, path: str, *, forbidden=None) -> int:
@@ -220,13 +219,23 @@ def _scan_python_prefix(argv: list[str], index: int, path: str) -> None:
             return
         if not token.startswith("-"):
             return
-        if token == "-c":
+        if token == "-c" or (token.startswith("-c") and not token.startswith("--")):
             _fail(path, "inline interpreter evaluation is forbidden")
         if token == "-m":
-            index = _consume_launcher_value(argv, index, path, forbidden=lambda value: value == "-c")
+            index = _consume_launcher_value(
+                argv,
+                index,
+                path,
+                forbidden=lambda value: value == "-c" or (value.startswith("-c") and not value.startswith("--")),
+            )
             return
         if token in value_options:
-            index = _consume_launcher_value(argv, index, path, forbidden=lambda value: value == "-c")
+            index = _consume_launcher_value(
+                argv,
+                index,
+                path,
+                forbidden=lambda value: value == "-c" or (value.startswith("-c") and not value.startswith("--")),
+            )
             continue
         if token.startswith("-W") or token.startswith("-X"):
             index += 1
@@ -255,8 +264,13 @@ NODE_VALUE_OPTIONS = {
 
 
 def _node_inline_switch(token: str) -> bool:
-    lowered = token.lower()
-    return lowered in {"-e", "-p", "--eval", "--print"} or lowered.startswith("--eval=") or lowered.startswith("--print=")
+    return (
+        token in {"-e", "-p", "--eval", "--print"}
+        or (token.startswith("-e") and not token.startswith("--"))
+        or (token.startswith("-p") and not token.startswith("--"))
+        or token.startswith("--eval=")
+        or token.startswith("--print=")
+    )
 
 
 def _scan_node_prefix(argv: list[str], index: int, path: str) -> None:
@@ -285,11 +299,24 @@ def _scan_ruby_or_perl_prefix(name: str, argv: list[str], index: int, path: str)
             return
         if not token.startswith("-"):
             return
-        lowered = token.lower()
-        if lowered == "-e" or (not lowered.startswith("--") and "e" in lowered[1:]):
+        if name == "ruby" and (
+            (token.startswith("-I") and token != "-I")
+            or (token.startswith("-r") and token != "-r")
+            or token.startswith("--require=")
+        ):
+            index += 1
+            continue
+        if name == "perl" and (
+            (token.startswith("-I") and token != "-I")
+            or (token.startswith("-M") and token != "-M")
+            or (token.startswith("-m") and token != "-m")
+        ):
+            index += 1
+            continue
+        if token == "-e" or (not token.startswith("--") and "e" in token[1:]):
             _fail(path, "inline interpreter evaluation is forbidden")
         if token in value_options:
-            index = _consume_launcher_value(argv, index, path, forbidden=lambda value: value.lower() == "-e")
+            index = _consume_launcher_value(argv, index, path, forbidden=lambda value: value == "-e")
             continue
         index += 1
 
