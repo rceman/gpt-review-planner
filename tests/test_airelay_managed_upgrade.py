@@ -127,10 +127,12 @@ class AirelayManagedUpgradeTests(unittest.TestCase):
         self.assertEqual(recipe["working_directory"], "/home/therceman/git/airelay")
         self.assertEqual(recipe["executable"]["invocation_path"], "/usr/local/bin/airelay")
         self.assertEqual(recipe["executable"]["resolved_path"], "/home/therceman/git/airelay/dist/airelay.cjs")
+        self.assertEqual(recipe["executable"]["resolution_kind"], "symlink")
         self.assertEqual(recipe["executable"]["version"], "0.1.54")
         self.assertEqual(recipe["executable"]["controller_protocol_version"], 1)
         self.assertEqual(recipe["child"]["invocation_path"], "/usr/local/bin/codex")
         self.assertEqual(recipe["child"]["resolved_path"], "/usr/local/lib/node_modules/@openai/codex/bin/codex.js")
+        self.assertEqual(recipe["child"]["resolution_kind"], "symlink")
         self.assertEqual(recipe["child"]["argv"], [
             "resume",
             "019df731-52d4-7833-b0d7-fd00a172fd23",
@@ -206,6 +208,8 @@ class AirelayManagedUpgradeTests(unittest.TestCase):
         self.assertEqual(master["expected_profile"], "codex")
         self.assertEqual(master["expected_pid"], 1294570)
         self.assertEqual(master["expected_controller_protocol_version"], 1)
+        self.assertEqual(master["expected_executable_resolution_kind"], "symlink")
+        self.assertEqual(master["expected_child_resolution_kind"], "symlink")
         self.assertEqual(master["expected_resume_identity"], "019df731-52d4-7833-b0d7-fd00a172fd23")
         self.assertEqual(master["expected_child_argv"][2], "--dangerously-bypass-approvals-and-sandbox")
         VALIDATOR.validate_request(request)
@@ -214,9 +218,114 @@ class AirelayManagedUpgradeTests(unittest.TestCase):
         self.assertEqual(old["profile"], "codex")
         self.assertEqual(old["pid"], 1294570)
         self.assertEqual(old["controller_protocol_version"], 1)
+        self.assertEqual(old["executable_resolution_kind"], "symlink")
+        self.assertEqual(old["child_resolution_kind"], "symlink")
         self.assertEqual(old["resume_identity"], master["expected_resume_identity"])
         self.assertEqual(old["child_argv"], master["expected_child_argv"])
         VALIDATOR.validate_receipt(receipt)
+
+    def test_argv_parentheses_are_rejected_by_all_three_schemas_and_validator(self):
+        recipe_pattern = self.recipe_schema["$defs"]["shellSafeToken"]["pattern"]
+        request_pattern = self.request_schema["$defs"]["argv"]["items"]["pattern"]
+        receipt_pattern = self.receipt_schema["$defs"]["argv"]["items"]["pattern"]
+        self.assertEqual(recipe_pattern, request_pattern)
+        self.assertEqual(recipe_pattern, receipt_pattern)
+        recipe = load_fixture("airelay-master-recipe.json")
+        bad_recipe = copy.deepcopy(recipe)
+        bad_recipe["child"]["argv"].append("(unsafe)")
+        with self.assertRaises(VALIDATOR.ValidationError):
+            VALIDATOR.validate_recipe(bad_recipe)
+        with self.assertRaises(AssertionError):
+            schema_validate(bad_recipe, self.recipe_schema)
+
+        request = load_fixture("rolling-upgrade-request.json")
+        bad_request = copy.deepcopy(request)
+        bad_request["selected_sessions"][0]["expected_child_argv"].append("(unsafe)")
+        with self.assertRaises(VALIDATOR.ValidationError):
+            VALIDATOR.validate_request(bad_request)
+        with self.assertRaises(AssertionError):
+            schema_validate(bad_request, self.request_schema)
+
+        receipt = load_fixture("rolling-upgrade-success-receipt.json")
+        bad_receipt = copy.deepcopy(receipt)
+        bad_receipt["sessions"][0]["old_identity"]["child_argv"].append("(unsafe)")
+        with self.assertRaises(VALIDATOR.ValidationError):
+            VALIDATOR.validate_receipt(bad_receipt)
+        with self.assertRaises(AssertionError):
+            schema_validate(bad_receipt, self.receipt_schema)
+
+    def test_resolution_kind_is_closed_and_equality_is_proven(self):
+        recipe = load_fixture("airelay-master-recipe.json")
+        for kind in ("direct", "unknown"):
+            bad = copy.deepcopy(recipe)
+            bad["executable"]["resolution_kind"] = kind
+            bad["recipe_sha256"] = VALIDATOR._recipe_digest(bad)
+            if kind == "direct":
+                with self.assertRaises(VALIDATOR.ValidationError):
+                    VALIDATOR.validate_recipe(bad)
+            else:
+                self.assert_invalid(VALIDATOR.validate_recipe, bad)
+                with self.assertRaises(AssertionError):
+                    schema_validate(bad, self.recipe_schema)
+
+        direct = copy.deepcopy(recipe)
+        direct["executable"]["resolution_kind"] = "direct"
+        direct["executable"]["resolved_path"] = direct["executable"]["invocation_path"]
+        direct["recipe_sha256"] = VALIDATOR._recipe_digest(direct)
+        VALIDATOR.validate_recipe(direct)
+        schema_validate(direct, self.recipe_schema)
+
+        for kind in ("symlink", "wrapper"):
+            equal = copy.deepcopy(recipe)
+            equal["executable"]["resolution_kind"] = kind
+            equal["executable"]["resolved_path"] = equal["executable"]["invocation_path"]
+            equal["recipe_sha256"] = VALIDATOR._recipe_digest(equal)
+            self.assert_invalid(VALIDATOR.validate_recipe, equal)
+
+        request = load_fixture("rolling-upgrade-request.json")
+        missing = copy.deepcopy(request)
+        missing["selected_sessions"][0].pop("expected_executable_resolution_kind")
+        self.assert_invalid(VALIDATOR.validate_request, missing)
+        with self.assertRaises(AssertionError):
+            schema_validate(missing, self.request_schema)
+        receipt = load_fixture("rolling-upgrade-success-receipt.json")
+        unknown = copy.deepcopy(receipt)
+        unknown["sessions"][0]["old_identity"]["child_resolution_kind"] = "unproved"
+        self.assert_invalid(VALIDATOR.validate_receipt, unknown)
+        with self.assertRaises(AssertionError):
+            schema_validate(unknown, self.receipt_schema)
+
+    def test_resolution_kind_semantics_apply_to_request_and_receipt_identities(self):
+        request = load_fixture("rolling-upgrade-request.json")
+        direct_mismatch = copy.deepcopy(request)
+        master = direct_mismatch["selected_sessions"][-1]
+        master["expected_executable_resolution_kind"] = "direct"
+        self.assert_invalid(VALIDATOR.validate_request, direct_mismatch)
+        symlink_equal = copy.deepcopy(request)
+        master = symlink_equal["selected_sessions"][-1]
+        master["expected_executable_resolved_path"] = master["expected_executable_invocation_path"]
+        self.assert_invalid(VALIDATOR.validate_request, symlink_equal)
+        missing = copy.deepcopy(request)
+        missing["selected_sessions"][-1].pop("expected_child_resolution_kind")
+        self.assert_invalid(VALIDATOR.validate_request, missing)
+        with self.assertRaises(AssertionError):
+            schema_validate(missing, self.request_schema)
+
+        receipt = load_fixture("rolling-upgrade-success-receipt.json")
+        direct_mismatch = copy.deepcopy(receipt)
+        old = direct_mismatch["sessions"][-1]["old_identity"]
+        old["executable_resolution_kind"] = "direct"
+        self.assert_invalid(VALIDATOR.validate_receipt, direct_mismatch)
+        wrapper_equal = copy.deepcopy(receipt)
+        old = wrapper_equal["sessions"][-1]["old_identity"]
+        old["child_resolution_kind"] = "wrapper"
+        old["child_resolved_path"] = old["child_invocation_path"]
+        self.assert_invalid(VALIDATOR.validate_receipt, wrapper_equal)
+        unknown = copy.deepcopy(receipt)
+        unknown["sessions"][-1]["old_identity"]["executable_resolution_kind"] = "unknown"
+        self.assert_invalid(VALIDATOR.validate_receipt, unknown)
+        with self.assertRaises(AssertionError):
+            schema_validate(unknown, self.receipt_schema)
 
     def test_request_authorization_and_ordering(self):
         request = load_fixture("rolling-upgrade-request.json")

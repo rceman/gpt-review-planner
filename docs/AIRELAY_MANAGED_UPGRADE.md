@@ -16,6 +16,12 @@ relative path, duplicate argv item, session key substituted for the resume
 UUID, or unapproved flag is forbidden.
 The controller protocol version is a positive safe JSON integer, independently
 validated from the SemVer runtime version.
+Each executable and child path pair also declares a closed resolution_kind:
+direct, symlink, or wrapper. Direct requires equal invocation and resolved
+paths; symlink and wrapper require unequal paths. This is a declared proof
+checked against path equality. The external supervisor must additionally
+verify the symlink or wrapper target and build before stopping the old
+controller.
 recipe_sha256 is the SHA-256 of the canonical sorted JSON recipe after
 removing the recipe_sha256 field itself.
 

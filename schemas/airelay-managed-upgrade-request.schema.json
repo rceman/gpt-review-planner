@@ -30,6 +30,7 @@
   "$defs": {
     "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "uuid": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
+    "resolutionKind": {"enum": ["direct", "symlink", "wrapper"]},
     "sessionKey": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$", "minLength": 1, "maxLength": 128},
     "identifier": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$", "minLength": 1, "maxLength": 128},
     "argv": {
@@ -37,7 +38,7 @@
       "minItems": 1,
       "maxItems": 128,
       "uniqueItems": true,
-      "items": {"type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^(?!.*[\\u0000-\\u001f\\u007f;|&$\\x60<>]).+$"}
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^(?!.*[\\u0000-\\u001f\\u007f;|&$\\x60\\x28\\x29<>]).+$"}
     },
     "flag": {"type": "string", "pattern": "^--[A-Za-z0-9][A-Za-z0-9-]{0,63}$"},
     "semver": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"},
@@ -71,8 +72,10 @@
         "expected_working_directory",
         "expected_executable_invocation_path",
         "expected_executable_resolved_path",
+        "expected_executable_resolution_kind",
         "expected_child_invocation_path",
         "expected_child_resolved_path",
+        "expected_child_resolution_kind",
         "expected_child_argv",
         "expected_approved_flags",
         "expected_resume_identity"
@@ -87,8 +90,10 @@
         "expected_working_directory": {"$ref": "#/$defs/absolutePath"},
         "expected_executable_invocation_path": {"$ref": "#/$defs/absolutePath"},
         "expected_executable_resolved_path": {"$ref": "#/$defs/absolutePath"},
+        "expected_executable_resolution_kind": {"$ref": "#/$defs/resolutionKind"},
         "expected_child_invocation_path": {"$ref": "#/$defs/absolutePath"},
         "expected_child_resolved_path": {"$ref": "#/$defs/absolutePath"},
+        "expected_child_resolution_kind": {"$ref": "#/$defs/resolutionKind"},
         "expected_child_argv": {"$ref": "#/$defs/argv"},
         "expected_approved_flags": {"type": "array", "uniqueItems": true, "maxItems": 64, "items": {"$ref": "#/$defs/flag"}},
         "expected_resume_identity": {"$ref": "#/$defs/uuid"}

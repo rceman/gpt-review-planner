@@ -38,6 +38,7 @@ FLAG_RE = re.compile(r"^--[A-Za-z0-9][A-Za-z0-9-]{0,63}$")
 CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
 SHELL_CHARS = set(";|&$" + chr(96) + "()<>" )
 MAX_SAFE_INTEGER = 9007199254740991
+RESOLUTION_KINDS = {"direct", "symlink", "wrapper"}
 
 
 def _duplicate_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -145,6 +146,16 @@ def _absolute_path(value: Any, path: str) -> str:
     components = value.split("/")[1:]
     if any(not component or component in {".", ".."} for component in components):
         _fail(path, "must not contain empty, dot, or traversal components")
+    return value
+
+
+def _resolution_kind(value: Any, path: str, invocation_path: str, resolved_path: str) -> str:
+    if not isinstance(value, str) or value not in RESOLUTION_KINDS:
+        _fail(path, "must be direct, symlink, or wrapper")
+    if value == "direct" and invocation_path != resolved_path:
+        _fail(path, "direct requires equal invocation_path and resolved_path")
+    if value in {"symlink", "wrapper"} and invocation_path == resolved_path:
+        _fail(path, f"{value} requires different invocation_path and resolved_path")
     return value
 
 
@@ -264,14 +275,16 @@ def validate_recipe(document: Any) -> dict[str, Any]:
     session_key = _session_key(recipe["session_key"], "recipe.session_key")
     _identifier(recipe["profile"], "recipe.profile")
     _absolute_path(recipe["working_directory"], "recipe.working_directory")
-    executable = _object(recipe["executable"], "recipe.executable", {"invocation_path", "resolved_path", "version", "controller_protocol_version"}, {"invocation_path", "resolved_path", "version", "controller_protocol_version"})
-    _absolute_path(executable["invocation_path"], "recipe.executable.invocation_path")
-    _absolute_path(executable["resolved_path"], "recipe.executable.resolved_path")
+    executable = _object(recipe["executable"], "recipe.executable", {"invocation_path", "resolved_path", "resolution_kind", "version", "controller_protocol_version"}, {"invocation_path", "resolved_path", "resolution_kind", "version", "controller_protocol_version"})
+    executable_invocation = _absolute_path(executable["invocation_path"], "recipe.executable.invocation_path")
+    executable_resolved = _absolute_path(executable["resolved_path"], "recipe.executable.resolved_path")
+    _resolution_kind(recipe["executable"]["resolution_kind"], "recipe.executable.resolution_kind", executable_invocation, executable_resolved)
     _semver(executable["version"], "recipe.executable.version")
     _positive_integer(executable["controller_protocol_version"], "recipe.executable.controller_protocol_version")
-    child = _object(recipe["child"], "recipe.child", {"invocation_path", "resolved_path", "argv"}, {"invocation_path", "resolved_path", "argv"})
-    _absolute_path(child["invocation_path"], "recipe.child.invocation_path")
-    _absolute_path(child["resolved_path"], "recipe.child.resolved_path")
+    child = _object(recipe["child"], "recipe.child", {"invocation_path", "resolved_path", "resolution_kind", "argv"}, {"invocation_path", "resolved_path", "resolution_kind", "argv"})
+    child_invocation = _absolute_path(child["invocation_path"], "recipe.child.invocation_path")
+    child_resolved = _absolute_path(child["resolved_path"], "recipe.child.resolved_path")
+    _resolution_kind(child["resolution_kind"], "recipe.child.resolution_kind", child_invocation, child_resolved)
     argv = _validate_argv(child["argv"], "recipe.child.argv")
     resume = _object(recipe["resume"], "recipe.resume", {"identity"}, {"identity"})
     resume_identity = _match(resume["identity"], "recipe.resume.identity", UUID_RE)
@@ -299,8 +312,10 @@ def _validate_selected_session(value: Any, index: int) -> dict[str, Any]:
         "expected_working_directory",
         "expected_executable_invocation_path",
         "expected_executable_resolved_path",
+        "expected_executable_resolution_kind",
         "expected_child_invocation_path",
         "expected_child_resolved_path",
+        "expected_child_resolution_kind",
         "expected_child_argv",
         "expected_approved_flags",
         "expected_resume_identity",
@@ -313,10 +328,12 @@ def _validate_selected_session(value: Any, index: int) -> dict[str, Any]:
     _positive_integer(session["expected_pid"], f"{path}.expected_pid")
     _positive_integer(session["expected_controller_protocol_version"], f"{path}.expected_controller_protocol_version")
     _absolute_path(session["expected_working_directory"], f"{path}.expected_working_directory")
-    _absolute_path(session["expected_executable_invocation_path"], f"{path}.expected_executable_invocation_path")
-    _absolute_path(session["expected_executable_resolved_path"], f"{path}.expected_executable_resolved_path")
-    _absolute_path(session["expected_child_invocation_path"], f"{path}.expected_child_invocation_path")
-    _absolute_path(session["expected_child_resolved_path"], f"{path}.expected_child_resolved_path")
+    executable_invocation = _absolute_path(session["expected_executable_invocation_path"], f"{path}.expected_executable_invocation_path")
+    executable_resolved = _absolute_path(session["expected_executable_resolved_path"], f"{path}.expected_executable_resolved_path")
+    _resolution_kind(session["expected_executable_resolution_kind"], f"{path}.expected_executable_resolution_kind", executable_invocation, executable_resolved)
+    child_invocation = _absolute_path(session["expected_child_invocation_path"], f"{path}.expected_child_invocation_path")
+    child_resolved = _absolute_path(session["expected_child_resolved_path"], f"{path}.expected_child_resolved_path")
+    _resolution_kind(session["expected_child_resolution_kind"], f"{path}.expected_child_resolution_kind", child_invocation, child_resolved)
     argv = _validate_argv(session["expected_child_argv"], f"{path}.expected_child_argv")
     flags = _validate_flags(session["expected_approved_flags"], f"{path}.expected_approved_flags", argv)
     resume_identity = _match(session["expected_resume_identity"], f"{path}.expected_resume_identity", UUID_RE)
@@ -364,8 +381,10 @@ IDENTITY_KEYS = {
     "working_directory",
     "executable_invocation_path",
     "executable_resolved_path",
+    "executable_resolution_kind",
     "child_invocation_path",
     "child_resolved_path",
+    "child_resolution_kind",
     "child_argv",
     "approved_flags",
     "resume_identity",
@@ -380,10 +399,12 @@ def _validate_identity(value: Any, path: str, session_key: str) -> dict[str, Any
     _positive_integer(identity["pid"], f"{path}.pid")
     _positive_integer(identity["controller_protocol_version"], f"{path}.controller_protocol_version")
     _absolute_path(identity["working_directory"], f"{path}.working_directory")
-    _absolute_path(identity["executable_invocation_path"], f"{path}.executable_invocation_path")
-    _absolute_path(identity["executable_resolved_path"], f"{path}.executable_resolved_path")
-    _absolute_path(identity["child_invocation_path"], f"{path}.child_invocation_path")
-    _absolute_path(identity["child_resolved_path"], f"{path}.child_resolved_path")
+    executable_invocation = _absolute_path(identity["executable_invocation_path"], f"{path}.executable_invocation_path")
+    executable_resolved = _absolute_path(identity["executable_resolved_path"], f"{path}.executable_resolved_path")
+    _resolution_kind(identity["executable_resolution_kind"], f"{path}.executable_resolution_kind", executable_invocation, executable_resolved)
+    child_invocation = _absolute_path(identity["child_invocation_path"], f"{path}.child_invocation_path")
+    child_resolved = _absolute_path(identity["child_resolved_path"], f"{path}.child_resolved_path")
+    _resolution_kind(identity["child_resolution_kind"], f"{path}.child_resolution_kind", child_invocation, child_resolved)
     argv = _validate_argv(identity["child_argv"], f"{path}.child_argv")
     flags = _validate_flags(identity["approved_flags"], f"{path}.approved_flags", argv)
     resume_identity = _match(identity["resume_identity"], f"{path}.resume_identity", UUID_RE)

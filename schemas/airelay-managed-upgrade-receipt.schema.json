@@ -38,6 +38,7 @@
   "$defs": {
     "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "uuid": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
+    "resolutionKind": {"enum": ["direct", "symlink", "wrapper"]},
     "identifier": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$", "minLength": 1, "maxLength": 128},
     "sessionKey": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$", "minLength": 1, "maxLength": 128},
     "semver": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"},
@@ -46,7 +47,7 @@
       "minItems": 1,
       "maxItems": 128,
       "uniqueItems": true,
-      "items": {"type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^(?!.*[\\u0000-\\u001f\\u007f;|&$\\x60<>]).+$"}
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^(?!.*[\\u0000-\\u001f\\u007f;|&$\\x60\\x28\\x29<>]).+$"}
     },
     "flag": {"type": "string", "pattern": "^--[A-Za-z0-9][A-Za-z0-9-]{0,63}$"},
     "absolutePath": {
@@ -75,8 +76,10 @@
         "working_directory",
         "executable_invocation_path",
         "executable_resolved_path",
+        "executable_resolution_kind",
         "child_invocation_path",
         "child_resolved_path",
+        "child_resolution_kind",
         "child_argv",
         "approved_flags",
         "resume_identity"
@@ -90,8 +93,10 @@
         "working_directory": {"$ref": "#/$defs/absolutePath"},
         "executable_invocation_path": {"$ref": "#/$defs/absolutePath"},
         "executable_resolved_path": {"$ref": "#/$defs/absolutePath"},
+        "executable_resolution_kind": {"$ref": "#/$defs/resolutionKind"},
         "child_invocation_path": {"$ref": "#/$defs/absolutePath"},
         "child_resolved_path": {"$ref": "#/$defs/absolutePath"},
+        "child_resolution_kind": {"$ref": "#/$defs/resolutionKind"},
         "child_argv": {"$ref": "#/$defs/argv"},
         "approved_flags": {"type": "array", "uniqueItems": true, "maxItems": 64, "items": {"$ref": "#/$defs/flag"}},
         "resume_identity": {"$ref": "#/$defs/uuid"}

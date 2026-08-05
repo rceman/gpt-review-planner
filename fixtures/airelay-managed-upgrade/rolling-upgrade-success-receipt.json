@@ -21,8 +21,10 @@
         "working_directory": "/tmp/airelay-example-worker",
         "executable_invocation_path": "/tmp/airelay-example-worker/bin/airelay",
         "executable_resolved_path": "/tmp/airelay-example-worker/releases/0.1.54/airelay.cjs",
+        "executable_resolution_kind": "symlink",
         "child_invocation_path": "/tmp/airelay-example-worker/bin/codex",
         "child_resolved_path": "/tmp/airelay-example-worker/releases/0.1.54/codex.js",
+        "child_resolution_kind": "symlink",
         "child_argv": [
           "resume",
           "019faea5-f0b2-73a3-b286-ef54956ddd11"
@@ -39,8 +41,10 @@
         "working_directory": "/tmp/airelay-example-worker",
         "executable_invocation_path": "/tmp/airelay-example-worker/bin/airelay",
         "executable_resolved_path": "/tmp/airelay-example-worker/releases/0.1.55/airelay.cjs",
+        "executable_resolution_kind": "symlink",
         "child_invocation_path": "/tmp/airelay-example-worker/bin/codex",
         "child_resolved_path": "/tmp/airelay-example-worker/releases/0.1.55/codex.js",
+        "child_resolution_kind": "symlink",
         "child_argv": [
           "resume",
           "019faea5-f0b2-73a3-b286-ef54956ddd11"
@@ -60,8 +64,10 @@
           "working_directory": "/tmp/airelay-example-worker",
           "executable_invocation_path": "/tmp/airelay-example-worker/bin/airelay",
           "executable_resolved_path": "/tmp/airelay-example-worker/releases/0.1.55/airelay.cjs",
+          "executable_resolution_kind": "symlink",
           "child_invocation_path": "/tmp/airelay-example-worker/bin/codex",
           "child_resolved_path": "/tmp/airelay-example-worker/releases/0.1.55/codex.js",
+          "child_resolution_kind": "symlink",
           "child_argv": [
             "resume",
             "019faea5-f0b2-73a3-b286-ef54956ddd11"
@@ -83,7 +89,7 @@
       "session_key": "airelay_master",
       "state": "ready",
       "old_identity": {
-        "recipe_sha256": "e1160b8452c4f5afc81b21028df83f292d50c5e33850ce79edeb86ca334a8077",
+        "recipe_sha256": "8cfc1446a935cc7941dfcbf40c4f3c35ee15eb947317a709335cb509e41889da",
         "profile": "codex",
         "version": "0.1.54",
         "pid": 1294570,
@@ -91,8 +97,10 @@
         "working_directory": "/home/therceman/git/airelay",
         "executable_invocation_path": "/usr/local/bin/airelay",
         "executable_resolved_path": "/home/therceman/git/airelay/dist/airelay.cjs",
+        "executable_resolution_kind": "symlink",
         "child_invocation_path": "/usr/local/bin/codex",
         "child_resolved_path": "/usr/local/lib/node_modules/@openai/codex/bin/codex.js",
+        "child_resolution_kind": "symlink",
         "child_argv": [
           "resume",
           "019df731-52d4-7833-b0d7-fd00a172fd23",
@@ -112,8 +120,10 @@
         "working_directory": "/home/therceman/git/airelay",
         "executable_invocation_path": "/usr/local/bin/airelay",
         "executable_resolved_path": "/home/therceman/.local/share/airelay/releases/0.1.55/airelay.cjs",
+        "executable_resolution_kind": "symlink",
         "child_invocation_path": "/usr/local/bin/codex",
         "child_resolved_path": "/usr/local/lib/node_modules/@openai/codex/bin/codex.js",
+        "child_resolution_kind": "symlink",
         "child_argv": [
           "resume",
           "019df731-52d4-7833-b0d7-fd00a172fd23",
@@ -136,8 +146,10 @@
           "working_directory": "/home/therceman/git/airelay",
           "executable_invocation_path": "/usr/local/bin/airelay",
           "executable_resolved_path": "/home/therceman/.local/share/airelay/releases/0.1.55/airelay.cjs",
+          "executable_resolution_kind": "symlink",
           "child_invocation_path": "/usr/local/bin/codex",
           "child_resolved_path": "/usr/local/lib/node_modules/@openai/codex/bin/codex.js",
+          "child_resolution_kind": "symlink",
           "child_argv": [
             "resume",
             "019df731-52d4-7833-b0d7-fd00a172fd23",

@@ -1,18 +1,20 @@
 {
   "schema_version": 1,
-  "recipe_sha256": "e1160b8452c4f5afc81b21028df83f292d50c5e33850ce79edeb86ca334a8077",
+  "recipe_sha256": "8cfc1446a935cc7941dfcbf40c4f3c35ee15eb947317a709335cb509e41889da",
   "session_key": "airelay_master",
   "profile": "codex",
   "working_directory": "/home/therceman/git/airelay",
   "executable": {
     "invocation_path": "/usr/local/bin/airelay",
     "resolved_path": "/home/therceman/git/airelay/dist/airelay.cjs",
+    "resolution_kind": "symlink",
     "version": "0.1.54",
     "controller_protocol_version": 1
   },
   "child": {
     "invocation_path": "/usr/local/bin/codex",
     "resolved_path": "/usr/local/lib/node_modules/@openai/codex/bin/codex.js",
+    "resolution_kind": "symlink",
     "argv": [
       "resume",
       "019df731-52d4-7833-b0d7-fd00a172fd23",
