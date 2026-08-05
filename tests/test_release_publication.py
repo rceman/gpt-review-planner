@@ -467,6 +467,8 @@ class ReleasePublicationTests(unittest.TestCase):
                     "bash", str(ROOT / "setup.sh"), "--project", str(project), "--version", "v2.2.2",
                     "--commit", "a" * 40, "--execution-mode", "gpt_tunnel_managed",
                     "--release-publication-file", str(ROOT / "templates/project/release-publication.none.json"),
+                    "--project-workflow-file", str(ROOT / "templates/project/project-workflow.json"),
+                    "--quality-gates-file", str(ROOT / "templates/project/quality-gates.json"),
                 ],
                 cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
             )

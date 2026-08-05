@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,6 +40,11 @@ def schema_accepts(value, schema, root=None):
         return False
     if "anyOf" in schema and not any(schema_accepts(value, child, root) for child in schema["anyOf"]):
         return False
+    if "allOf" in schema and not all(schema_accepts(value, child, root) for child in schema["allOf"]):
+        return False
+    if "if" in schema and schema_accepts(value, schema["if"], root):
+        if "then" in schema and not schema_accepts(value, schema["then"], root):
+            return False
     if "type" in schema:
         types = schema["type"] if isinstance(schema["type"], list) else [schema["type"]]
         matches = []
@@ -163,8 +169,14 @@ class QualityGateSelectionTests(unittest.TestCase):
         return value
 
     def snapshot(self):
+        index = Path(git(self.repo, "rev-parse", "--git-path", "index"))
+        if not index.is_absolute():
+            index = self.repo / index
         return (
             git(self.repo, "rev-parse", "HEAD"),
+            git(self.repo, "for-each-ref", "--format=%(refname) %(objectname)", "refs/heads", "refs/tags"),
+            index.read_bytes(),
+            (self.repo / ".git" / "config").read_bytes(),
             git(self.repo, "status", "--porcelain=v1", "--untracked-files=all"),
             subprocess.run(["git", "-C", str(self.repo), "diff", "--binary"], stdout=subprocess.PIPE, check=True).stdout,
             subprocess.run(["git", "-C", str(self.repo), "diff", "--cached", "--binary"], stdout=subprocess.PIPE, check=True).stdout,
@@ -296,6 +308,128 @@ class QualityGateSelectionTests(unittest.TestCase):
         import hashlib
 
         self.assertEqual(plan["declaration"]["sha256"], hashlib.sha256((self.repo / "quality-gates.json").read_bytes()).hexdigest())
+
+    def test_generated_outputs_preserve_declaration_order_byte_stably(self):
+        declaration = copy.deepcopy(self.declaration)
+        declaration["generated"][0]["outputs"] = ["build/z.json", "build/a.json"]
+        declaration["rules"][1]["paths"].append("quality-gates.json")
+        (self.repo / "quality-gates.json").write_text(json.dumps(declaration, indent=2) + "\n", encoding="utf-8")
+        (self.repo / "templates/project/input.json").write_text('{"changed": true}\n', encoding="utf-8")
+        first = Path(self.temp.name) / "ordered-first.json"
+        second = Path(self.temp.name) / "ordered-second.json"
+        result, _ = self.run_plan(output=first)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        result, _ = self.run_plan(output=second)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        first_plan = self.read_plan(first)
+        second_plan = self.read_plan(second)
+        self.assertEqual(first_plan["selected_generated"][0]["outputs"], ["build/z.json", "build/a.json"])
+        self.assertEqual(first_plan["selected_generated"][0]["matched_inputs"], ["templates/project/input.json"])
+        self.assertEqual(first.read_bytes(), second.read_bytes())
+
+    def test_phase_target_and_timeout_invariants_match_schema(self):
+        (self.repo / "src" / "a.py").write_text("changed\n", encoding="utf-8")
+        result, output = self.run_plan()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        valid = self.read_plan(output)
+
+        merge_fix = copy.deepcopy(valid)
+        merge_fix["phase"] = "merge"
+        merge_fix["selected_generated"] = []
+        merge_fix["counts"]["selected_generated"] = 0
+        merge_fix["selected_commands"][0]["mode"] = "fix"
+        with self.assertRaises(PLANNER.QualityGatePlanError):
+            PLANNER.validate_execution_plan(merge_fix)
+        self.assertFalse(schema_accepts(merge_fix, self.schema))
+
+        merge_generated = copy.deepcopy(valid)
+        merge_generated["phase"] = "merge"
+        merge_generated["counts"]["selected_generated"] = len(merge_generated["selected_generated"])
+        merge_generated["selected_generated"] = [{
+            "id": "generated-index",
+            "matched_inputs": ["src/a.py"],
+            "outputs": ["build/index.json"],
+            "argv": ["python3", "scripts/generate.py"],
+            "timeout_seconds": 60,
+        }]
+        merge_generated["counts"]["selected_generated"] = 1
+        with self.assertRaises(PLANNER.QualityGatePlanError):
+            PLANNER.validate_execution_plan(merge_generated)
+        self.assertFalse(schema_accepts(merge_generated, self.schema))
+
+        worktree_bad_fingerprint = copy.deepcopy(valid)
+        worktree_bad_fingerprint["target"]["worktree_fingerprint"] = ""
+        with self.assertRaises(PLANNER.QualityGatePlanError):
+            PLANNER.validate_execution_plan(worktree_bad_fingerprint)
+        self.assertFalse(schema_accepts(worktree_bad_fingerprint, self.schema))
+
+        commit_bad_projection = copy.deepcopy(valid)
+        commit_bad_projection["target"] = {
+            "kind": "commit",
+            "revision": self.base,
+            "head_revision": self.base,
+            "worktree_fingerprint": "f" * 64,
+            "status_projection": [" M src/a.py"],
+        }
+        with self.assertRaises(PLANNER.QualityGatePlanError):
+            PLANNER.validate_execution_plan(commit_bad_projection)
+        self.assertFalse(schema_accepts(commit_bad_projection, self.schema))
+
+        generated_timeout = copy.deepcopy(valid)
+        generated_timeout["selected_generated"] = [{
+            "id": "generated-index",
+            "matched_inputs": ["src/a.py"],
+            "outputs": ["build/index.json"],
+            "argv": ["python3", "scripts/generate.py"],
+            "timeout_seconds": 3601,
+        }]
+        generated_timeout["counts"]["selected_generated"] = 1
+        with self.assertRaises(PLANNER.QualityGatePlanError):
+            PLANNER.validate_execution_plan(generated_timeout)
+        self.assertFalse(schema_accepts(generated_timeout, self.schema))
+
+        command_timeout = copy.deepcopy(valid)
+        command_timeout["selected_commands"][0]["timeout_seconds"] = 3601
+        with self.assertRaises(PLANNER.QualityGatePlanError):
+            PLANNER.validate_execution_plan(command_timeout)
+        self.assertFalse(schema_accepts(command_timeout, self.schema))
+
+        empty_rule_paths = copy.deepcopy(valid)
+        empty_rule_paths["selected_rules"][0]["matched_paths"] = []
+        with self.assertRaises(PLANNER.QualityGatePlanError):
+            PLANNER.validate_execution_plan(empty_rule_paths)
+        self.assertFalse(schema_accepts(empty_rule_paths, self.schema))
+
+    def test_declaration_hash_and_validation_use_one_byte_snapshot(self):
+        original = (self.repo / "quality-gates.json").read_bytes()
+        validator = PLANNER._quality_validator()
+        proxy = mock.Mock(wraps=validator)
+        proxy.load_json = mock.Mock(side_effect=AssertionError("declaration was re-read"))
+        with mock.patch.object(PLANNER, "_quality_validator", return_value=proxy):
+            plan = PLANNER.build_plan(str(self.repo), "quality-gates.json", self.base, "prepare", "WORKTREE")
+        import hashlib
+
+        self.assertEqual(plan["declaration"]["sha256"], hashlib.sha256(original).hexdigest())
+        proxy.load_json.assert_not_called()
+        self.assertEqual((self.repo / "quality-gates.json").read_bytes(), original)
+
+    def test_worktree_change_during_selection_fails_closed_without_output(self):
+        (self.repo / "src" / "a.py").write_text("changed\n", encoding="utf-8")
+        output = Path(self.temp.name) / "unstable.json"
+        before = self.snapshot()
+        original_select = PLANNER._select
+
+        def mutate_after_collection(declaration, phase, material_paths):
+            selected = original_select(declaration, phase, material_paths)
+            (self.repo / "src" / "a.py").write_text("changed during selection\n", encoding="utf-8")
+            return selected
+
+        with mock.patch.object(PLANNER, "_select", side_effect=mutate_after_collection):
+            with self.assertRaises(PLANNER.QualityGatePlanError):
+                PLANNER.build_plan(str(self.repo), "quality-gates.json", self.base, "prepare", "WORKTREE")
+        self.assertFalse(output.exists())
+        (self.repo / "src" / "a.py").write_text("changed\n", encoding="utf-8")
+        self.assertEqual(before, self.snapshot())
 
     def test_invalid_utf8_path_and_conflicted_index_are_rejected(self):
         bad = os.fsencode(str(self.repo)) + b"/bad-\xff.txt"

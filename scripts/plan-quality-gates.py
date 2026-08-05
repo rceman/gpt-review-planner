@@ -329,6 +329,21 @@ def _collect_changes(repo: Path, base: str, target: str) -> tuple[list[dict[str,
     return _sort_records(records), paths, "", []
 
 
+def _current_worktree_state(repo: Path, base: str) -> tuple[str, str]:
+    """Return the exact HEAD and fingerprint used for a WORKTREE plan check."""
+    head = _decode(_git(repo, "rev-parse", "--verify", "HEAD^{commit}").strip(), "HEAD")
+    _resolve_commit(repo, head, "HEAD")
+    status_raw = _git(repo, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--")
+    untracked = [
+        _safe_path(_decode(token, "untracked path"), "untracked path")
+        for token in _parse_nul_tokens(
+            _git(repo, "ls-files", "--others", "--exclude-standard", "-z", "--"),
+            "untracked paths",
+        )
+    ]
+    return head, _worktree_fingerprint(repo, base, status_raw, untracked)
+
+
 def _sort_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(records, key=lambda item: (item["path"], item.get("source", ""), item["status"]))
 
@@ -421,9 +436,11 @@ def _exact_object(value: Any, label: str, keys: set[str]) -> dict[str, Any]:
     return value
 
 
-def _plan_integer(value: Any, label: str, minimum: int = 0) -> int:
+def _plan_integer(value: Any, label: str, minimum: int = 0, maximum: int | None = None) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
         _fail(f"{label} must be an integer >= {minimum}")
+    if maximum is not None and value > maximum:
+        _fail(f"{label} must be an integer <= {maximum}")
     return value
 
 
@@ -545,14 +562,18 @@ def validate_execution_plan(plan: Any) -> dict[str, Any]:
         generated_ids.add(generated_id)
         for field in ("matched_inputs", "outputs"):
             values = entry[field]
-            if not isinstance(values, list) or values != sorted(values) or len(set(values)) != len(values) or not values:
-                _fail(f"plan.selected_generated[{index}].{field} must be sorted and unique")
+            if not isinstance(values, list) or len(set(values)) != len(values) or not values:
+                _fail(f"plan.selected_generated[{index}].{field} must be non-empty and unique")
+            if field == "matched_inputs" and values != sorted(values):
+                _fail(f"plan.selected_generated[{index}].matched_inputs must be sorted and unique")
             for path in values:
                 _safe_path(path, f"plan.selected_generated[{index}].{field}")
         if any(path not in material for path in entry["matched_inputs"]):
             _fail("selected generated input is not a material changed path")
         _validate_argv(entry["argv"], f"plan.selected_generated[{index}].argv")
-        _plan_integer(entry["timeout_seconds"], f"plan.selected_generated[{index}].timeout_seconds", 1)
+        _plan_integer(entry["timeout_seconds"], f"plan.selected_generated[{index}].timeout_seconds", 1, 3600)
+    if root["phase"] == "merge" and generated:
+        _fail("plan.selected_generated must be empty for merge phase")
     cleanup = _exact_object(root["cleanup"], "plan.cleanup", {"untracked_only", "paths", "performed"})
     if cleanup["untracked_only"] is not True or cleanup["performed"] is not False:
         _fail("cleanup projection must be untracked-only and not performed")
@@ -574,7 +595,9 @@ def validate_execution_plan(plan: Any) -> dict[str, Any]:
         _validate_argv(item["argv"], f"plan.selected_commands[{index}].argv")
         if item["mode"] not in {"check", "fix"} or item["file_args"] not in {"none", "append", "each"}:
             _fail("selected command mode or file_args is invalid")
-        _plan_integer(item["timeout_seconds"], f"plan.selected_commands[{index}].timeout_seconds", 1)
+        if root["phase"] == "merge" and item["mode"] != "check":
+            _fail("merge phase commands must be check-only")
+        _plan_integer(item["timeout_seconds"], f"plan.selected_commands[{index}].timeout_seconds", 1, 3600)
         paths = item["matched_paths"]
         if not isinstance(paths, list) or paths != sorted(paths) or len(set(paths)) != len(paths):
             _fail("selected command paths must be sorted and unique")
@@ -658,7 +681,10 @@ def build_plan(repo_argument: str, declaration_argument: str, base_argument: str
     declaration_relative, declaration_path, declaration_bytes = _relative_declaration(repo, declaration_argument)
     validator = _quality_validator()
     try:
-        declaration = validator.load_json(declaration_path)
+        # Validate the exact bytes already read for the emitted digest.  Do not
+        # re-open the path: a concurrent replacement must never make the plan
+        # describe one declaration while hashing another.
+        declaration = validator.load_json_bytes(declaration_bytes, label=str(declaration_path))
     except Exception as exc:
         _fail(f"invalid quality-gates declaration: {exc}")
     base = _resolve_commit(repo, base_argument, "base")
@@ -675,6 +701,10 @@ def build_plan(repo_argument: str, declaration_argument: str, base_argument: str
             _fail("base must be an ancestor of target")
     records, material_paths, fingerprint, status_projection = _collect_changes(repo, base, target)
     selected = _select(declaration, phase, material_paths)
+    if target == "WORKTREE":
+        current_head, current_fingerprint = _current_worktree_state(repo, base)
+        if current_head != head or current_fingerprint != fingerprint:
+            _fail("worktree changed during plan collection")
     cleanup = {
         "untracked_only": declaration["cleanup"]["untracked_only"],
         "paths": list(declaration["cleanup"]["paths"]),

@@ -78,6 +78,8 @@ class ReleaseLifecyclePolicyTests(unittest.TestCase):
 
     def make_integration_project(self, mode: str) -> Path:
         repo = self.make_repo("2.2.0")
+        shutil.copy2(ROOT / "templates/project/project-workflow.json", repo / "project-workflow.json")
+        shutil.copy2(ROOT / "templates/project/quality-gates.json", repo / "quality-gates.json")
         (repo / "AGENTS.md").write_text(
             "<!-- BEGIN GPT-REVIEW-PLANNER -->\nmanaged\n<!-- END GPT-REVIEW-PLANNER -->\n",
             encoding="utf-8",

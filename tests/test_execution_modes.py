@@ -8,6 +8,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLICATION_NONE = ROOT / "templates/project/release-publication.none.json"
+PROJECT_WORKFLOW = ROOT / "templates/project/project-workflow.json"
+QUALITY_GATES = ROOT / "templates/project/quality-gates.json"
 
 
 class ExecutionModeTests(unittest.TestCase):
@@ -25,6 +27,10 @@ class ExecutionModeTests(unittest.TestCase):
             "a" * 40,
             "--release-publication-file",
             str(PUBLICATION_NONE),
+            "--project-workflow-file",
+            str(PROJECT_WORKFLOW),
+            "--quality-gates-file",
+            str(QUALITY_GATES),
         ]
         if mode:
             command.extend(["--execution-mode", mode])

@@ -9,6 +9,8 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+PROJECT_WORKFLOW = ROOT / "templates/project/project-workflow.json"
+QUALITY_GATES = ROOT / "templates/project/quality-gates.json"
 
 
 def load_validator(name: str, path: Path):
@@ -256,7 +258,7 @@ class EngineeringBaselineTests(unittest.TestCase):
             for name, version in (("tagged", "v1.1.1"), ("exact", commit)):
                 project = root / name
                 project.mkdir()
-                subprocess.run(["bash", str(ROOT / "setup.sh"), "--project", str(project), "--version", version, "--execution-mode", "repository_evidence", "--release-publication-file", str(ROOT / "templates/project/release-publication.none.json"), "--commit", commit], check=True, capture_output=True, text=True)
+                subprocess.run(["bash", str(ROOT / "setup.sh"), "--project", str(project), "--version", version, "--execution-mode", "repository_evidence", "--release-publication-file", str(ROOT / "templates/project/release-publication.none.json"), "--project-workflow-file", str(PROJECT_WORKFLOW), "--quality-gates-file", str(QUALITY_GATES), "--commit", commit], check=True, capture_output=True, text=True)
                 lock = json.loads((project / ".gpt-workflow.lock").read_text())
                 self.assertIn("installed_at", lock)
                 self.assertNotIn("generated_at", lock)

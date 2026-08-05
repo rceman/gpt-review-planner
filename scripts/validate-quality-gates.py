@@ -527,6 +527,17 @@ def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
+def load_json_bytes(data: bytes, *, label: str = "input") -> dict[str, Any]:
+    try:
+        text = data.decode("utf-8")
+        value = json.loads(text, object_pairs_hook=_reject_duplicate_keys)
+    except QualityGatesError:
+        raise
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise QualityGatesError(f"cannot load JSON from {label}: {exc}") from exc
+    return validate(value)
+
+
 def load_json(path: str | os.PathLike[str]) -> dict[str, Any]:
     source = Path(path)
     if source.is_symlink():
@@ -534,13 +545,10 @@ def load_json(path: str | os.PathLike[str]) -> dict[str, Any]:
     if not source.is_file():
         raise QualityGatesError("input must be a regular file")
     try:
-        text = source.read_text(encoding="utf-8")
-        value = json.loads(text, object_pairs_hook=_reject_duplicate_keys)
-    except QualityGatesError:
-        raise
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        data = source.read_bytes()
+    except OSError as exc:
         raise QualityGatesError(f"cannot load JSON: {exc}") from exc
-    return validate(value)
+    return load_json_bytes(data, label=str(source))
 
 
 def validate_file(path: str | os.PathLike[str]) -> dict[str, Any]:
