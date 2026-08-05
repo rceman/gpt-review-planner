@@ -16,10 +16,13 @@ The canonical template is
 Its top-level fields are exactly `schema_version`,
 `unmatched_changed_path`, `cleanup`, `generated`, `rules`, and `release`.
 
-Launcher validation is Linux-only. Supported launcher semantics cover POSIX
-shells, Python, Node/NodeJS, Ruby, and Perl. Known Windows shell launchers
-(`cmd`, `cmd.exe`, `powershell`, `powershell.exe`, `pwsh`, and `pwsh.exe`) are
-unsupported and rejected outright; their switches are not parsed.
+Launcher validation is Linux-only and uses strict bounded allowlists. Supported
+profiles are exact `sh`, `dash`, and `bash` POSIX launchers; exact `python` and
+`python3` launchers; and exact `node` and `nodejs` launchers. Every launcher
+option before the first script, module, or file operand must be recognized by
+its profile. Unknown options fail closed. `zsh`, `ksh`, `fish`, `python2`,
+`pypy`, `pypy3`, Ruby, Perl, and known Windows shell launchers are unsupported
+and rejected outright; their switches are not parsed.
 
 ## Selection and ordering
 

@@ -20,9 +20,16 @@ class QualityGatesError(ValueError):
 ID_RE = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
 CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
 GLOB_META = set("*?[]")
-SHELL_NAMES = {"sh", "dash", "bash", "zsh", "ksh"}
+SHELL_NAMES = {"sh", "dash", "bash"}
 UNSUPPORTED_LAUNCHERS = {
+    "zsh",
+    "ksh",
     "fish",
+    "python2",
+    "pypy",
+    "pypy3",
+    "ruby",
+    "perl",
     "cmd",
     "cmd.exe",
     "powershell",
@@ -30,7 +37,8 @@ UNSUPPORTED_LAUNCHERS = {
     "pwsh",
     "pwsh.exe",
 }
-CODE_INTERPRETERS = {"python", "python2", "python3", "node", "nodejs", "ruby", "perl"}
+PYTHON_NAMES = {"python", "python3"}
+NODE_NAMES = {"node", "nodejs"}
 BROAD_CLEANUP = {".", "*", "**", "**/*", "/"}
 MAX_STRING = 4096
 
@@ -178,12 +186,11 @@ def _has_short_command_switch(token: str) -> bool:
     return token.startswith("-") and not token.startswith("--") and "c" in token[1:]
 
 
-def _consume_launcher_value(argv: list[str], index: int, path: str, *, forbidden=None, allowed=None) -> int:
+def _consume_launcher_value(argv: list[str], index: int, path: str, *, allowed=None) -> int:
     """Consume one value for a recognized launcher option.
 
-    A value is consumed as part of the launcher prefix, even when it begins
-    with a dash. Known evaluation switches are rejected instead of being
-    hidden as an option value.
+    Values that look like options are rejected so no launcher option can hide
+    another option or create a false positional operand boundary.
     """
     if index + 1 >= len(argv):
         _fail(path, "launcher option is missing its value")
@@ -192,13 +199,28 @@ def _consume_launcher_value(argv: list[str], index: int, path: str, *, forbidden
         _fail(path, "launcher option value cannot be another option")
     if allowed is not None and value not in allowed:
         _fail(path, "launcher option value is invalid")
-    if forbidden is not None and forbidden(value):
-        _fail(path, "launcher option value cannot hide an evaluation switch")
     return index + 2
 
 
+SHELL_VALUE_OPTIONS = {"-o", "-O", "--rcfile", "--init-file"}
+SHELL_SAFE_SHORT_CHARS = set("abefhilmnprstuvxBCEHPT")
+SHELL_SAFE_LONG_OPTIONS = {
+    "--debugger",
+    "--help",
+    "--login",
+    "--noediting",
+    "--noprofile",
+    "--norc",
+    "--noexec",
+    "--posix",
+    "--protected",
+    "--restricted",
+    "--verbose",
+    "--version",
+}
+
+
 def _scan_posix_shell_prefix(argv: list[str], index: int, path: str) -> None:
-    value_options = {"-o", "-O", "--rcfile", "--init-file"}
     while index < len(argv):
         token = argv[index]
         if token == "--":
@@ -207,21 +229,48 @@ def _scan_posix_shell_prefix(argv: list[str], index: int, path: str) -> None:
             return
         if _has_short_command_switch(token) or token == "--command" or token.startswith("--command="):
             _fail(path, "shell command-string evaluation is forbidden")
-        if token in value_options:
-            index = _consume_launcher_value(
-                argv,
-                index,
-                path,
-                forbidden=lambda value: _has_short_command_switch(value)
-                or value == "--command"
-                or value.startswith("--command="),
-            )
+        if token in SHELL_VALUE_OPTIONS:
+            index = _consume_launcher_value(argv, index, path)
             continue
+        if token.startswith("--"):
+            if token not in SHELL_SAFE_LONG_OPTIONS:
+                _fail(path, "unknown shell launcher option")
+            index += 1
+            continue
+        if not all(character in SHELL_SAFE_SHORT_CHARS for character in token[1:]):
+            _fail(path, "unknown shell launcher option")
         index += 1
 
 
+PYTHON_VALUE_OPTIONS = {"-W", "-X"}
+PYTHON_NO_VALUE_OPTIONS = {
+    "-B",
+    "-E",
+    "-I",
+    "-O",
+    "-OO",
+    "-P",
+    "-q",
+    "-s",
+    "-S",
+    "-u",
+    "-v",
+    "-VV",
+    "--dont-write-bytecode",
+    "--help",
+    "--ignore-environment",
+    "--isolated",
+    "--no-site",
+    "--no-user-site",
+    "--quiet",
+    "--safe-path",
+    "--utf8",
+    "--version",
+    "--warn-default-encoding",
+}
+
+
 def _scan_python_prefix(argv: list[str], index: int, path: str) -> None:
-    value_options = {"-W", "-X", "--check-hash-based-pycs"}
     while index < len(argv):
         token = argv[index]
         if token == "--":
@@ -231,35 +280,23 @@ def _scan_python_prefix(argv: list[str], index: int, path: str) -> None:
         if token == "-c" or (token.startswith("-c") and not token.startswith("--")):
             _fail(path, "inline interpreter evaluation is forbidden")
         if token == "-m":
-            index = _consume_launcher_value(
-                argv,
-                index,
-                path,
-                forbidden=lambda value: value == "-c" or (value.startswith("-c") and not value.startswith("--")),
-            )
+            index = _consume_launcher_value(argv, index, path)
             return
         if token == "--check-hash-based-pycs":
-            index = _consume_launcher_value(
-                argv,
-                index,
-                path,
-                allowed={"default", "always", "never"},
-            )
+            index = _consume_launcher_value(argv, index, path, allowed={"default", "always", "never"})
             continue
         if token.startswith("--check-hash-based-pycs="):
             _fail(path, "--check-hash-based-pycs requires a separate value")
-        if token in value_options:
-            index = _consume_launcher_value(
-                argv,
-                index,
-                path,
-                forbidden=lambda value: value == "-c" or (value.startswith("-c") and not value.startswith("--")),
-            )
+        if token in PYTHON_VALUE_OPTIONS:
+            index = _consume_launcher_value(argv, index, path)
             continue
         if token.startswith("-W") or token.startswith("-X"):
             index += 1
             continue
-        index += 1
+        if token in PYTHON_NO_VALUE_OPTIONS:
+            index += 1
+            continue
+        _fail(path, "unknown Python launcher option")
 
 
 NODE_VALUE_OPTIONS = {
@@ -281,6 +318,29 @@ NODE_VALUE_OPTIONS = {
     "--test-reporter",
     "--test-reporter-destination",
     "--test-shard",
+    "--inspect-port",
+}
+
+NODE_NO_VALUE_OPTIONS = {
+    "-c",
+    "-v",
+    "--check",
+    "--enable-source-maps",
+    "--experimental-repl-await",
+    "--help",
+    "--no-addons",
+    "--no-deprecation",
+    "--no-warnings",
+    "--pending-deprecation",
+    "--preserve-symlinks",
+    "--preserve-symlinks-main",
+    "--test",
+    "--test-only",
+    "--throw-deprecation",
+    "--trace-deprecation",
+    "--trace-warnings",
+    "--version",
+    "--watch",
 }
 
 
@@ -304,42 +364,15 @@ def _scan_node_prefix(argv: list[str], index: int, path: str) -> None:
         if _node_inline_switch(token):
             _fail(path, "inline interpreter evaluation is forbidden")
         if token in NODE_VALUE_OPTIONS:
-            index = _consume_launcher_value(argv, index, path, forbidden=_node_inline_switch)
+            index = _consume_launcher_value(argv, index, path)
             continue
         if any(token.startswith(option + "=") for option in NODE_VALUE_OPTIONS if option.startswith("--")):
             index += 1
             continue
-        index += 1
-
-
-def _scan_ruby_or_perl_prefix(name: str, argv: list[str], index: int, path: str) -> None:
-    value_options = {"-I", "-r", "--require"} if name == "ruby" else {"-I", "-M", "-m"}
-    while index < len(argv):
-        token = argv[index]
-        if token == "--":
-            return
-        if not token.startswith("-"):
-            return
-        if name == "ruby" and (
-            (token.startswith("-I") and token != "-I")
-            or (token.startswith("-r") and token != "-r")
-            or token.startswith("--require=")
-        ):
+        if token in NODE_NO_VALUE_OPTIONS:
             index += 1
             continue
-        if name == "perl" and (
-            (token.startswith("-I") and token != "-I")
-            or (token.startswith("-M") and token != "-M")
-            or (token.startswith("-m") and token != "-m")
-        ):
-            index += 1
-            continue
-        if token == "-e" or (not token.startswith("--") and "e" in token[1:]):
-            _fail(path, "inline interpreter evaluation is forbidden")
-        if token in value_options:
-            index = _consume_launcher_value(argv, index, path, forbidden=lambda value: value == "-e")
-            continue
-        index += 1
+        _fail(path, "unknown Node launcher option")
 
 
 def _reject_shell_evaluation(argv: list[str], path: str) -> None:
@@ -349,12 +382,10 @@ def _reject_shell_evaluation(argv: list[str], path: str) -> None:
         _fail(path, "launcher is unsupported on Linux")
     elif name in SHELL_NAMES:
         _scan_posix_shell_prefix(argv, prefix_start, path)
-    elif name in {"python", "python2", "python3"}:
+    elif name in PYTHON_NAMES:
         _scan_python_prefix(argv, prefix_start, path)
-    elif name in {"node", "nodejs"}:
+    elif name in NODE_NAMES:
         _scan_node_prefix(argv, prefix_start, path)
-    elif name in {"ruby", "perl"}:
-        _scan_ruby_or_perl_prefix(name, argv, prefix_start, path)
 
 
 def _command(value: Any, path: str, phase: str) -> dict[str, Any]:

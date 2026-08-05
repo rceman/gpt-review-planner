@@ -215,21 +215,24 @@ class QualityGatesTests(unittest.TestCase):
             ["bash", "-ce", "echo unsafe"],
             ["bash", "-O", "extglob", "-c", "echo unsafe"],
             ["bash", "-o", "-O", "extglob", "-c", "echo unsafe"],
+            ["bash", "--unknown", "-c", "echo unsafe"],
+            ["bash", "--unknown"],
             ["python3", "-c", "print('unsafe')"],
             ["python3", "-cprint('unsafe')"],
             ["python3", "-W", "ignore", "-c", "print('unsafe')"],
             ["python3", "--check-hash-based-pycs", "always", "-c", "print('unsafe')"],
             ["python3", "-W", "--check-hash-based-pycs", "always", "-c", "print('unsafe')"],
+            ["python3", "--unknown", "-c", "print('unsafe')"],
+            ["python3", "--unknown"],
             ["node", "--trace-warnings", "--eval", "console.log('unsafe')"],
             ["node", "-econsole.log('unsafe')"],
             ["node", "-pconsole.log('unsafe')"],
             ["node", "-C", "development", "--eval", "console.log('unsafe')"],
             ["node", "-C", "--require", "module", "--eval", "console.log('unsafe')"],
             ["node", "--test-reporter-destination", "stdout", "--eval", "console.log('unsafe')"],
-            ["ruby", "-I", "-eputs", "unsafe.rb"],
-            ["ruby", "-eputs", "unsafe.rb"],
-            ["perl", "-M", "-eprint", "unsafe.pl"],
-            ["perl", "-eprint", "unsafe.pl"],
+            ["node", "--inspect-port", "0", "--eval", "console.log('unsafe')"],
+            ["node", "--unknown", "--eval", "console.log('unsafe')"],
+            ["node", "--unknown"],
             ["fish", "-c", "echo unsafe"],
             ["fish", "-C", "echo unsafe"],
         )
@@ -253,24 +256,36 @@ class QualityGatesTests(unittest.TestCase):
             ["bash", "scripts/check.sh", "-c"],
             ["bash", "-o", "extglob", "scripts/check.sh", "-c"],
             ["bash", "-o", "./-O", "scripts/check.sh", "-c"],
+            ["sh", "-n", "scripts/check.sh"],
+            ["dash", "-n", "scripts/check.sh"],
             ["python3", "scripts/check.py", "-e"],
+            ["python3", "script.py"],
+            ["python3", "-m", "compileall"],
+            ["python3", "-m", "unittest"],
             ["python3", "-W", "ignore", "scripts/check.py", "-c"],
             ["node", "scripts/check.js", "--eval"],
+            ["node", "--check", "script.js"],
+            ["node", "-c", "script.js"],
+            ["node", "--trace-warnings", "script.js"],
             ["node", "--conditions", "development", "scripts/check.js", "--eval"],
             ["python3", "--check-hash-based-pycs", "always", "scripts/check.py", "-c"],
             ["node", "-C", "development", "scripts/check.js", "--eval"],
             ["node", "--test-reporter-destination", "stdout", "scripts/check.js", "--eval"],
-            ["ruby", "-I", "vendor", "scripts/check.rb"],
-            ["ruby", "-Ivendor", "scripts/check.rb"],
-            ["perl", "-M", "Encode", "scripts/check.pl"],
-            ["perl", "-MEncode", "scripts/check.pl"],
         ):
             value = self.valid()
             value["rules"][0]["prepare"][0]["argv"] = argv
             VALIDATOR.validate(value)
 
-    def test_windows_shell_launchers_are_unsupported(self):
+    def test_unsupported_launchers_are_rejected_without_parsing(self):
         for argv in (
+            ["zsh", "-c", "echo unsafe"],
+            ["ksh", "--command", "echo unsafe"],
+            ["fish", "-C", "echo unsafe"],
+            ["python2", "-c", "print('unsafe')"],
+            ["pypy", "--eval", "unsafe"],
+            ["pypy3"],
+            ["ruby", "-e", "unsafe"],
+            ["perl", "-e", "unsafe"],
             ["cmd"],
             ["cmd.exe", "/k", "echo unsafe"],
             ["powershell", "-Command", "Write-Host unsafe"],
@@ -293,11 +308,12 @@ class QualityGatesTests(unittest.TestCase):
             ["python3", "--check-hash-based-pycs"],
             ["python3", "--check-hash-based-pycs", "maybe"],
             ["python3", "--check-hash-based-pycs=always"],
+            ["python3", "--check-hash-based-pycs", "--always"],
             ["node", "--require"],
             ["node", "-C"],
             ["node", "--test-reporter-destination"],
-            ["ruby", "-I"],
-            ["perl", "-M"],
+            ["node", "--inspect-port"],
+            ["node", "--inspect-port", "--eval"],
         ):
             value = self.valid()
             value["rules"][0]["prepare"][0]["argv"] = argv
@@ -327,6 +343,9 @@ class QualityGatesTests(unittest.TestCase):
             "generated-output boundary",
             "task_merge",
             "full-suite run",
+            "strict",
+            "allowlist",
+            "unsupported",
         ):
             self.assertIn(phrase, docs)
 
