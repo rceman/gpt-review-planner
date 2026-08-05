@@ -55,7 +55,8 @@
     "cleanupGlob": {
       "allOf": [
         {"$ref": "#/$defs/relativeGlob"},
-        {"not": {"enum": [".", "*", "**", "**/*", "/"]}}
+        {"not": {"enum": [".", "*", "**", "**/*", "/"]}},
+        {"not": {"pattern": "^[*?\\[\\]/]+$"}}
       ]
     },
     "argv": {
@@ -122,17 +123,17 @@
     "generatedRule": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "input_globs", "output_paths", "argv", "timeout_seconds"],
+      "required": ["id", "inputs", "outputs", "argv", "timeout_seconds"],
       "properties": {
         "id": {"$ref": "#/$defs/id"},
-        "input_globs": {
+        "inputs": {
           "type": "array",
           "minItems": 1,
           "maxItems": 256,
           "uniqueItems": true,
           "items": {"$ref": "#/$defs/relativeGlob"}
         },
-        "output_paths": {
+        "outputs": {
           "type": "array",
           "minItems": 1,
           "maxItems": 256,

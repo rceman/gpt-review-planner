@@ -8,8 +8,8 @@
   "generated": [
     {
       "id": "project-index",
-      "input_globs": ["templates/project/*.json"],
-      "output_paths": ["build/generated/project-index.json"],
+      "inputs": ["templates/project/*.json"],
+      "outputs": ["build/generated/project-index.json"],
       "argv": ["python3", "scripts/generate-project-index.py"],
       "timeout_seconds": 60
     }

@@ -133,8 +133,8 @@ class QualityGatesTests(unittest.TestCase):
             (("cleanup", "paths"), ["../tmp"]),
             (("cleanup", "paths"), ["/tmp/*"]),
             (("rules", 0, "paths"), ["src/../x"]),
-            (("generated", 0, "input_globs"), ["src\\*.py"]),
-            (("generated", 0, "output_paths"), ["build/*.json"]),
+            (("generated", 0, "inputs"), ["src\\*.py"]),
+            (("generated", 0, "outputs"), ["build/*.json"]),
         ):
             value = self.valid()
             cursor = value
@@ -144,10 +144,14 @@ class QualityGatesTests(unittest.TestCase):
             self.assert_invalid(value)
 
     def test_cleanup_rejects_universal_patterns_and_requires_true(self):
-        for pattern in (".", "*", "**", "**/*", "/"):
+        for pattern in (".", "*", "**", "**/*", "/", "**/**", "*/*", "**/*/**", "?/?"):
             value = self.valid()
             value["cleanup"]["paths"] = [pattern]
             self.assert_invalid(value)
+        for pattern in (".quality-gates/tmp/*", "*.tmp", "*/tmp"):
+            value = self.valid()
+            value["cleanup"]["paths"] = [pattern]
+            VALIDATOR.validate(value)
         value = self.valid()
         value["cleanup"]["untracked_only"] = False
         self.assert_invalid(value)
@@ -168,12 +172,24 @@ class QualityGatesTests(unittest.TestCase):
         value = self.valid()
         value["generated"].append({
             "id": "other-output",
-            "input_globs": ["docs/*.md"],
-            "output_paths": [value["generated"][0]["output_paths"][0]],
+            "inputs": ["docs/*.md"],
+            "outputs": [value["generated"][0]["outputs"][0]],
             "argv": ["python3", "tool.py"],
             "timeout_seconds": 1,
         })
         self.assert_invalid(value, schema=False)
+
+    def test_generated_and_changed_rule_ids_share_one_namespace_and_old_names_reject(self):
+        value = self.valid()
+        value["generated"][0]["id"] = value["rules"][0]["id"]
+        self.assert_invalid(value, schema=False)
+
+        value = self.valid()
+        value["generated"][0]["input_globs"] = value["generated"][0].pop("inputs")
+        self.assert_invalid(value)
+        value = self.valid()
+        value["generated"][0]["output_paths"] = value["generated"][0].pop("outputs")
+        self.assert_invalid(value)
 
     def test_changed_rule_must_have_a_nonempty_phase(self):
         value = self.valid()
@@ -206,6 +222,12 @@ class QualityGatesTests(unittest.TestCase):
         value = self.valid()
         value["rules"][0]["prepare"][0]["argv"] = ["bash", "-n", "scripts/example.sh"]
         VALIDATOR.validate(value)
+        value = self.valid()
+        value["rules"][0]["prepare"][0]["argv"] = ["echo", "bash", "-c", "text"]
+        VALIDATOR.validate(value)
+        value = self.valid()
+        value["rules"][0]["prepare"][0]["argv"] = ["env", "MODE=x", "bash", "-c", "text"]
+        self.assert_invalid(value, schema=False)
 
     def test_timeout_bounds_and_integer_semantics_are_strict(self):
         for timeout in (0, -1, 3601, 1.5, True, float("inf")):

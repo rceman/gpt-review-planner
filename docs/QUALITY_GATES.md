@@ -37,8 +37,9 @@ one agent implementation commit; merge is performed only by the deterministic
 `cleanup.untracked_only` is always `true`. Cleanup paths are an explicit
 allowlist of normalized repository-relative globs and never authorize tracked,
 absolute, universal, or traversal paths. Generated rules declare input globs
-and exact output paths; only the generated-output boundary may mutate those
-outputs. No declaration command may use shell command-string evaluation such
+in `inputs` and exact output paths in `outputs`; only the generated-output boundary
+may mutate those outputs. No declaration command may use shell
+command-string evaluation such
 as `sh -c`, `cmd /c`, or PowerShell `-Command`; commands are direct argv.
 
 The declaration fails closed on unknown fields, unsafe paths, duplicate IDs or

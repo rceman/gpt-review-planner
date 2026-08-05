@@ -108,6 +108,8 @@ def _relative_path(value: Any, path: str, *, glob: bool = True, cleanup: bool = 
     segments = value.split("/")
     if any(segment in {"", ".", ".."} for segment in segments):
         _fail(path, "must have normalized non-empty path segments")
+    if cleanup and not any(char not in GLOB_META for segment in segments for char in segment):
+        _fail(path, "wildcard-only cleanup pattern is forbidden")
     if not glob and any(char in GLOB_META for char in value):
         _fail(path, "must be an exact path, not a glob")
     return value
@@ -128,25 +130,66 @@ def _basename(token: str) -> str:
     return token.replace("\\", "/").rsplit("/", 1)[-1].lower()
 
 
+ENV_ASSIGNMENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=.*$")
+
+
+def _effective_executable(argv: list[str], path: str) -> tuple[str, int]:
+    """Return the effective executable, allowing one transparent env prefix."""
+    if _basename(argv[0]) != "env":
+        return _basename(argv[0]), 0
+    index = 1
+    while index < len(argv):
+        token = argv[index]
+        if token == "--":
+            index += 1
+            break
+        if ENV_ASSIGNMENT_RE.fullmatch(token):
+            index += 1
+            continue
+        if token in {"-i", "--ignore-environment"}:
+            index += 1
+            continue
+        if token in {"-u", "--unset"}:
+            if index + 1 >= len(argv) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", argv[index + 1]):
+                _fail(path, "env unset option must name an environment variable")
+            index += 2
+            continue
+        if token.startswith("--unset="):
+            if not re.fullmatch(r"--unset=[A-Za-z_][A-Za-z0-9_]*", token):
+                _fail(path, "env unset option must name an environment variable")
+            index += 1
+            continue
+        if token.startswith("-"):
+            _fail(path, "unsupported env option cannot be treated as transparent")
+        break
+    if index >= len(argv):
+        _fail(path, "env prefix must be followed by an executable")
+    return _basename(argv[index]), index
+
+
+def _has_short_command_switch(token: str) -> bool:
+    lowered = token.lower()
+    if lowered == "-c":
+        return True
+    return lowered.startswith("-") and not lowered.startswith("--") and len(lowered) > 2 and lowered.endswith("c")
+
+
 def _reject_shell_evaluation(argv: list[str], path: str) -> None:
-    for index, token in enumerate(argv):
-        name = _basename(token)
-        lowered = token.lower()
-        next_tokens = argv[index + 1 :]
-        if name in SHELL_NAMES:
-            if any(item == "-c" or item.startswith("-c") or item in {"--command", "--command=..."} for item in next_tokens):
-                _fail(path, "shell command-string evaluation is forbidden")
-        elif name in CMD_NAMES:
-            if any(item.lower() == "/c" or item.lower().startswith("/c") or item.lower() == "/k" or item.lower().startswith("/k") for item in next_tokens):
-                _fail(path, "cmd command-string evaluation is forbidden")
-        elif name in POWERSHELL_NAMES:
-            switches = {"-command", "-c", "-encodedcommand", "-enc", "-e", "-encodedarguments"}
-            if any(item.lower() in switches or item.lower().startswith("-command:") for item in next_tokens):
-                _fail(path, "PowerShell command-string evaluation is forbidden")
-        elif name in CODE_INTERPRETERS:
-            if any(item == "-c" or item == "-e" or item.startswith("-c") for item in next_tokens):
-                _fail(path, "inline interpreter evaluation is forbidden")
-        _ = lowered
+    name, executable_index = _effective_executable(argv, path)
+    arguments = argv[executable_index + 1 :]
+    if name in SHELL_NAMES:
+        if any(_has_short_command_switch(item) or item == "--command" or item.startswith("--command=") for item in arguments):
+            _fail(path, "shell command-string evaluation is forbidden")
+    elif name in CMD_NAMES:
+        if any(item.lower() in {"/c", "/k"} for item in arguments):
+            _fail(path, "cmd command-string evaluation is forbidden")
+    elif name in POWERSHELL_NAMES:
+        switches = {"-command", "-c", "-encodedcommand", "-encodedarguments", "-enc", "-e"}
+        if any(item.lower() in switches or item.lower().startswith("-command:") or item.lower().startswith("-encodedcommand:") for item in arguments):
+            _fail(path, "PowerShell command-string evaluation is forbidden")
+    elif name in CODE_INTERPRETERS:
+        if any(_has_short_command_switch(item) or item in {"-e", "--eval"} for item in arguments):
+            _fail(path, "inline interpreter evaluation is forbidden")
 
 
 def _command(value: Any, path: str, phase: str) -> dict[str, Any]:
@@ -191,44 +234,42 @@ def _validate_cleanup(value: Any) -> None:
         seen.add(normalized)
 
 
-def _validate_generated(value: Any) -> None:
+def _validate_generated(value: Any, rule_ids: set[str]) -> None:
     generated = _array(value, "generated", maximum=128)
-    ids: set[str] = set()
     outputs: set[str] = set()
     for index, generated_rule in enumerate(generated):
         path = f"generated[{index}]"
-        item = _exact_object(generated_rule, path, {"id", "input_globs", "output_paths", "argv", "timeout_seconds"})
+        item = _exact_object(generated_rule, path, {"id", "inputs", "outputs", "argv", "timeout_seconds"})
         rule_id = _id(item["id"], f"{path}.id")
-        if rule_id in ids:
-            _fail(f"{path}.id", "generated rule id must be unique")
-        ids.add(rule_id)
-        inputs = _array(item["input_globs"], f"{path}.input_globs", minimum=1, maximum=256)
-        _unique(inputs, f"{path}.input_globs")
+        if rule_id in rule_ids:
+            _fail(f"{path}.id", "rule id must be globally unique")
+        rule_ids.add(rule_id)
+        inputs = _array(item["inputs"], f"{path}.inputs", minimum=1, maximum=256)
+        _unique(inputs, f"{path}.inputs")
         for input_index, input_glob in enumerate(inputs):
-            _relative_path(input_glob, f"{path}.input_globs[{input_index}]")
-        output_paths = _array(item["output_paths"], f"{path}.output_paths", minimum=1, maximum=256)
-        _unique(output_paths, f"{path}.output_paths")
+            _relative_path(input_glob, f"{path}.inputs[{input_index}]")
+        output_paths = _array(item["outputs"], f"{path}.outputs", minimum=1, maximum=256)
+        _unique(output_paths, f"{path}.outputs")
         for output_index, output_path in enumerate(output_paths):
-            normalized = _relative_path(output_path, f"{path}.output_paths[{output_index}]", glob=False)
+            normalized = _relative_path(output_path, f"{path}.outputs[{output_index}]", glob=False)
             if normalized in outputs:
-                _fail(f"{path}.output_paths[{output_index}]", "generated output path must be globally unique")
+                _fail(f"{path}.outputs[{output_index}]", "generated output path must be globally unique")
             outputs.add(normalized)
         _argv(item["argv"], f"{path}.argv")
         _reject_shell_evaluation(item["argv"], f"{path}.argv")
         _integer(item["timeout_seconds"], f"{path}.timeout_seconds", minimum=1, maximum=3600)
 
 
-def _validate_rules(value: Any) -> set[str]:
+def _validate_rules(value: Any, rule_ids: set[str]) -> set[str]:
     rules = _array(value, "rules", maximum=128)
-    ids: set[str] = set()
     command_ids: set[str] = set()
     for index, changed_rule in enumerate(rules):
         path = f"rules[{index}]"
         item = _exact_object(changed_rule, path, {"id", "paths", "prepare", "merge"})
         rule_id = _id(item["id"], f"{path}.id")
-        if rule_id in ids:
-            _fail(f"{path}.id", "changed-path rule id must be globally unique")
-        ids.add(rule_id)
+        if rule_id in rule_ids:
+            _fail(f"{path}.id", "rule id must be globally unique")
+        rule_ids.add(rule_id)
         paths = _array(item["paths"], f"{path}.paths", minimum=1, maximum=256)
         _unique(paths, f"{path}.paths")
         for path_index, changed_path in enumerate(paths):
@@ -250,8 +291,9 @@ def validate(document: Any) -> dict[str, Any]:
     if root["unmatched_changed_path"] != "reject":
         _fail("unmatched_changed_path", "must be exactly reject")
     _validate_cleanup(root["cleanup"])
-    _validate_generated(root["generated"])
-    command_ids = _validate_rules(root["rules"])
+    rule_ids: set[str] = set()
+    _validate_generated(root["generated"], rule_ids)
+    command_ids = _validate_rules(root["rules"], rule_ids)
     _command_list(root["release"], "release", "release", command_ids, minimum=1)
     return root
 
